@@ -12,7 +12,7 @@ import (
 
 // EmbeddingConfig 嵌入服务配置
 type EmbeddingConfig struct {
-	Provider string `json:"provider"` // openai, azure, local
+	Provider string `json:"provider"` // openai, azure, deepseek, local
 	APIKey   string `json:"api_key"`
 	BaseURL  string `json:"base_url"`
 	Model    string `json:"model"`
@@ -277,6 +277,16 @@ func (f *EmbeddingServiceFactory) CreateEmbeddingService(config *EmbeddingConfig
 			config.Model = "text-embedding-ada-002"
 		}
 		return NewOpenAIEmbeddingService(config), nil // Azure 使用相同的 API 格式
+		
+	case "deepseek":
+		// DeepSeek 使用 OpenAI 兼容的 API 格式
+		if config.BaseURL == "" {
+			config.BaseURL = "https://api.deepseek.com/v1"
+		}
+		if config.Model == "" {
+			config.Model = "text-embedding-ada-002" // DeepSeek 的默认 embedding 模型
+		}
+		return NewOpenAIEmbeddingService(config), nil
 		
 	case "local":
 		dimension := 768
