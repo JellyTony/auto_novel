@@ -9,6 +9,7 @@ require (
 	github.com/cloudwego/eino-ext/components/model/qwen v0.0.0-20250929071429-e7650d831a09
 	github.com/go-kratos/kratos/v2 v2.8.0
 	github.com/google/wire v0.6.0
+	github.com/gorilla/handlers v1.5.2
 	go.uber.org/automaxprocs v1.5.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
 	google.golang.org/grpc v1.65.0
@@ -28,6 +29,7 @@ require (
 	github.com/eino-contrib/jsonschema v1.0.0 // indirect
 	github.com/eino-contrib/ollama v0.1.0 // indirect
 	github.com/evanphx/json-patch v0.5.2 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getkin/kin-openapi v0.118.0 // indirect
 	github.com/go-kratos/aegis v0.2.0 // indirect
