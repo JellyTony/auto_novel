@@ -3,10 +3,387 @@
 
 openapi: 3.0.3
 info:
-    title: VideoScriptService API
-    description: 短视频脚本服务
+    title: ""
     version: 0.0.1
 paths:
+    /api/v1/novel/models:
+        get:
+            tags:
+                - NovelService
+            description: 获取可用模型列表
+            operationId: NovelService_ListModels
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.ListModelsResponse'
+    /api/v1/novel/projects:
+        get:
+            tags:
+                - NovelService
+            description: 列出项目
+            operationId: NovelService_ListProjects
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.ListProjectsResponse'
+        post:
+            tags:
+                - NovelService
+            description: 创建小说项目
+            operationId: NovelService_CreateProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.CreateProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.CreateProjectResponse'
+    /api/v1/novel/projects/{projectId}:
+        get:
+            tags:
+                - NovelService
+            description: 获取项目详情
+            operationId: NovelService_GetProject
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.GetProjectResponse'
+    /api/v1/novel/projects/{projectId}/chapters:
+        post:
+            tags:
+                - NovelService
+            description: 生成章节内容
+            operationId: NovelService_GenerateChapter
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.GenerateChapterRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.GenerateChapterResponse'
+    /api/v1/novel/projects/{projectId}/chapters/{chapterId}/polish:
+        post:
+            tags:
+                - NovelService
+            description: 润色章节
+            operationId: NovelService_PolishChapter
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: chapterId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.PolishChapterRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.PolishChapterResponse'
+    /api/v1/novel/projects/{projectId}/chapters/{chapterId}/quality:
+        post:
+            tags:
+                - NovelService
+            description: 质量检测
+            operationId: NovelService_CheckQuality
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: chapterId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.CheckQualityRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.CheckQualityResponse'
+    /api/v1/novel/projects/{projectId}/characters:
+        post:
+            tags:
+                - NovelService
+            description: 生成人物卡
+            operationId: NovelService_GenerateCharacters
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.GenerateCharactersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.GenerateCharactersResponse'
+    /api/v1/novel/projects/{projectId}/consistency:
+        post:
+            tags:
+                - NovelService
+            description: 一致性检查
+            operationId: NovelService_CheckConsistency
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.CheckConsistencyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.CheckConsistencyResponse'
+    /api/v1/novel/projects/{projectId}/export:
+        post:
+            tags:
+                - NovelService
+            description: 导出小说
+            operationId: NovelService_ExportNovel
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.ExportNovelRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.ExportNovelResponse'
+    /api/v1/novel/projects/{projectId}/generate:
+        post:
+            tags:
+                - NovelService
+            description: 生成完整小说（工作流）
+            operationId: NovelService_GenerateNovel
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.GenerateNovelRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.GenerateNovelResponse'
+    /api/v1/novel/projects/{projectId}/outline:
+        post:
+            tags:
+                - NovelService
+            description: 生成章节大纲
+            operationId: NovelService_GenerateOutline
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.GenerateOutlineRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.GenerateOutlineResponse'
+    /api/v1/novel/projects/{projectId}/quality/batch:
+        post:
+            tags:
+                - NovelService
+            description: 批量质量检测
+            operationId: NovelService_BatchCheckQuality
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.BatchCheckQualityRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.BatchCheckQualityResponse'
+    /api/v1/novel/projects/{projectId}/video-script:
+        post:
+            tags:
+                - NovelService
+            description: 生成短视频分镜脚本
+            operationId: NovelService_GenerateVideoScript
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.GenerateVideoScriptRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.GenerateVideoScriptResponse'
+    /api/v1/novel/projects/{projectId}/worldview:
+        post:
+            tags:
+                - NovelService
+            description: 生成世界观
+            operationId: NovelService_GenerateWorldView
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.GenerateWorldViewRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.GenerateWorldViewResponse'
+    /api/v1/novel/switch-model:
+        post:
+            tags:
+                - NovelService
+            description: 切换AI模型
+            operationId: NovelService_SwitchModel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.SwitchModelRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.SwitchModelResponse'
     /api/v1/projects/{projectId}/video-scripts:
         get:
             tags:
@@ -35,13 +412,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListVideoScriptsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: '#/components/schemas/api.video_script.v1.ListVideoScriptsResponse'
     /api/v1/video-scripts/generate:
         post:
             tags:
@@ -52,7 +423,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/GenerateVideoScriptRequest'
+                            $ref: '#/components/schemas/api.video_script.v1.GenerateVideoScriptRequest'
                 required: true
             responses:
                 "200":
@@ -60,13 +431,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GenerateVideoScriptResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: '#/components/schemas/api.video_script.v1.GenerateVideoScriptResponse'
     /api/v1/video-scripts/{baseScriptId}/variants:
         post:
             tags:
@@ -83,7 +448,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/GeneratePlatformVariantsRequest'
+                            $ref: '#/components/schemas/api.video_script.v1.GeneratePlatformVariantsRequest'
                 required: true
             responses:
                 "200":
@@ -91,13 +456,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GeneratePlatformVariantsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: '#/components/schemas/api.video_script.v1.GeneratePlatformVariantsResponse'
     /api/v1/video-scripts/{scriptId}:
         get:
             tags:
@@ -116,13 +475,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GetVideoScriptResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: '#/components/schemas/api.video_script.v1.GetVideoScriptResponse'
         delete:
             tags:
                 - VideoScriptService
@@ -140,13 +493,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/DeleteVideoScriptResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: '#/components/schemas/api.video_script.v1.DeleteVideoScriptResponse'
     /api/v1/video-scripts/{scriptId}/optimize:
         put:
             tags:
@@ -163,7 +510,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/OptimizeVideoScriptRequest'
+                            $ref: '#/components/schemas/api.video_script.v1.OptimizeVideoScriptRequest'
                 required: true
             responses:
                 "200":
@@ -171,22 +518,35 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/OptimizeVideoScriptResponse'
-                default:
-                    description: Default error response
+                                $ref: '#/components/schemas/api.video_script.v1.OptimizeVideoScriptResponse'
+    /helloworld/{name}:
+        get:
+            tags:
+                - Greeter
+            description: Sends a greeting
+            operationId: Greeter_SayHello
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Status'
+                                $ref: '#/components/schemas/helloworld.v1.HelloReply'
 components:
     schemas:
-        DeleteVideoScriptResponse:
+        api.video_script.v1.DeleteVideoScriptResponse:
             type: object
             properties:
                 success:
                     type: boolean
             description: 删除视频脚本响应
-        GeneratePlatformVariantsRequest:
+        api.video_script.v1.GeneratePlatformVariantsRequest:
             type: object
             properties:
                 baseScriptId:
@@ -196,15 +556,15 @@ components:
                     items:
                         type: string
             description: 生成平台变体请求
-        GeneratePlatformVariantsResponse:
+        api.video_script.v1.GeneratePlatformVariantsResponse:
             type: object
             properties:
                 variants:
                     type: array
                     items:
-                        $ref: '#/components/schemas/VideoScript'
+                        $ref: '#/components/schemas/api.video_script.v1.VideoScript'
             description: 生成平台变体响应
-        GenerateVideoScriptRequest:
+        api.video_script.v1.GenerateVideoScriptRequest:
             type: object
             properties:
                 projectId:
@@ -225,38 +585,30 @@ components:
                 requirements:
                     type: string
             description: 生成短视频脚本请求
-        GenerateVideoScriptResponse:
+        api.video_script.v1.GenerateVideoScriptResponse:
             type: object
             properties:
                 videoScript:
-                    $ref: '#/components/schemas/VideoScript'
+                    $ref: '#/components/schemas/api.video_script.v1.VideoScript'
             description: 生成短视频脚本响应
-        GetVideoScriptResponse:
+        api.video_script.v1.GetVideoScriptResponse:
             type: object
             properties:
                 videoScript:
-                    $ref: '#/components/schemas/VideoScript'
+                    $ref: '#/components/schemas/api.video_script.v1.VideoScript'
             description: 获取视频脚本详情响应
-        GoogleProtobufAny:
-            type: object
-            properties:
-                '@type':
-                    type: string
-                    description: The type of the serialized message.
-            additionalProperties: true
-            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
-        ListVideoScriptsResponse:
+        api.video_script.v1.ListVideoScriptsResponse:
             type: object
             properties:
                 scripts:
                     type: array
                     items:
-                        $ref: '#/components/schemas/VideoScript'
+                        $ref: '#/components/schemas/api.video_script.v1.VideoScript'
                 total:
                     type: integer
                     format: int32
             description: 获取视频脚本列表响应
-        OptimizeVideoScriptRequest:
+        api.video_script.v1.OptimizeVideoScriptRequest:
             type: object
             properties:
                 scriptId:
@@ -264,29 +616,13 @@ components:
                 requirements:
                     type: string
             description: 优化短视频脚本请求
-        OptimizeVideoScriptResponse:
+        api.video_script.v1.OptimizeVideoScriptResponse:
             type: object
             properties:
                 videoScript:
-                    $ref: '#/components/schemas/VideoScript'
+                    $ref: '#/components/schemas/api.video_script.v1.VideoScript'
             description: 优化短视频脚本响应
-        Status:
-            type: object
-            properties:
-                code:
-                    type: integer
-                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-                    format: int32
-                message:
-                    type: string
-                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
-                details:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/GoogleProtobufAny'
-                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
-            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
-        VideoHooks:
+        api.video_script.v1.VideoHooks:
             type: object
             properties:
                 opening:
@@ -296,7 +632,7 @@ components:
                 ending:
                     type: string
             description: 视频钩子点
-        VideoScene:
+        api.video_script.v1.VideoScene:
             type: object
             properties:
                 index:
@@ -324,7 +660,7 @@ components:
                     items:
                         type: string
             description: 视频分镜场景
-        VideoScript:
+        api.video_script.v1.VideoScript:
             type: object
             properties:
                 id:
@@ -345,9 +681,9 @@ components:
                 scenes:
                     type: array
                     items:
-                        $ref: '#/components/schemas/VideoScene'
+                        $ref: '#/components/schemas/api.video_script.v1.VideoScene'
                 hooks:
-                    $ref: '#/components/schemas/VideoHooks'
+                    $ref: '#/components/schemas/api.video_script.v1.VideoHooks'
                 hashtags:
                     type: array
                     items:
@@ -361,5 +697,718 @@ components:
                 updatedAt:
                     type: string
             description: 短视频脚本
+        helloworld.v1.HelloReply:
+            type: object
+            properties:
+                message:
+                    type: string
+            description: The response message containing the greetings
+        novel.v1.BatchCheckQualityRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                chapterIds:
+                    type: array
+                    items:
+                        type: string
+                checkType:
+                    type: string
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+        novel.v1.BatchCheckQualityResponse:
+            type: object
+            properties:
+                results:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.CheckQualityResponse'
+                summary:
+                    $ref: '#/components/schemas/novel.v1.QualitySummary'
+                overallScore:
+                    type: number
+                    format: double
+        novel.v1.Chapter:
+            type: object
+            properties:
+                id:
+                    type: string
+                projectId:
+                    type: string
+                index:
+                    type: integer
+                    format: int32
+                title:
+                    type: string
+                summary:
+                    type: string
+                rawContent:
+                    type: string
+                polishedContent:
+                    type: string
+                wordCount:
+                    type: integer
+                    format: int32
+                status:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+        novel.v1.ChapterOutline:
+            type: object
+            properties:
+                index:
+                    type: integer
+                    format: int32
+                title:
+                    type: string
+                summary:
+                    type: string
+                goal:
+                    type: string
+                twistHint:
+                    type: string
+                importantItems:
+                    type: array
+                    items:
+                        type: string
+        novel.v1.Character:
+            type: object
+            properties:
+                id:
+                    type: string
+                projectId:
+                    type: string
+                name:
+                    type: string
+                role:
+                    type: string
+                age:
+                    type: integer
+                    format: int32
+                appearance:
+                    type: string
+                background:
+                    type: string
+                motivation:
+                    type: string
+                flaws:
+                    type: array
+                    items:
+                        type: string
+                speechTone:
+                    type: string
+                secrets:
+                    type: array
+                    items:
+                        type: string
+                relationshipMap:
+                    type: object
+                    additionalProperties:
+                        type: string
+        novel.v1.CheckConsistencyRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                checkType:
+                    type: string
+                chapterIds:
+                    type: array
+                    items:
+                        type: string
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+            description: 一致性检查相关消息
+        novel.v1.CheckConsistencyResponse:
+            type: object
+            properties:
+                issues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.ConsistencyIssue'
+                suggestions:
+                    type: array
+                    items:
+                        type: string
+                overallScore:
+                    type: number
+                    format: double
+        novel.v1.CheckQualityRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                chapterId:
+                    type: string
+                checkType:
+                    type: string
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+            description: 质量检测相关消息
+        novel.v1.CheckQualityResponse:
+            type: object
+            properties:
+                polishedChapter:
+                    $ref: '#/components/schemas/novel.v1.Chapter'
+                proofreadResult:
+                    $ref: '#/components/schemas/novel.v1.ProofreadResult'
+                critiqueResult:
+                    $ref: '#/components/schemas/novel.v1.CritiqueResult'
+                consistencyIssues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.ConsistencyIssue'
+                overallScore:
+                    type: number
+                    format: double
+                recommendations:
+                    type: array
+                    items:
+                        type: string
+        novel.v1.ConsistencyIssue:
+            type: object
+            properties:
+                type:
+                    type: string
+                severity:
+                    type: string
+                description:
+                    type: string
+                location:
+                    type: string
+                suggestion:
+                    type: string
+        novel.v1.CreateProjectRequest:
+            type: object
+            properties:
+                title:
+                    type: string
+                description:
+                    type: string
+                genre:
+                    type: string
+                targetAudience:
+                    type: string
+                tone:
+                    type: string
+                themes:
+                    type: array
+                    items:
+                        type: string
+            description: 项目相关消息
+        novel.v1.CreateProjectResponse:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                title:
+                    type: string
+                status:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+        novel.v1.CritiqueResult:
+            type: object
+            properties:
+                logicalIssues:
+                    type: array
+                    items:
+                        type: string
+                characterIssues:
+                    type: array
+                    items:
+                        type: string
+                pacingIssues:
+                    type: array
+                    items:
+                        type: string
+                improvements:
+                    type: array
+                    items:
+                        type: string
+                fixedExample:
+                    type: string
+                overallScore:
+                    type: integer
+                    format: int32
+        novel.v1.ExportNovelRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                format:
+                    type: string
+                options:
+                    $ref: '#/components/schemas/novel.v1.ExportOptions'
+            description: 导出相关消息
+        novel.v1.ExportNovelResponse:
+            type: object
+            properties:
+                downloadUrl:
+                    type: string
+                fileName:
+                    type: string
+                fileSize:
+                    type: string
+        novel.v1.ExportOptions:
+            type: object
+            properties:
+                includeMetadata:
+                    type: boolean
+                includeOutline:
+                    type: boolean
+                fontFamily:
+                    type: string
+                fontSize:
+                    type: integer
+                    format: int32
+        novel.v1.GenerateChapterRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                chapterOutline:
+                    $ref: '#/components/schemas/novel.v1.ChapterOutline'
+                context:
+                    $ref: '#/components/schemas/novel.v1.GenerationContext'
+                targetWordCount:
+                    type: integer
+                    format: int32
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+            description: 章节生成相关消息
+        novel.v1.GenerateChapterResponse:
+            type: object
+            properties:
+                chapter:
+                    $ref: '#/components/schemas/novel.v1.Chapter'
+        novel.v1.GenerateCharactersRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                characterNames:
+                    type: array
+                    items:
+                        type: string
+                worldView:
+                    $ref: '#/components/schemas/novel.v1.WorldView'
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+            description: 人物卡相关消息
+        novel.v1.GenerateCharactersResponse:
+            type: object
+            properties:
+                characters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.Character'
+        novel.v1.GenerateNovelRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                options:
+                    $ref: '#/components/schemas/novel.v1.GenerateOptions'
+            description: 完整小说生成相关消息
+        novel.v1.GenerateNovelResponse:
+            type: object
+            properties:
+                status:
+                    type: string
+                progress:
+                    type: number
+                    format: double
+                currentStage:
+                    type: string
+                message:
+                    type: string
+                chapters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.Chapter'
+                issues:
+                    type: array
+                    items:
+                        type: string
+        novel.v1.GenerateOptions:
+            type: object
+            properties:
+                maxChapters:
+                    type: integer
+                    format: int32
+                wordsPerChapter:
+                    type: integer
+                    format: int32
+                polishEnabled:
+                    type: boolean
+                consistencyCheck:
+                    type: boolean
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+        novel.v1.GenerateOutlineRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                chapterCount:
+                    type: integer
+                    format: int32
+                worldView:
+                    $ref: '#/components/schemas/novel.v1.WorldView'
+                characters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.Character'
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+            description: 章节大纲相关消息
+        novel.v1.GenerateOutlineResponse:
+            type: object
+            properties:
+                outline:
+                    $ref: '#/components/schemas/novel.v1.Outline'
+        novel.v1.GenerateVideoScriptRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                chapterIds:
+                    type: array
+                    items:
+                        type: string
+                options:
+                    $ref: '#/components/schemas/novel.v1.VideoScriptOptions'
+            description: 短视频分镜脚本相关消息
+        novel.v1.GenerateVideoScriptResponse:
+            type: object
+            properties:
+                scenes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.VideoScene'
+        novel.v1.GenerateWorldViewRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                genre:
+                    type: string
+                setting:
+                    type: string
+                keyRules:
+                    type: array
+                    items:
+                        type: string
+                tone:
+                    type: string
+                targetAudience:
+                    type: string
+                themes:
+                    type: array
+                    items:
+                        type: string
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+            description: 世界观相关消息
+        novel.v1.GenerateWorldViewResponse:
+            type: object
+            properties:
+                worldView:
+                    $ref: '#/components/schemas/novel.v1.WorldView'
+        novel.v1.GenerationContext:
+            type: object
+            properties:
+                previousSummary:
+                    type: string
+                characters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.Character'
+                timeline:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.TimelineEvent'
+                props:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.PropItem'
+                styleExamples:
+                    type: array
+                    items:
+                        type: string
+        novel.v1.GetProjectResponse:
+            type: object
+            properties:
+                project:
+                    $ref: '#/components/schemas/novel.v1.Project'
+        novel.v1.LLMOptions:
+            type: object
+            properties:
+                temperature:
+                    type: number
+                    format: double
+                topP:
+                    type: number
+                    format: double
+                maxTokens:
+                    type: integer
+                    format: int32
+                frequencyPenalty:
+                    type: number
+                    format: double
+                presencePenalty:
+                    type: number
+                    format: double
+                model:
+                    type: string
+            description: 选项和配置
+        novel.v1.ListModelsResponse:
+            type: object
+            properties:
+                models:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.ModelInfo'
+                currentModel:
+                    type: string
+        novel.v1.ListProjectsResponse:
+            type: object
+            properties:
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.Project'
+                total:
+                    type: integer
+                    format: int32
+        novel.v1.ModelInfo:
+            type: object
+            properties:
+                name:
+                    type: string
+                provider:
+                    type: string
+                model:
+                    type: string
+                description:
+                    type: string
+                available:
+                    type: boolean
+        novel.v1.Outline:
+            type: object
+            properties:
+                id:
+                    type: string
+                projectId:
+                    type: string
+                chapters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.ChapterOutline'
+        novel.v1.PolishChapterRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                chapterId:
+                    type: string
+                style:
+                    type: string
+                focus:
+                    type: array
+                    items:
+                        type: string
+                llmOptions:
+                    $ref: '#/components/schemas/novel.v1.LLMOptions'
+            description: 润色相关消息
+        novel.v1.PolishChapterResponse:
+            type: object
+            properties:
+                chapter:
+                    $ref: '#/components/schemas/novel.v1.Chapter'
+        novel.v1.Project:
+            type: object
+            properties:
+                id:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                genre:
+                    type: string
+                targetAudience:
+                    type: string
+                tone:
+                    type: string
+                themes:
+                    type: array
+                    items:
+                        type: string
+                status:
+                    type: string
+                worldView:
+                    $ref: '#/components/schemas/novel.v1.WorldView'
+                characters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.Character'
+                outline:
+                    $ref: '#/components/schemas/novel.v1.Outline'
+                chapters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.Chapter'
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+            description: 数据模型
+        novel.v1.ProofreadResult:
+            type: object
+            properties:
+                correctedContent:
+                    type: string
+                issues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.QualityIssue'
+                suggestions:
+                    type: array
+                    items:
+                        type: string
+        novel.v1.PropItem:
+            type: object
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+                location:
+                    type: string
+        novel.v1.QualityIssue:
+            type: object
+            properties:
+                type:
+                    type: string
+                severity:
+                    type: string
+                description:
+                    type: string
+                position:
+                    type: string
+                original:
+                    type: string
+                corrected:
+                    type: string
+        novel.v1.QualitySummary:
+            type: object
+            properties:
+                totalIssues:
+                    type: integer
+                    format: int32
+                issuesByType:
+                    type: object
+                    additionalProperties:
+                        type: integer
+                        format: int32
+                issuesBySeverity:
+                    type: object
+                    additionalProperties:
+                        type: integer
+                        format: int32
+                recommendations:
+                    type: array
+                    items:
+                        type: string
+                qualityTrends:
+                    type: array
+                    items:
+                        type: number
+                        format: double
+        novel.v1.SwitchModelRequest:
+            type: object
+            properties:
+                modelName:
+                    type: string
+            description: 模型切换相关消息
+        novel.v1.SwitchModelResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+                currentModel:
+                    type: string
+        novel.v1.TimelineEvent:
+            type: object
+            properties:
+                timestamp:
+                    type: string
+                event:
+                    type: string
+                description:
+                    type: string
+        novel.v1.VideoScene:
+            type: object
+            properties:
+                screenIndex:
+                    type: integer
+                    format: int32
+                text:
+                    type: string
+                suggestedBgmTag:
+                    type: string
+                suggestedImageTag:
+                    type: string
+                ttsVoice:
+                    type: string
+                notes:
+                    type: string
+        novel.v1.VideoScriptOptions:
+            type: object
+            properties:
+                scenesPerChapter:
+                    type: integer
+                    format: int32
+                platform:
+                    type: string
+                voiceType:
+                    type: string
+        novel.v1.WorldView:
+            type: object
+            properties:
+                title:
+                    type: string
+                synopsis:
+                    type: string
+                setting:
+                    type: string
+                keyRules:
+                    type: array
+                    items:
+                        type: string
+                toneExamples:
+                    type: array
+                    items:
+                        type: string
+                themes:
+                    type: array
+                    items:
+                        type: string
 tags:
+    - name: Greeter
+      description: The greeting service definition.
+    - name: NovelService
+      description: 小说生成服务
     - name: VideoScriptService
+      description: 短视频脚本服务

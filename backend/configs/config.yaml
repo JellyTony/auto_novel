@@ -26,3 +26,34 @@ data:
       base_url: "https://api.openai.com/v1"
       model: "text-embedding-ada-002"
       timeout: 30
+ai:
+  models:
+    # 默认模型配置
+    default:
+      provider: "deepseek"
+      model_name: "deepseek-reasoner"
+      api_key: "${DEEPSEEK_API_KEY}"
+      base_url: "https://api.deepseek.com/"
+      temperature: 0.8
+      max_tokens: 4096
+      top_p: 1.0
+      timeout: 300s
+    # 可选的其他模型配置
+    creative:
+      provider: "deepseek"
+      model_name: "deepseek-chat"
+      api_key: "${DEEPSEEK_API_KEY}"
+      base_url: "https://api.deepseek.com/"
+      temperature: 1.0
+      max_tokens: 4096
+      top_p: 0.9
+      timeout: 300s
+    reasoning:
+      provider: "deepseek"
+      model_name: "deepseek-reasoner"
+      api_key: "${DEEPSEEK_API_KEY}"
+      base_url: "https://api.deepseek.com/"
+      temperature: 0.3
+      max_tokens: 8192
+      top_p: 0.8
+      timeout: 600s

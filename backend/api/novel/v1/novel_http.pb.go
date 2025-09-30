@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-http v2.7.3
 // - protoc             v5.29.0
-// source: api/novel/v1/novel.proto
+// source: novel/v1/novel.proto
 
 package v1
 
@@ -30,8 +30,10 @@ const OperationNovelServiceGenerateOutline = "/novel.v1.NovelService/GenerateOut
 const OperationNovelServiceGenerateVideoScript = "/novel.v1.NovelService/GenerateVideoScript"
 const OperationNovelServiceGenerateWorldView = "/novel.v1.NovelService/GenerateWorldView"
 const OperationNovelServiceGetProject = "/novel.v1.NovelService/GetProject"
+const OperationNovelServiceListModels = "/novel.v1.NovelService/ListModels"
 const OperationNovelServiceListProjects = "/novel.v1.NovelService/ListProjects"
 const OperationNovelServicePolishChapter = "/novel.v1.NovelService/PolishChapter"
+const OperationNovelServiceSwitchModel = "/novel.v1.NovelService/SwitchModel"
 
 type NovelServiceHTTPServer interface {
 	// BatchCheckQuality 批量质量检测
@@ -56,10 +58,14 @@ type NovelServiceHTTPServer interface {
 	GenerateWorldView(context.Context, *GenerateWorldViewRequest) (*GenerateWorldViewResponse, error)
 	// GetProject 获取项目详情
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// ListModels 获取可用模型列表
+	ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
 	// ListProjects 列出项目
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
 	// PolishChapter 润色章节
 	PolishChapter(context.Context, *PolishChapterRequest) (*PolishChapterResponse, error)
+	// SwitchModel 切换AI模型
+	SwitchModel(context.Context, *SwitchModelRequest) (*SwitchModelResponse, error)
 }
 
 func RegisterNovelServiceHTTPServer(s *http.Server, srv NovelServiceHTTPServer) {
@@ -77,6 +83,8 @@ func RegisterNovelServiceHTTPServer(s *http.Server, srv NovelServiceHTTPServer) 
 	r.POST("/api/v1/novel/projects/{project_id}/consistency", _NovelService_CheckConsistency0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/export", _NovelService_ExportNovel0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/video-script", _NovelService_GenerateVideoScript0_HTTP_Handler(srv))
+	r.POST("/api/v1/novel/switch-model", _NovelService_SwitchModel0_HTTP_Handler(srv))
+	r.GET("/api/v1/novel/models", _NovelService_ListModels0_HTTP_Handler(srv))
 }
 
 func _NovelService_CreateProject0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
@@ -392,6 +400,47 @@ func _NovelService_GenerateVideoScript0_HTTP_Handler(srv NovelServiceHTTPServer)
 	}
 }
 
+func _NovelService_SwitchModel0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SwitchModelRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationNovelServiceSwitchModel)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SwitchModel(ctx, req.(*SwitchModelRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SwitchModelResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _NovelService_ListModels0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListModelsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationNovelServiceListModels)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListModels(ctx, req.(*ListModelsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListModelsResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 type NovelServiceHTTPClient interface {
 	BatchCheckQuality(ctx context.Context, req *BatchCheckQualityRequest, opts ...http.CallOption) (rsp *BatchCheckQualityResponse, err error)
 	CheckConsistency(ctx context.Context, req *CheckConsistencyRequest, opts ...http.CallOption) (rsp *CheckConsistencyResponse, err error)
@@ -404,8 +453,10 @@ type NovelServiceHTTPClient interface {
 	GenerateVideoScript(ctx context.Context, req *GenerateVideoScriptRequest, opts ...http.CallOption) (rsp *GenerateVideoScriptResponse, err error)
 	GenerateWorldView(ctx context.Context, req *GenerateWorldViewRequest, opts ...http.CallOption) (rsp *GenerateWorldViewResponse, err error)
 	GetProject(ctx context.Context, req *GetProjectRequest, opts ...http.CallOption) (rsp *GetProjectResponse, err error)
+	ListModels(ctx context.Context, req *ListModelsRequest, opts ...http.CallOption) (rsp *ListModelsResponse, err error)
 	ListProjects(ctx context.Context, req *ListProjectsRequest, opts ...http.CallOption) (rsp *ListProjectsResponse, err error)
 	PolishChapter(ctx context.Context, req *PolishChapterRequest, opts ...http.CallOption) (rsp *PolishChapterResponse, err error)
+	SwitchModel(ctx context.Context, req *SwitchModelRequest, opts ...http.CallOption) (rsp *SwitchModelResponse, err error)
 }
 
 type NovelServiceHTTPClientImpl struct {
@@ -559,6 +610,19 @@ func (c *NovelServiceHTTPClientImpl) GetProject(ctx context.Context, in *GetProj
 	return &out, nil
 }
 
+func (c *NovelServiceHTTPClientImpl) ListModels(ctx context.Context, in *ListModelsRequest, opts ...http.CallOption) (*ListModelsResponse, error) {
+	var out ListModelsResponse
+	pattern := "/api/v1/novel/models"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationNovelServiceListModels))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *NovelServiceHTTPClientImpl) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...http.CallOption) (*ListProjectsResponse, error) {
 	var out ListProjectsResponse
 	pattern := "/api/v1/novel/projects"
@@ -577,6 +641,19 @@ func (c *NovelServiceHTTPClientImpl) PolishChapter(ctx context.Context, in *Poli
 	pattern := "/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/polish"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationNovelServicePolishChapter))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *NovelServiceHTTPClientImpl) SwitchModel(ctx context.Context, in *SwitchModelRequest, opts ...http.CallOption) (*SwitchModelResponse, error) {
+	var out SwitchModelResponse
+	pattern := "/api/v1/novel/switch-model"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationNovelServiceSwitchModel))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

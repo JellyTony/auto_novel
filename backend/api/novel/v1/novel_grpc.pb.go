@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v5.29.0
-// source: api/novel/v1/novel.proto
+// source: novel/v1/novel.proto
 
 package v1
 
@@ -33,6 +33,8 @@ const (
 	NovelService_GenerateNovel_FullMethodName       = "/novel.v1.NovelService/GenerateNovel"
 	NovelService_ExportNovel_FullMethodName         = "/novel.v1.NovelService/ExportNovel"
 	NovelService_GenerateVideoScript_FullMethodName = "/novel.v1.NovelService/GenerateVideoScript"
+	NovelService_SwitchModel_FullMethodName         = "/novel.v1.NovelService/SwitchModel"
+	NovelService_ListModels_FullMethodName          = "/novel.v1.NovelService/ListModels"
 )
 
 // NovelServiceClient is the client API for NovelService service.
@@ -67,6 +69,10 @@ type NovelServiceClient interface {
 	ExportNovel(ctx context.Context, in *ExportNovelRequest, opts ...grpc.CallOption) (*ExportNovelResponse, error)
 	// 生成短视频分镜脚本
 	GenerateVideoScript(ctx context.Context, in *GenerateVideoScriptRequest, opts ...grpc.CallOption) (*GenerateVideoScriptResponse, error)
+	// 切换AI模型
+	SwitchModel(ctx context.Context, in *SwitchModelRequest, opts ...grpc.CallOption) (*SwitchModelResponse, error)
+	// 获取可用模型列表
+	ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
 }
 
 type novelServiceClient struct {
@@ -226,6 +232,24 @@ func (c *novelServiceClient) GenerateVideoScript(ctx context.Context, in *Genera
 	return out, nil
 }
 
+func (c *novelServiceClient) SwitchModel(ctx context.Context, in *SwitchModelRequest, opts ...grpc.CallOption) (*SwitchModelResponse, error) {
+	out := new(SwitchModelResponse)
+	err := c.cc.Invoke(ctx, NovelService_SwitchModel_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *novelServiceClient) ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error) {
+	out := new(ListModelsResponse)
+	err := c.cc.Invoke(ctx, NovelService_ListModels_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NovelServiceServer is the server API for NovelService service.
 // All implementations must embed UnimplementedNovelServiceServer
 // for forward compatibility
@@ -258,6 +282,10 @@ type NovelServiceServer interface {
 	ExportNovel(context.Context, *ExportNovelRequest) (*ExportNovelResponse, error)
 	// 生成短视频分镜脚本
 	GenerateVideoScript(context.Context, *GenerateVideoScriptRequest) (*GenerateVideoScriptResponse, error)
+	// 切换AI模型
+	SwitchModel(context.Context, *SwitchModelRequest) (*SwitchModelResponse, error)
+	// 获取可用模型列表
+	ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
 	mustEmbedUnimplementedNovelServiceServer()
 }
 
@@ -306,6 +334,12 @@ func (UnimplementedNovelServiceServer) ExportNovel(context.Context, *ExportNovel
 }
 func (UnimplementedNovelServiceServer) GenerateVideoScript(context.Context, *GenerateVideoScriptRequest) (*GenerateVideoScriptResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateVideoScript not implemented")
+}
+func (UnimplementedNovelServiceServer) SwitchModel(context.Context, *SwitchModelRequest) (*SwitchModelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SwitchModel not implemented")
+}
+func (UnimplementedNovelServiceServer) ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListModels not implemented")
 }
 func (UnimplementedNovelServiceServer) mustEmbedUnimplementedNovelServiceServer() {}
 
@@ -575,6 +609,42 @@ func _NovelService_GenerateVideoScript_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NovelService_SwitchModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SwitchModelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NovelServiceServer).SwitchModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NovelService_SwitchModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NovelServiceServer).SwitchModel(ctx, req.(*SwitchModelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NovelService_ListModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListModelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NovelServiceServer).ListModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NovelService_ListModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NovelServiceServer).ListModels(ctx, req.(*ListModelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // NovelService_ServiceDesc is the grpc.ServiceDesc for NovelService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -634,6 +704,14 @@ var NovelService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GenerateVideoScript",
 			Handler:    _NovelService_GenerateVideoScript_Handler,
 		},
+		{
+			MethodName: "SwitchModel",
+			Handler:    _NovelService_SwitchModel_Handler,
+		},
+		{
+			MethodName: "ListModels",
+			Handler:    _NovelService_ListModels_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -642,5 +720,5 @@ var NovelService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "api/novel/v1/novel.proto",
+	Metadata: "novel/v1/novel.proto",
 }

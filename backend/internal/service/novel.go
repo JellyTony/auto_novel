@@ -36,10 +36,11 @@ type NovelService struct {
 	polishAgent  *polish.PolishAgent
 	qualityAgent *quality.QualityAgent
 	consistencyAgent *consistency.ConsistencyAgent
+	modelSwitcher *eino.ModelSwitcher
 }
 
 // NewNovelService 创建小说服务
-func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, llmClient llm.LLMClient) *NovelService {
+func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher) *NovelService {
 	service := &NovelService{
 		uc:           uc,
 		orchestrator: orchestratorAgent,
@@ -49,6 +50,7 @@ func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.Orche
 		chapterAgent: chapter.NewChapterAgent(llmClient),
 		polishAgent:  polish.NewPolishAgent(llmClient),
 		consistencyAgent: consistency.NewConsistencyAgent(llmClient),
+		modelSwitcher: modelSwitcher,
 	}
 	
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
@@ -59,7 +61,7 @@ func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.Orche
 
 // NewNovelServiceWithRAG 创建带RAG功能的小说服务
 func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, 
-	einoClient eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient) *NovelService {
+	einoClient *eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher) *NovelService {
 	service := &NovelService{
 		uc:           uc,
 		orchestrator: orchestratorAgent,
@@ -68,7 +70,8 @@ func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrato
 		outlineAgent: outline.NewOutlineAgent(llmClient),
 		chapterAgent: chapter.NewChapterAgent(llmClient),
 		polishAgent:  polish.NewPolishAgent(llmClient),
-		consistencyAgent: consistency.NewConsistencyAgentWithRAG(llmClient, einoClient, ragService),
+		consistencyAgent: consistency.NewConsistencyAgentWithRAG(llmClient, *einoClient, ragService),
+		modelSwitcher: modelSwitcher,
 	}
 	
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
@@ -834,4 +837,44 @@ func convertChapterOutlineFromProto(pbOutline *pb.ChapterOutline) *models.Chapte
 // generateID 生成唯一ID
 func generateID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
+}
+
+// SwitchModel 切换AI模型
+func (s *NovelService) SwitchModel(ctx context.Context, req *pb.SwitchModelRequest) (*pb.SwitchModelResponse, error) {
+	err := s.modelSwitcher.SwitchModel(ctx, req.ModelName)
+	if err != nil {
+		return &pb.SwitchModelResponse{
+			Success: false,
+			Message: fmt.Sprintf("切换模型失败: %v", err),
+		}, nil
+	}
+
+	currentModel := s.modelSwitcher.GetCurrentModel()
+	return &pb.SwitchModelResponse{
+		Success:      true,
+		Message:      "模型切换成功",
+		CurrentModel: currentModel,
+	}, nil
+}
+
+// ListModels 获取可用模型列表
+func (s *NovelService) ListModels(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
+	models := s.modelSwitcher.ListModels()
+	currentModel := s.modelSwitcher.GetCurrentModel()
+
+	var pbModels []*pb.ModelInfo
+	for _, modelName := range models {
+		pbModels = append(pbModels, &pb.ModelInfo{
+			Name:        modelName,
+			Provider:    "deepseek", // 这里可以从配置中获取
+			Model:       modelName,
+			Description: fmt.Sprintf("Model: %s", modelName),
+			Available:   true, // 这里可以添加实际的可用性检查
+		})
+	}
+
+	return &pb.ListModelsResponse{
+		Models:       pbModels,
+		CurrentModel: currentModel,
+	}, nil
 }

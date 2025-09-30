@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-http v2.7.3
 // - protoc             v5.29.0
-// source: api/video_script/v1/video_script.proto
+// source: video_script/v1/video_script.proto
 
 package v1
 
@@ -43,7 +43,7 @@ type VideoScriptServiceHTTPServer interface {
 
 func RegisterVideoScriptServiceHTTPServer(s *http.Server, srv VideoScriptServiceHTTPServer) {
 	r := s.Route("/")
-	r.POST("/api/v1/video-scripts/generate", _VideoScriptService_GenerateVideoScript0_HTTP_Handler(srv))
+	r.POST("/api/v1/video-scripts/generate", _VideoScriptService_GenerateVideoScript1_HTTP_Handler(srv))
 	r.PUT("/api/v1/video-scripts/{script_id}/optimize", _VideoScriptService_OptimizeVideoScript0_HTTP_Handler(srv))
 	r.POST("/api/v1/video-scripts/{base_script_id}/variants", _VideoScriptService_GeneratePlatformVariants0_HTTP_Handler(srv))
 	r.GET("/api/v1/projects/{project_id}/video-scripts", _VideoScriptService_ListVideoScripts0_HTTP_Handler(srv))
@@ -51,7 +51,7 @@ func RegisterVideoScriptServiceHTTPServer(s *http.Server, srv VideoScriptService
 	r.DELETE("/api/v1/video-scripts/{script_id}", _VideoScriptService_DeleteVideoScript0_HTTP_Handler(srv))
 }
 
-func _VideoScriptService_GenerateVideoScript0_HTTP_Handler(srv VideoScriptServiceHTTPServer) func(ctx http.Context) error {
+func _VideoScriptService_GenerateVideoScript1_HTTP_Handler(srv VideoScriptServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in GenerateVideoScriptRequest
 		if err := ctx.Bind(&in); err != nil {

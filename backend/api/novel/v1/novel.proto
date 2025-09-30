@@ -121,6 +121,21 @@ service NovelService {
       body: "*"
     };
   }
+
+  // 切换AI模型
+  rpc SwitchModel (SwitchModelRequest) returns (SwitchModelResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/switch-model"
+      body: "*"
+    };
+  }
+
+  // 获取可用模型列表
+  rpc ListModels (ListModelsRequest) returns (ListModelsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/novel/models"
+    };
+  }
 }
 
 // 项目相关消息
@@ -464,6 +479,34 @@ message GenerateOptions {
   bool polish_enabled = 3;
   bool consistency_check = 4;
   LLMOptions llm_options = 5;
+}
+
+// 模型切换相关消息
+message SwitchModelRequest {
+  string model_name = 1;  // 模型名称，如 "default", "creative", "reasoning"
+}
+
+message SwitchModelResponse {
+  bool success = 1;
+  string message = 2;
+  string current_model = 3;
+}
+
+message ListModelsRequest {
+  // 空请求
+}
+
+message ListModelsResponse {
+  repeated ModelInfo models = 1;
+  string current_model = 2;
+}
+
+message ModelInfo {
+  string name = 1;
+  string provider = 2;
+  string model = 3;
+  string description = 4;
+  bool available = 5;
 }
 
 message ExportOptions {

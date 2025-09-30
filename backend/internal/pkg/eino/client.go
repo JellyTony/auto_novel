@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/schema"
+	"github.com/cloudwego/eino-ext/components/model/deepseek"
 )
 
 // EinoLLMClient 基于 cloudwego/eino 框架的 LLM 客户端
@@ -19,29 +21,38 @@ type EinoLLMClient struct {
 
 // Config eino 客户端配置
 type Config struct {
-	ModelName     string
-	Temperature   float64
-	MaxTokens     int
-	TopP          float64
-	APIKey        string
-	BaseURL       string
-	EnableTrace   bool
-	EnableMetrics bool
+	Provider      string        `json:"provider"`       // deepseek, openai, azure, etc.
+	ModelName     string        `json:"model_name"`
+	Temperature   float32       `json:"temperature"`
+	MaxTokens     int           `json:"max_tokens"`
+	TopP          float32       `json:"top_p"`
+	APIKey        string        `json:"api_key"`
+	BaseURL       string        `json:"base_url"`
+	Timeout       time.Duration `json:"timeout"`
+	EnableTrace   bool          `json:"enable_trace"`
+	EnableMetrics bool          `json:"enable_metrics"`
 }
 
 // NewEinoLLMClient 创建新的 eino LLM 客户端
 func NewEinoLLMClient(ctx context.Context, config *Config) (*EinoLLMClient, error) {
-	// 这里需要根据实际的模型提供商创建模型实例
-	// 例如：openai.NewChatModel 或 ark.NewChatModel
 	var chatModel model.BaseChatModel
 	var err error
 
-	// 示例：使用 OpenAI 模型（需要根据实际情况调整）
-	// chatModel, err = openai.NewChatModel(ctx, openai.Config{
-	//     APIKey: config.APIKey,
-	//     BaseURL: config.BaseURL,
-	//     Model: config.ModelName,
-	// })
+	// 根据配置的提供商创建相应的模型实例
+	switch config.Provider {
+	case "deepseek":
+		chatModel, err = deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
+			APIKey:      config.APIKey,
+			Model:       config.ModelName,
+			MaxTokens:   config.MaxTokens,
+			Temperature: config.Temperature,
+			TopP:        config.TopP,
+			BaseURL:     config.BaseURL,
+			Timeout:     config.Timeout,
+		})
+	default:
+		return nil, fmt.Errorf("unsupported model provider: %s", config.Provider)
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create chat model: %w", err)

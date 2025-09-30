@@ -12,6 +12,8 @@ import (
 	"backend/internal/server"
 	"backend/internal/service"
 	"backend/internal/pkg/llm"
+	"backend/internal/pkg/eino"
+	"backend/internal/pkg/vector"
 	"backend/internal/agent/orchestrator"
 
 	"github.com/go-kratos/kratos/v2"
@@ -20,6 +22,6 @@ import (
 )
 
 // wireApp init kratos application.
-func wireApp(*conf.Server, *conf.Data, log.Logger) (*kratos.App, func(), error) {
-	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, llm.ProviderSet, orchestrator.ProviderSet, newApp))
+func wireApp(*conf.Server, *conf.Data, *conf.AI, log.Logger) (*kratos.App, func(), error) {
+	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, llm.ProviderSet, eino.ProviderSet, vector.ProviderSet, orchestrator.ProviderSet, newApp))
 }

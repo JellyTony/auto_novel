@@ -11,7 +11,9 @@ import (
 	"backend/internal/biz"
 	"backend/internal/conf"
 	"backend/internal/data"
+	"backend/internal/pkg/eino"
 	"backend/internal/pkg/llm"
+	"backend/internal/pkg/vector"
 	"backend/internal/server"
 	"backend/internal/service"
 	"github.com/go-kratos/kratos/v2"
@@ -25,7 +27,7 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger log.Logger) (*kratos.App, func(), error) {
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
@@ -42,7 +44,23 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
 	llmClient := llm.NewMockLLMClient()
 	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
-	novelService := service.NewNovelService(novelUsecase, orchestratorAgent, llmClient)
+	einoLLMClient, err := eino.NewDefaultEinoClient(ai, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	ragService, err := vector.NewRAGServiceProvider(confData)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	modelFactory, err := eino.NewModelFactory(ai)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	modelSwitcher := eino.NewModelSwitcher(modelFactory)
+	novelService := service.NewNovelServiceWithRAG(novelUsecase, orchestratorAgent, einoLLMClient, ragService, llmClient, modelSwitcher)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, videoScriptService, novelService, logger)
 	httpServer := server.NewHTTPServer(confServer, greeterService, videoScriptService, novelService, logger)
 	app := newApp(logger, grpcServer, httpServer)

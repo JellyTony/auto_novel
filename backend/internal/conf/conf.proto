@@ -8,6 +8,7 @@ import "google/protobuf/duration.proto";
 message Bootstrap {
   Server server = 1;
   Data data = 2;
+  AI ai = 3;
 }
 
 message Server {
@@ -57,4 +58,18 @@ message Data {
   Database database = 1;
   Redis redis = 2;
   Vector vector = 3;
+}
+
+message AI {
+  message ModelConfig {
+    string provider = 1;
+    string model_name = 2;
+    string api_key = 3;
+    string base_url = 4;
+    float temperature = 5;
+    int32 max_tokens = 6;
+    float top_p = 7;
+    google.protobuf.Duration timeout = 8;
+  }
+  map<string, ModelConfig> models = 1;
 }
