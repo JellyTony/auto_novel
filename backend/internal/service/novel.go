@@ -324,7 +324,7 @@ func (s *NovelService) PolishChapter(ctx context.Context, req *pb.PolishChapterR
 	}
 
 	return &pb.PolishChapterResponse{
-		Chapter: convertChapterToProto(updatedChapter),
+		PolishedChapter: convertChapterToProto(updatedChapter),
 	}, nil
 }
 
@@ -778,17 +778,16 @@ func convertOutlineToProto(outline *models.Outline) *pb.Outline {
 
 func convertChapterToProto(chapter *models.Chapter) *pb.Chapter {
 	return &pb.Chapter{
-		Id:              chapter.ID,
-		ProjectId:       chapter.ProjectID,
-		Index:           int32(chapter.Index),
-		Title:           chapter.Title,
-		Summary:         chapter.Summary,
-		RawContent:      chapter.RawContent,
-		PolishedContent: chapter.PolishedContent,
-		WordCount:       int32(chapter.WordCount),
-		Status:          chapter.Status,
-		CreatedAt:       timestamppb.New(chapter.CreatedAt),
-		UpdatedAt:       timestamppb.New(chapter.UpdatedAt),
+		Id:         chapter.ID,
+		ProjectId:  chapter.ProjectID,
+		Index:      int32(chapter.Index),
+		Title:      chapter.Title,
+		Summary:    chapter.Summary,
+		RawContent: chapter.RawContent,
+		WordCount:  int32(chapter.WordCount),
+		Status:     chapter.Status,
+		CreatedAt:  timestamppb.New(chapter.CreatedAt),
+		UpdatedAt:  timestamppb.New(chapter.UpdatedAt),
 	}
 }
 
