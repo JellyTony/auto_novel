@@ -69,11 +69,6 @@ func (uc *NovelUsecase) CreateProject(ctx context.Context, project *models.Novel
 		project.ID = generateProjectID()
 	}
 
-	// 设置创建时间
-	now := time.Now()
-	project.CreatedAt = now
-	project.UpdatedAt = now
-
 	// 设置默认状态
 	if project.Status == "" {
 		project.Status = "draft"

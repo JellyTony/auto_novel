@@ -8,6 +8,7 @@ package main
 
 import (
 	"backend/internal/agent/orchestrator"
+	"backend/internal/agent/video_script"
 	"backend/internal/biz"
 	"backend/internal/conf"
 	"backend/internal/data"
@@ -37,16 +38,17 @@ func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger l
 	greeterService := service.NewGreeterService(greeterUsecase)
 	videoScriptRepo := data.NewVideoScriptRepo(dataData, logger)
 	videoScriptUseCase := biz.NewVideoScriptUseCase(videoScriptRepo, logger)
-	videoScriptService := service.NewVideoScriptService(videoScriptUseCase, logger)
-	novelRepo := data.NewNovelRepo(dataData, logger)
-	exportService := service.NewExportService(logger)
-	bizVideoScriptService := biz.NewVideoScriptServiceImpl(logger)
-	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
 	einoLLMClient, err := eino.NewDefaultEinoClient(ai, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
+	einoVideoScriptAgent := video_script.NewEinoVideoScriptAgent(einoLLMClient)
+	videoScriptService := service.NewVideoScriptService(videoScriptUseCase, einoVideoScriptAgent, logger)
+	novelRepo := data.NewNovelRepo(dataData, logger)
+	exportService := service.NewExportService(logger)
+	bizVideoScriptService := biz.NewVideoScriptServiceImpl(logger)
+	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
 	llmClient := llm.NewRealLLMClient(einoLLMClient)
 	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
 	ragService, err := vector.NewRAGServiceProvider(confData, ai)

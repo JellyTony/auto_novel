@@ -225,7 +225,7 @@ func (s *NovelService) GenerateCharacters(ctx context.Context, req *pb.GenerateC
 		ProjectID:      req.ProjectId,
 		WorldView:      project.WorldView,
 		CharacterNames: req.CharacterNames,
-		Options:        nil, // TODO: 转换选项
+		Options:        convertLLMOptionsFromProto(req.LlmOptions),
 	}
 
 	resp, err := s.charAgent.GenerateCharacters(ctx, charReq)
@@ -262,7 +262,7 @@ func (s *NovelService) GenerateOutline(ctx context.Context, req *pb.GenerateOutl
 		WorldView:    project.WorldView,
 		Characters:   project.Characters,
 		ChapterCount: int(req.ChapterCount),
-		Options:      nil, // TODO: 转换选项
+		Options:      convertLLMOptionsFromProto(req.LlmOptions),
 	}
 
 	resp, err := s.outlineAgent.GenerateOutline(ctx, outlineReq)
@@ -289,7 +289,7 @@ func (s *NovelService) GenerateChapter(ctx context.Context, req *pb.GenerateChap
 		ChapterOutline:  convertChapterOutlineFromProto(req.ChapterOutline),
 		Context:         convertContextFromProto(req.Context),
 		TargetWordCount: int(req.TargetWordCount),
-		Options:         nil, // TODO: 转换选项
+		Options:         convertLLMOptionsFromProto(req.LlmOptions),
 	}
 
 	resp, err := s.chapterAgent.GenerateChapter(ctx, chapterReq)
@@ -319,7 +319,7 @@ func (s *NovelService) PolishChapter(ctx context.Context, req *pb.PolishChapterR
 		Chapter: chapter,
 		Style:   req.Style,
 		Focus:   req.Focus,
-		Options: nil, // TODO: 转换选项
+		Options: convertLLMOptionsFromProto(req.LlmOptions),
 	}
 
 	resp, err := s.polishAgent.PolishChapter(ctx, polishReq)
@@ -349,7 +349,7 @@ func (s *NovelService) CheckConsistency(ctx context.Context, req *pb.CheckConsis
 		Project:   project,
 		Chapters:  project.Chapters,
 		CheckType: req.CheckType,
-		Options:   nil, // TODO: 转换选项
+		Options:   convertLLMOptionsFromProto(req.LlmOptions),
 	}
 
 	resp, err := s.consistencyAgent.CheckConsistency(ctx, consistencyReq)
@@ -386,13 +386,7 @@ func (s *NovelService) GenerateNovel(req *pb.GenerateNovelRequest, stream pb.Nov
 
 	orchestratorReq := &orchestrator.GenerateNovelRequest{
 		Project: project,
-		Options: &orchestrator.GenerateOptions{
-			MaxChapters:      int(req.Options.MaxChapters),
-			WordsPerChapter:  int(req.Options.WordsPerChapter),
-			PolishEnabled:    req.Options.PolishEnabled,
-			ConsistencyCheck: req.Options.ConsistencyCheck,
-			LLMOptions:       nil, // TODO: 转换选项
-		},
+		Options: convertGenerateOptionsFromProto(req.Options),
 	}
 
 	resp, err := s.orchestrator.GenerateNovel(ctx, orchestratorReq)
@@ -967,4 +961,54 @@ func (s *NovelService) GetStats(ctx context.Context, req *pb.GetStatsRequest) (*
 			MonthlyWords:      monthlyWords,
 		},
 	}, nil
+}
+
+// convertLLMOptionsFromProto 将protobuf LLM选项转换为LLM选项
+func convertLLMOptionsFromProto(pbOptions *pb.LLMOptions) *llm.GenerateOptions {
+	if pbOptions == nil {
+		return llm.DefaultOptions()
+	}
+	
+	options := &llm.GenerateOptions{
+		Temperature:      float64(pbOptions.Temperature),
+		TopP:             float64(pbOptions.TopP),
+		MaxTokens:        int(pbOptions.MaxTokens),
+		FrequencyPenalty: float64(pbOptions.FrequencyPenalty),
+		PresencePenalty:  float64(pbOptions.PresencePenalty),
+		RetryCount:       2, // 默认重试次数
+	}
+	
+	// 设置默认值
+	if options.Temperature == 0 {
+		options.Temperature = 0.35
+	}
+	if options.TopP == 0 {
+		options.TopP = 0.9
+	}
+	if options.MaxTokens == 0 {
+		options.MaxTokens = 2000
+	}
+	
+	return options
+}
+
+// convertGenerateOptionsFromProto 将protobuf生成选项转换为编排器选项
+func convertGenerateOptionsFromProto(pbOptions *pb.GenerateOptions) *orchestrator.GenerateOptions {
+	if pbOptions == nil {
+		return &orchestrator.GenerateOptions{
+			MaxChapters:      20,
+			WordsPerChapter:  3000,
+			PolishEnabled:    true,
+			ConsistencyCheck: true,
+			LLMOptions:       llm.DefaultOptions(),
+		}
+	}
+	
+	return &orchestrator.GenerateOptions{
+		MaxChapters:      int(pbOptions.MaxChapters),
+		WordsPerChapter:  int(pbOptions.WordsPerChapter),
+		PolishEnabled:    pbOptions.PolishEnabled,
+		ConsistencyCheck: pbOptions.ConsistencyCheck,
+		LLMOptions:       convertLLMOptionsFromProto(pbOptions.LlmOptions),
+	}
 }
