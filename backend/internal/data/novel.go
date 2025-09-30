@@ -30,13 +30,23 @@ func NewNovelRepo(data *Data, logger log.Logger) biz.NovelRepo {
 // modelToEntity 将数据库模型转换为业务实体
 func (r *novelRepo) modelToEntity(dbProject *NovelProject) (*models.NovelProject, error) {
 	project := &models.NovelProject{
-		ID:          dbProject.ID,
-		Title:       dbProject.Title,
-		Description: dbProject.Description,
-		Genre:       dbProject.Genre,
-		Status:      dbProject.Status,
-		CreatedAt:   dbProject.CreatedAt,
-		UpdatedAt:   dbProject.UpdatedAt,
+		ID:             dbProject.ID,
+		Title:          dbProject.Title,
+		Description:    dbProject.Description,
+		Genre:          dbProject.Genre,
+		TargetAudience: dbProject.TargetAudience,
+		Tone:           dbProject.Tone,
+		Status:         dbProject.Status,
+		CreatedAt:      dbProject.CreatedAt,
+		UpdatedAt:      dbProject.UpdatedAt,
+	}
+
+	// 解析主题数组
+	if dbProject.Themes != "" {
+		var themes []string
+		if err := json.Unmarshal([]byte(dbProject.Themes), &themes); err == nil {
+			project.Themes = themes
+		}
 	}
 
 	// 解析世界观设定
@@ -69,13 +79,22 @@ func (r *novelRepo) modelToEntity(dbProject *NovelProject) (*models.NovelProject
 // entityToModel 将业务实体转换为数据库模型
 func (r *novelRepo) entityToModel(project *models.NovelProject) (*NovelProject, error) {
 	dbProject := &NovelProject{
-		ID:          project.ID,
-		Title:       project.Title,
-		Description: project.Description,
-		Genre:       project.Genre,
-		Status:      project.Status,
-		CreatedAt:   project.CreatedAt,
-		UpdatedAt:   project.UpdatedAt,
+		ID:             project.ID,
+		Title:          project.Title,
+		Description:    project.Description,
+		Genre:          project.Genre,
+		TargetAudience: project.TargetAudience,
+		Tone:           project.Tone,
+		Status:         project.Status,
+		CreatedAt:      project.CreatedAt,
+		UpdatedAt:      project.UpdatedAt,
+	}
+
+	// 序列化主题数组
+	if project.Themes != nil {
+		if data, err := json.Marshal(project.Themes); err == nil {
+			dbProject.Themes = string(data)
+		}
 	}
 
 	// 序列化世界观设定

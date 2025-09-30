@@ -4,12 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"os"
 
+	"github.com/go-kratos/kratos/v2/log"
 	"backend/internal/pkg/llm"
 )
 
 func main() {
+	// 创建 logger
+	logger := log.With(log.NewStdLogger(os.Stdout),
+		"ts", log.DefaultTimestamp,
+		"caller", log.DefaultCaller,
+	)
+	helper := log.NewHelper(logger)
+
 	// 创建 Mock LLM 客户端
 	mockLLM := llm.NewMockLLMClient()
 
@@ -47,7 +55,7 @@ func main() {
 	// 调用 GenerateJSON 方法（这是 OutlineAgent 实际使用的方法）
 	result, err := mockLLM.GenerateJSON(context.Background(), prompt, nil)
 	if err != nil {
-		log.Fatalf("GenerateJSON failed: %v", err)
+		helper.Fatalf("GenerateJSON failed: %v", err)
 	}
 
 	// 检查返回的结果

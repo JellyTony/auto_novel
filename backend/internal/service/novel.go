@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/log"
 	pb "backend/api/novel/v1"
 	"backend/internal/agent/chapter"
 	"backend/internal/agent/character"
@@ -38,20 +38,22 @@ type NovelService struct {
 	qualityAgent     *quality.QualityAgent
 	consistencyAgent *consistency.ConsistencyAgent
 	modelSwitcher    *eino.ModelSwitcher
+	log              *log.Helper
 }
 
 // NewNovelService 创建小说服务
-func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher) *NovelService {
+func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher, logger log.Logger) *NovelService {
 	service := &NovelService{
 		uc:               uc,
 		orchestrator:     orchestratorAgent,
-		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient),
+		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient, logger),
 		charAgent:        character.NewCharacterAgent(llmClient),
 		outlineAgent:     outline.NewOutlineAgent(llmClient),
 		chapterAgent:     chapter.NewChapterAgent(llmClient),
 		polishAgent:      polish.NewPolishAgent(llmClient),
 		consistencyAgent: consistency.NewConsistencyAgent(llmClient),
 		modelSwitcher:    modelSwitcher,
+		log:              log.NewHelper(logger),
 	}
 
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
@@ -62,17 +64,18 @@ func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.Orche
 
 // NewNovelServiceWithRAG 创建带RAG功能的小说服务
 func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent,
-	einoClient *eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher) *NovelService {
+	einoClient *eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher, logger log.Logger) *NovelService {
 	service := &NovelService{
 		uc:               uc,
 		orchestrator:     orchestratorAgent,
-		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient),
+		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient, logger),
 		charAgent:        character.NewCharacterAgent(llmClient),
 		outlineAgent:     outline.NewOutlineAgent(llmClient),
 		chapterAgent:     chapter.NewChapterAgent(llmClient),
 		polishAgent:      polish.NewPolishAgent(llmClient),
 		consistencyAgent: consistency.NewConsistencyAgentWithRAG(llmClient, *einoClient, ragService),
 		modelSwitcher:    modelSwitcher,
+		log:              log.NewHelper(logger),
 	}
 
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
