@@ -5,4 +5,4 @@ import (
 )
 
 // ProviderSet is llm providers.
-var ProviderSet = wire.NewSet(NewMockLLMClient)
+var ProviderSet = wire.NewSet(NewRealLLMClient)

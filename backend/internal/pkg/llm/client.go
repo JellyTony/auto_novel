@@ -70,10 +70,10 @@ type EinoLLMClient struct {
 	model interface{} // 暂时使用 interface{} 避免编译错误
 }
 
-// NewEinoLLMClient 创建新的 Eino LLM 客户端
-func NewEinoLLMClient(model interface{}) *EinoLLMClient {
+// NewRealLLMClient 创建真实的 LLM 客户端，使用 Eino 框架
+func NewRealLLMClient(einoClient *eino.EinoLLMClient) LLMClient {
 	return &EinoLLMClient{
-		model: model,
+		model: einoClient,
 	}
 }
 
@@ -90,13 +90,8 @@ func (c *EinoLLMClient) GenerateText(ctx context.Context, prompt string, opts *G
 
 	// 将模型转换为真实的Eino客户端
 	if einoClient, ok := c.model.(*eino.EinoLLMClient); ok {
+		// 调用eino客户端的GenerateText方法，不传递额外参数
 		return einoClient.GenerateText(ctx, prompt)
-	}
-
-	// 如果模型是字符串类型（临时处理）
-	if modelStr, ok := c.model.(string); ok {
-		// 这里应该调用真实的AI模型，但由于当前架构限制，先返回有意义的响应
-		return fmt.Sprintf("AI Generated Response for prompt: %s (using model: %s)", prompt, modelStr), nil
 	}
 
 	// 默认返回错误

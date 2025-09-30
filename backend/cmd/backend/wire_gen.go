@@ -42,13 +42,13 @@ func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger l
 	exportService := service.NewExportService(logger)
 	bizVideoScriptService := biz.NewVideoScriptServiceImpl(logger)
 	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
-	llmClient := llm.NewMockLLMClient()
-	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
 	einoLLMClient, err := eino.NewDefaultEinoClient(ai, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
+	llmClient := llm.NewRealLLMClient(einoLLMClient)
+	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
 	ragService, err := vector.NewRAGServiceProvider(confData)
 	if err != nil {
 		cleanup()

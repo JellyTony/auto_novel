@@ -3,6 +3,7 @@ package worldbuilding
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"backend/internal/pkg/llm"
 	"backend/internal/pkg/models"
@@ -24,6 +25,8 @@ func NewWorldBuildingAgent(llmClient llm.LLMClient) *WorldBuildingAgent {
 
 // GenerateWorldView 生成世界观设定
 func (a *WorldBuildingAgent) GenerateWorldView(ctx context.Context, req *GenerateWorldViewRequest) (*models.WorldView, error) {
+	log.Printf("Starting world view generation for project: %s", req.ProjectID)
+	
 	// 构建提示词数据
 	data := map[string]interface{}{
 		"genre":     req.Genre,
@@ -34,20 +37,29 @@ func (a *WorldBuildingAgent) GenerateWorldView(ctx context.Context, req *Generat
 		"themes":    req.Themes,
 	}
 
+	log.Printf("Template data: %+v", data)
+
 	// 使用模板生成提示词
 	prompt := a.templates.WorldBuildingPrompt()
+	log.Printf("Template prompt: %s", prompt)
 	
 	// 使用模板生成 JSON 响应
 	finalPrompt, err := a.llmClient.GenerateWithTemplate(ctx, prompt, data, llm.PreciseOptions())
 	if err != nil {
+		log.Printf("Failed to generate prompt: %v", err)
 		return nil, fmt.Errorf("failed to generate prompt: %w", err)
 	}
+
+	log.Printf("Final prompt: %s", finalPrompt)
 
 	// 生成 JSON 响应
 	jsonResult, err := a.llmClient.GenerateJSON(ctx, finalPrompt, llm.PreciseOptions())
 	if err != nil {
+		log.Printf("Failed to generate JSON: %v", err)
 		return nil, fmt.Errorf("failed to generate world view JSON: %w", err)
 	}
+
+	log.Printf("JSON result: %+v", jsonResult)
 
 	// 转换为 WorldView 模型
 	worldView := &models.WorldView{
@@ -59,6 +71,8 @@ func (a *WorldBuildingAgent) GenerateWorldView(ctx context.Context, req *Generat
 		ToneExamples: getStringArrayFromJSON(jsonResult, "tone_examples"),
 		Themes:    getStringArrayFromJSON(jsonResult, "themes"),
 	}
+
+	log.Printf("Generated world view: %+v", worldView)
 
 	return worldView, nil
 }
