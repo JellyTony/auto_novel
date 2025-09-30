@@ -11,6 +11,8 @@ import (
 	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/schema"
 	"github.com/cloudwego/eino-ext/components/model/deepseek"
+	"github.com/cloudwego/eino-ext/components/model/qwen"
+	"github.com/cloudwego/eino-ext/components/model/ollama"
 )
 
 // EinoLLMClient 基于 cloudwego/eino 框架的 LLM 客户端
@@ -43,6 +45,25 @@ func NewEinoLLMClient(ctx context.Context, config *Config) (*EinoLLMClient, erro
 	case "deepseek":
 		chatModel, err = deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
 			APIKey:      config.APIKey,
+			Model:       config.ModelName,
+			MaxTokens:   config.MaxTokens,
+			Temperature: config.Temperature,
+			TopP:        config.TopP,
+			BaseURL:     config.BaseURL,
+			Timeout:     config.Timeout,
+		})
+	case "qwen":
+		chatModel, err = qwen.NewChatModel(ctx, &qwen.ChatModelConfig{
+			APIKey:      config.APIKey,
+			Model:       config.ModelName,
+			MaxTokens:   config.MaxTokens,
+			Temperature: config.Temperature,
+			TopP:        config.TopP,
+			BaseURL:     config.BaseURL,
+			Timeout:     config.Timeout,
+		})
+	case "ollama":
+		chatModel, err = ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 			Model:       config.ModelName,
 			MaxTokens:   config.MaxTokens,
 			Temperature: config.Temperature,
