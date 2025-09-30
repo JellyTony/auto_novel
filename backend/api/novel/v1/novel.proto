@@ -140,384 +140,633 @@ service NovelService {
 
 // 项目相关消息
 message CreateProjectRequest {
+  // 项目标题
   string title = 1;
+  // 项目描述
   string description = 2;
-  string genre = 3;  // 体裁：现代都市/悬疑/玄幻/科幻/古代言情
-  string target_audience = 4;  // 目标读者：青年/女性向/男性向/泛读者
-  string tone = 5;  // 调性：温情/冷峻/快节奏/慢热
-  repeated string themes = 6;  // 主题
+  // 体裁：现代都市/悬疑/玄幻/科幻/古代言情
+  string genre = 3;
+  // 目标读者：青年/女性向/男性向/泛读者
+  string target_audience = 4;
+  // 调性：温情/冷酷/快节奏/慢热
+  string tone = 5;
+  // 主题
+  repeated string themes = 6;
 }
 
+// 项目创建响应
 message CreateProjectResponse {
+  // 项目ID
   string project_id = 1;
+  // 项目标题
   string title = 2;
+  // 项目状态
   string status = 3;
+  // 创建时间
   google.protobuf.Timestamp created_at = 4;
 }
 
+// 获取项目详情请求
 message GetProjectRequest {
+  // 项目ID
   string project_id = 1;
 }
 
+// 获取项目详情响应
 message GetProjectResponse {
+  // 项目详情
   Project project = 1;
 }
 
+// 列出项目请求
 message ListProjectsRequest {
+  // 页码
   int32 page = 1;
+  // 每页项目数
   int32 page_size = 2;
 }
 
+// 列出项目响应
 message ListProjectsResponse {
+  // 项目列表
   repeated Project projects = 1;
+  // 总项目数
   int32 total = 2;
 }
 
 // 世界观相关消息
 message GenerateWorldViewRequest {
+  // 项目ID
   string project_id = 1;
+  // 体裁
   string genre = 2;
-  string setting = 3;  // 时代与地点
-  repeated string key_rules = 4;  // 基本规则/设定
+  // 时代与地点
+  string setting = 3;
+  // 基本规则/设定
+  repeated string key_rules = 4;
+  // 调性
   string tone = 5;
+  // 目标读者
   string target_audience = 6;
+  // 主题
   repeated string themes = 7;
+  // LLM选项
   LLMOptions llm_options = 8;
 }
 
+// 生成世界观响应
 message GenerateWorldViewResponse {
+  // 世界观
   WorldView world_view = 1;
 }
 
 // 人物卡相关消息
 message GenerateCharactersRequest {
+  // 项目ID
   string project_id = 1;
+  // 人物名称列表
   repeated string character_names = 2;
+  // 世界观
   WorldView world_view = 3;
+  // LLM选项
   LLMOptions llm_options = 4;
 }
 
+// 生成人物卡响应
 message GenerateCharactersResponse {
+  // 人物列表
   repeated Character characters = 1;
 }
 
 // 章节大纲相关消息
 message GenerateOutlineRequest {
+  // 项目ID
   string project_id = 1;
+  // 章节数
   int32 chapter_count = 2;
+  // 世界观
   WorldView world_view = 3;
+  // 人物列表
   repeated Character characters = 4;
+  // LLM选项
   LLMOptions llm_options = 5;
 }
 
+// 生成章节大纲响应
 message GenerateOutlineResponse {
+  // 章节大纲
   Outline outline = 1;
 }
 
 // 章节生成相关消息
 message GenerateChapterRequest {
+  // 项目ID
   string project_id = 1;
+  // 章节大纲
   ChapterOutline chapter_outline = 2;
+  // 生成上下文
   GenerationContext context = 3;
+  // 目标单词数
   int32 target_word_count = 4;
+  // LLM选项
   LLMOptions llm_options = 5;
 }
 
+// 生成章节响应
 message GenerateChapterResponse {
+  // 章节内容
   Chapter chapter = 1;
 }
 
 // 润色相关消息
 message PolishChapterRequest {
+  // 项目ID
   string project_id = 1;
+  // 章节ID
   string chapter_id = 2;
-  string style = 3;  // formal/casual/literary
-  repeated string focus = 4;  // grammar/flow/dialogue/description
+  // 润色风格：正式/非正式/文学
+  string style = 3;
+  // 润色焦点：语法/流程/对话/描述
+  repeated string focus = 4;
+  // LLM选项
   LLMOptions llm_options = 5;
 }
 
+// 润色章节响应
 message PolishChapterResponse {
-  Chapter chapter = 1;
+  // 润色后的章节内容
+  Chapter polished_chapter = 1;
 }
 
 // 质量检测相关消息
 message CheckQualityRequest {
+  // 项目ID
   string project_id = 1;
+  // 章节ID
   string chapter_id = 2;
-  string check_type = 3;  // polish/proofread/critique/consistency/all
+  // polish/proofread/critique/consistency/all
+  string check_type = 3;
+  // LLM选项
   LLMOptions llm_options = 4;
 }
 
+// 质量检测响应
 message CheckQualityResponse {
+  // 润色后的章节内容
   Chapter polished_chapter = 1;
+  // 语法检查结果
   ProofreadResult proofread_result = 2;
+  // 逻辑检查结果
   CritiqueResult critique_result = 3;
+  // 一致性检查结果
   repeated ConsistencyIssue consistency_issues = 4;
+  // 总质量分
   double overall_score = 5;
+  // 质量检测建议
   repeated string recommendations = 6;
 }
 
+// 批量质量检测请求
 message BatchCheckQualityRequest {
+  // 项目ID
   string project_id = 1;
+  // 章节ID列表
   repeated string chapter_ids = 2;
+  // polish/proofread/critique/consistency/all
   string check_type = 3;
+  // LLM选项
   LLMOptions llm_options = 4;
 }
 
+// 批量质量检测响应
 message BatchCheckQualityResponse {
+  // 每个章节的质量检测结果
   repeated CheckQualityResponse results = 1;
+  // 质量检测摘要
   QualitySummary summary = 2;
+  // 总质量分
   double overall_score = 3;
 }
 
+// 语法检查结果
 message ProofreadResult {
+  // 修正后的章节内容
   string corrected_content = 1;
+  // 语法错误列表
   repeated QualityIssue issues = 2;
+  // 语法修正建议
   repeated string suggestions = 3;
 }
 
+// 逻辑检查结果
 message CritiqueResult {
+  // 逻辑错误列表
   repeated string logical_issues = 1;
+  // 人物关系错误列表
   repeated string character_issues = 2;
+  //  pacing/flow 错误列表
   repeated string pacing_issues = 3;
+  // 改进建议列表
   repeated string improvements = 4;
+  // 修正后的示例段落
   string fixed_example = 5;
+  // 总质量分
   int32 overall_score = 6;
 }
 
+// 质量问题
 message QualityIssue {
-  string type = 1;        // grammar/punctuation/spelling/style
-  string severity = 2;    // high/medium/low
+  // 问题类型：grammar/punctuation/spelling/style
+  string type = 1;
+  // 问题严重程度：high/medium/low
+  string severity = 2;
+  // 问题描述
   string description = 3;
-  string position = 4;    // 位置描述
-  string original = 5;    // 原文
-  string corrected = 6;   // 修正后
+  // 问题位置描述
+  string position = 4;
+  // 原文
+  string original = 5;
+  // 修正后
+  string corrected = 6;
 }
 
+// 质量检测摘要
 message QualitySummary {
+  // 总问题数
   int32 total_issues = 1;
+  // 按类型统计问题数
   map<string, int32> issues_by_type = 2;
+  // 按严重程度统计问题数
   map<string, int32> issues_by_severity = 3;
+  // 质量检测建议
   repeated string recommendations = 4;
+  // 质量趋势（按章节）
   repeated double quality_trends = 5;
 }
 
 // 一致性检查相关消息
 message CheckConsistencyRequest {
+  // 项目ID
   string project_id = 1;
-  string check_type = 2;  // character/plot/world/timeline/all
+  // 检查类型：character/plot/world/timeline/all
+  string check_type = 2;
+  // 章节ID列表
   repeated string chapter_ids = 3;
+  // LLM选项
   LLMOptions llm_options = 4;
 }
 
+// 一致性检查响应
 message CheckConsistencyResponse {
+  // 一致性问题列表
   repeated ConsistencyIssue issues = 1;
+  // 一致性修正建议列表
   repeated string suggestions = 2;
+  // 总质量分
   double overall_score = 3;
 }
 
 // 完整小说生成相关消息
 message GenerateNovelRequest {
+  // 项目ID
   string project_id = 1;
+  // 生成选项
   GenerateOptions options = 2;
 }
 
+// 完整小说生成响应
 message GenerateNovelResponse {
-  string status = 1;  // generating/completed/error
-  double progress = 2;  // 0.0-1.0
-  string current_stage = 3;  // worldbuilding/character/outline/chapter/polish/consistency
+  // 生成状态：generating/completed/error
+  string status = 1;
+  // 生成进度：0.0-1.0
+  double progress = 2;
+  // 当前生成阶段：worldbuilding/character/outline/chapter/polish/consistency
+  string current_stage = 3;
+  // 生成消息
   string message = 4;
+  // 生成的章节列表
   repeated Chapter chapters = 5;
+  // 生成问题列表
   repeated string issues = 6;
 }
 
 // 导出相关消息
 message ExportNovelRequest {
+  // 项目ID
   string project_id = 1;
-  string format = 2;  // txt/epub/pdf
+  // 导出格式：txt/epub/pdf
+  string format = 2;
+  // 导出选项
   ExportOptions options = 3;
 }
 
+// 导出响应
 message ExportNovelResponse {
+  // 下载URL
   string download_url = 1;
+  // 文件名
   string file_name = 2;
+  // 文件大小（字节）
   int64 file_size = 3;
 }
 
 // 短视频分镜脚本相关消息
 message GenerateVideoScriptRequest {
+  // 项目ID
   string project_id = 1;
+  // 章节ID列表
   repeated string chapter_ids = 2;
+  // 视频分镜脚本选项
   VideoScriptOptions options = 3;
 }
 
+// 视频分镜脚本响应
 message GenerateVideoScriptResponse {
+  // 视频分镜场景列表
   repeated VideoScene scenes = 1;
 }
 
 // 数据模型
 message Project {
+  // 项目ID
   string id = 1;
+  // 项目标题
   string title = 2;
+  // 项目描述 （可选）
   string description = 3;
+  // 项目类型：novel/short_story
   string genre = 4;
+  // 目标受众：general/adult
   string target_audience = 5;
+  // 写作风格：formal/informal
   string tone = 6;
   repeated string themes = 7;
-  string status = 8;  // draft/generating/completed/error
+  // 项目状态：draft/generating/completed/error
+  string status = 8;
+  // 世界视图
   WorldView world_view = 9;
+  // 人物角色列表
   repeated Character characters = 10;
+  // 章节大纲
   Outline outline = 11;
+  // 章节列表
   repeated Chapter chapters = 12;
+  // 创建时间
   google.protobuf.Timestamp created_at = 13;
+  // 更新时间
   google.protobuf.Timestamp updated_at = 14;
 }
 
+// 世界视图
 message WorldView {
+  // 世界视图标题
   string title = 1;
+  // 世界视图摘要
   string synopsis = 2;
+  // 世界视图设置描述
   string setting = 3;
+  // 世界视图关键规则列表
   repeated string key_rules = 4;
+  // 世界视图写作风格示例列表
   repeated string tone_examples = 5;
+  // 世界视图主题列表
   repeated string themes = 6;
 }
 
+// 人物角色
 message Character {
+  // 人物角色ID
   string id = 1;
+  // 项目ID
   string project_id = 2;
+  // 人物角色名称
   string name = 3;
+  // 人物角色角色描述
   string role = 4;
+  // 人物角色年龄
   int32 age = 5;
+  // 人物角色外貌描述
   string appearance = 6;
+  // 人物角色背景描述
   string background = 7;
+  // 人物角色动机描述
   string motivation = 8;
+  // 人物角色缺陷描述列表
   repeated string flaws = 9;
+  // 人物角色语音语调描述
   string speech_tone = 10;
+  // 人物角色秘密描述列表
   repeated string secrets = 11;
+  // 人物角色关系映射
   map<string, string> relationship_map = 12;
 }
 
+// 章节大纲
 message Outline {
+  // 章节大纲ID
   string id = 1;
+  // 项目ID
   string project_id = 2;
+  // 章节大纲列表
   repeated ChapterOutline chapters = 3;
 }
 
+// 章节大纲项
 message ChapterOutline {
+  // 章节索引
   int32 index = 1;
+  // 章节标题
   string title = 2;
+  // 章节摘要
   string summary = 3;
+  // 章节目标描述
   string goal = 4;
+  // 章节 Twist 提示
   string twist_hint = 5;
+  // 章节重要物品列表
   repeated string important_items = 6;
 }
 
+// 章节
 message Chapter {
+  // 章节ID
   string id = 1;
+  // 项目ID
   string project_id = 2;
+  // 章节索引
   int32 index = 3;
+  // 章节标题
   string title = 4;
+  // 章节摘要
   string summary = 5;
+  // 原始内容
   string raw_content = 6;
-  string polished_content = 7;
+  //  polished_content = 7;
+  // 章节字数
   int32 word_count = 8;
-  string status = 9;  // draft/generated/polished/reviewed
+  // 章节状态：draft/generated/polished/reviewed
+  string status = 9;
+  // 创建时间
   google.protobuf.Timestamp created_at = 10;
+  // 更新时间
   google.protobuf.Timestamp updated_at = 11;
 }
 
+// 生成上下文
 message GenerationContext {
+  // 上一章节摘要
   string previous_summary = 1;
+  // 人物角色列表
   repeated Character characters = 2;
+  // 时间线事件列表
   repeated TimelineEvent timeline = 3;
+  // 道具物品列表
   repeated PropItem props = 4;
+  // 写作风格示例列表
   repeated string style_examples = 5;
 }
 
+// 时间线事件
 message TimelineEvent {
+  // 事件时间戳
   string timestamp = 1;
+  // 事件描述
   string event = 2;
+  // 事件详细描述
   string description = 3;
 }
 
+// 道具物品
 message PropItem {
+  // 道具物品名称
   string name = 1;
+  // 道具物品描述
   string description = 2;
+  // 道具物品位置描述
   string location = 3;
 }
 
+// 一致性问题
 message ConsistencyIssue {
-  string type = 1;  // character/plot/world/timeline
-  string severity = 2;  // low/medium/high/critical
+  // 问题类型：character/plot/world/timeline
+  string type = 1;
+  // 问题严重程度：low/medium/high/critical
+  string severity = 2;
+  // 问题描述
   string description = 3;
+  // 问题位置（章节索引/时间戳/道具名称等）
   string location = 4;
+  // 建议修复方案
   string suggestion = 5;
 }
 
+// 视频场景
 message VideoScene {
+  // 场景索引
   int32 screen_index = 1;
+  // 场景文本内容
   string text = 2;
+  // 建议背景音乐标签
   string suggested_bgm_tag = 3;
+  // 建议图片标签
   string suggested_image_tag = 4;
-  string tts_voice = 5;  // male/female
+  // 建议TTS语音类型：male/female
+  string tts_voice = 5;
+  // 备注
   string notes = 6;
 }
 
 // 选项和配置
 message LLMOptions {
+  // 温度参数，控制生成文本的随机性，默认0.7
   double temperature = 1;
+  // Top-p（nucleus sampling）参数，控制生成文本的多样性，默认0.9
   double top_p = 2;
+  // 最大生成令牌数，默认2048
   int32 max_tokens = 3;
+  // 频率惩罚参数，控制生成文本中重复令牌的惩罚，默认0.0
   double frequency_penalty = 4;
+  // 存在惩罚参数，控制生成文本中新令牌的惩罚，默认0.0
   double presence_penalty = 5;
+  // 使用的模型名称，默认"default"
   string model = 6;
 }
 
+// 生成选项
 message GenerateOptions {
+  // 最大生成章节数，默认10
   int32 max_chapters = 1;
+  // 每章最大单词数，默认2000
   int32 words_per_chapter = 2;
+  // 是否启用内容 polished，默认false
   bool polish_enabled = 3;
+  // 是否启用一致性检查，默认false
   bool consistency_check = 4;
+  // LLM 选项
   LLMOptions llm_options = 5;
 }
 
 // 模型切换相关消息
 message SwitchModelRequest {
-  string model_name = 1;  // 模型名称，如 "default", "creative", "reasoning"
+  // 模型名称，如 "default", "creative", "reasoning"
+  string model_name = 1;
 }
 
+// 模型切换响应
 message SwitchModelResponse {
+  // 切换是否成功
   bool success = 1;
+  // 切换消息
   string message = 2;
+  // 当前使用的模型名称
   string current_model = 3;
 }
 
+// 模型列表请求
 message ListModelsRequest {
   // 空请求
 }
 
+// 模型列表响应
 message ListModelsResponse {
+  // 模型列表
   repeated ModelInfo models = 1;
+  // 当前使用的模型名称
   string current_model = 2;
 }
 
+// 模型信息
 message ModelInfo {
+  // 模型名称
   string name = 1;
+  // 模型供应商
   string provider = 2;
+  // 模型ID
   string model = 3;
+  // 模型描述
   string description = 4;
+  // 是否可用
   bool available = 5;
 }
 
+// 导出选项
 message ExportOptions {
+  // 是否包含元数据，默认true
   bool include_metadata = 1;
+  // 是否包含大纲，默认true
   bool include_outline = 2;
+  // 字体家族，默认"宋体"
   string font_family = 3;
+  // 字体大小，默认14
   int32 font_size = 4;
 }
 
+// 视频脚本选项
 message VideoScriptOptions {
-  int32 scenes_per_chapter = 1;  // 每章分几个场景，默认8-12
-  string platform = 2;  // tiktok/youtube/bilibili
-  string voice_type = 3;  // male/female/auto
+  // 每章分几个场景，默认8-12
+  int32 scenes_per_chapter = 1;
+  // 视频平台：tiktok/youtube/bilibili
+  string platform = 2;
+  // 语音类型：male/female/auto
+  string voice_type = 3;
 }

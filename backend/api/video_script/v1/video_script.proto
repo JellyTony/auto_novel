@@ -56,14 +56,22 @@ service VideoScriptService {
 
 // 生成短视频脚本请求
 message GenerateVideoScriptRequest {
-  string project_id = 1;       // 项目ID
-  string chapter_id = 2;       // 章节ID
-  string chapter_title = 3;    // 章节标题
-  string chapter_content = 4;  // 章节内容
-  string platform = 5;        // 目标平台：douyin/kuaishou/bilibili/xiaohongshu/weibo
-  int32 duration = 6;          // 视频时长（秒）
-  string style = 7;            // 风格：dramatic/humorous/suspenseful/romantic/action
-  string requirements = 8;     // 特殊要求
+  // 项目ID
+  string project_id = 1;
+  // 章节ID
+  string chapter_id = 2;
+  // 章节标题
+  string chapter_title = 3;
+  // 章节内容
+  string chapter_content = 4;
+  // 目标平台：douyin/kuaishou/bilibili/xiaohongshu/weibo
+  string platform = 5;
+  // 视频时长（秒）
+  int32 duration = 6;
+  // 风格：dramatic/humorous/suspenseful/romantic/action
+  string style = 7;
+  // 特殊要求
+  string requirements = 8;
 }
 
 // 生成短视频脚本响应
@@ -74,94 +82,136 @@ message GenerateVideoScriptResponse {
 
 // 优化短视频脚本请求
 message OptimizeVideoScriptRequest {
-  string project_id = 1;       // 项目ID
-  string script_id = 2;        // 视频脚本ID
-  string requirements = 3;     // 优化要求
+  // 项目ID
+  string project_id = 1;
+  // 视频脚本ID
+  string script_id = 2;
+  // 优化要求
+  string requirements = 3;
 }
 
 // 优化短视频脚本响应
 message OptimizeVideoScriptResponse {
+  // 优化后的短视频脚本
   VideoScript video_script = 1;
 }
 
 // 生成平台变体请求
 message GeneratePlatformVariantsRequest {
+  // 基础视频脚本ID
   string base_script_id = 1;
+  // 目标平台列表：douyin/kuaishou/bilibili/xiaohongshu/weibo
   repeated string target_platforms = 2;
 }
 
 // 生成平台变体响应
 message GeneratePlatformVariantsResponse {
+  // 生成的平台变体视频脚本列表
   repeated VideoScript variants = 1;
 }
 
 // 获取视频脚本列表请求
 message ListVideoScriptsRequest {
+  // 项目ID
   string project_id = 1;
+  // 分页页码
   int32 page = 2;
+  // 分页大小
   int32 page_size = 3;
 }
 
 // 获取视频脚本列表响应
 message ListVideoScriptsResponse {
+  // 视频脚本列表
   repeated VideoScript scripts = 1;
+  // 总视频脚本数量
   int32 total = 2;
 }
 
 // 获取视频脚本详情请求
 message GetVideoScriptRequest {
+  // 视频脚本ID
   string script_id = 1;
 }
 
 // 获取视频脚本详情响应
 message GetVideoScriptResponse {
+  // 视频脚本详情
   VideoScript video_script = 1;
 }
 
 // 删除视频脚本请求
 message DeleteVideoScriptRequest {
+  // 视频脚本ID
   string script_id = 1;
 }
 
 // 删除视频脚本响应
 message DeleteVideoScriptResponse {
+  // 删除是否成功
   bool success = 1;
 }
 
 // 短视频脚本
 message VideoScript {
+  // 视频脚本ID
   string id = 1;
+  // 项目ID
   string project_id = 2;
+  // 章节ID
   string chapter_id = 3;
+  // 视频脚本标题
   string title = 4;
-  int32 duration = 5;          // 视频时长（秒）
-  string platform = 6;         // 目标平台
-  string style = 7;            // 风格
-  repeated VideoScene scenes = 8;  // 分镜场景
-  VideoHooks hooks = 9;        // 钩子点
-  repeated string hashtags = 10;   // 标签
-  string description = 11;     // 视频描述
-  string status = 12;          // 状态：draft/optimized/variant/published
+  // 视频时长（秒）
+  int32 duration = 5;
+  // 目标平台
+  string platform = 6;
+  // 风格
+  string style = 7;
+  // 分镜场景
+  repeated VideoScene scenes = 8;
+  // 钩子点
+  VideoHooks hooks = 9;
+  // 标签
+  repeated string hashtags = 10;
+  // 视频描述
+  string description = 11;
+  // 状态：draft/optimized/variant/published
+  string status = 12;
+  // 创建时间
   int64 created_at = 13;
+  // 更新时间
   int64 updated_at = 14;
 }
 
 // 视频分镜场景
 message VideoScene {
-  int32 index = 1;             // 场景序号
-  int32 duration = 2;          // 场景时长（秒）
-  string shot_type = 3;        // 镜头类型
-  string visual_description = 4; // 画面描述
-  string narration = 5;        // 旁白内容
-  string subtitle = 6;         // 字幕内容
-  repeated string sound_effects = 7; // 音效
-  string transition = 8;       // 转场效果
-  repeated string key_elements = 9;  // 关键元素
+  // 场景序号
+  int32 index = 1;
+  // 场景时长（秒）
+  int32 duration = 2;
+  // 镜头类型
+  string shot_type = 3;
+  // 画面描述
+  string visual_description = 4;
+  // 旁白内容
+  string narration = 5;
+  // 字幕内容
+  string subtitle = 6;
+  // 音效
+  repeated string sound_effects = 7;
+  // 转场效果
+  string transition = 8;
+  // 关键元素
+  repeated string key_elements = 9;
 }
 
 // 视频钩子点
 message VideoHooks {
-  string opening = 1;          // 开头吸引点
-  string climax = 2;           // 高潮点
-  string ending = 3;           // 结尾钩子
+  // 开头吸引点
+  string opening = 1;
+  // 高潮点
+  string climax = 2;
+  // 结尾钩子
+  string ending = 3;           
 }

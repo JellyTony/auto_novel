@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	pb "backend/api/novel/v1"
@@ -140,11 +141,23 @@ func (s *NovelService) ListProjects(ctx context.Context, req *pb.ListProjectsReq
 
 // GenerateWorldView 生成世界观
 func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWorldViewRequest) (*pb.GenerateWorldViewResponse, error) {
+	log.Printf("=== GenerateWorldView called ===")
+	log.Printf("Request: %+v", req)
+	log.Printf("ProjectId: %s", req.ProjectId)
+	log.Printf("Genre: %s", req.Genre)
+	log.Printf("Setting: %s", req.Setting)
+	
+	// 获取项目
+	log.Printf("Getting project with ID: %s", req.ProjectId)
 	project, err := s.uc.GetProject(ctx, req.ProjectId)
 	if err != nil {
+		log.Printf("Error getting project: %v", err)
 		return nil, err
 	}
+	log.Printf("Project retrieved successfully: %+v", project)
 
+	// 构建世界观生成请求
+	log.Printf("Building worldview generation request...")
 	worldReq := &worldbuilding.GenerateWorldViewRequest{
 		ProjectID: req.ProjectId,
 		Genre:     req.Genre,
@@ -154,21 +167,40 @@ func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWo
 		Audience:  req.TargetAudience,
 		Themes:    req.Themes,
 	}
+	log.Printf("Worldview request: %+v", worldReq)
 
+	// 调用世界观生成Agent
+	log.Printf("Calling world agent GenerateWorldView...")
 	worldView, err := s.worldAgent.GenerateWorldView(ctx, worldReq)
 	if err != nil {
+		log.Printf("Error generating worldview: %v", err)
 		return nil, err
 	}
+	log.Printf("Worldview generated successfully: %+v", worldView)
 
-	// 保存世界观到项目中
+	// 更新项目的世界观
+	log.Printf("Updating project worldview...")
 	project.WorldView = worldView
+
+	// 保存项目
+	log.Printf("Saving updated project...")
 	_, err = s.uc.UpdateProject(ctx, project)
 	if err != nil {
+		log.Printf("Error updating project: %v", err)
 		return nil, err
 	}
+	log.Printf("Project updated successfully")
 
+	log.Printf("=== GenerateWorldView completed ===")
 	return &pb.GenerateWorldViewResponse{
-		WorldView: convertWorldViewToProto(worldView),
+		WorldView: &pb.WorldView{
+			Title:        worldView.Title,
+			Synopsis:     worldView.Synopsis,
+			Setting:      worldView.Setting,
+			KeyRules:     worldView.KeyRules,
+			ToneExamples: worldView.ToneExamples,
+			Themes:       worldView.Themes,
+		},
 	}, nil
 }
 

@@ -27,14 +27,22 @@ type GenerateVideoScriptRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ProjectId      string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`                // 项目ID
-	ChapterId      string `protobuf:"bytes,2,opt,name=chapter_id,json=chapterId,proto3" json:"chapter_id,omitempty"`                // 章节ID
-	ChapterTitle   string `protobuf:"bytes,3,opt,name=chapter_title,json=chapterTitle,proto3" json:"chapter_title,omitempty"`       // 章节标题
-	ChapterContent string `protobuf:"bytes,4,opt,name=chapter_content,json=chapterContent,proto3" json:"chapter_content,omitempty"` // 章节内容
-	Platform       string `protobuf:"bytes,5,opt,name=platform,proto3" json:"platform,omitempty"`                                   // 目标平台：douyin/kuaishou/bilibili/xiaohongshu/weibo
-	Duration       int32  `protobuf:"varint,6,opt,name=duration,proto3" json:"duration,omitempty"`                                  // 视频时长（秒）
-	Style          string `protobuf:"bytes,7,opt,name=style,proto3" json:"style,omitempty"`                                         // 风格：dramatic/humorous/suspenseful/romantic/action
-	Requirements   string `protobuf:"bytes,8,opt,name=requirements,proto3" json:"requirements,omitempty"`                           // 特殊要求
+	// 项目ID
+	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// 章节ID
+	ChapterId string `protobuf:"bytes,2,opt,name=chapter_id,json=chapterId,proto3" json:"chapter_id,omitempty"`
+	// 章节标题
+	ChapterTitle string `protobuf:"bytes,3,opt,name=chapter_title,json=chapterTitle,proto3" json:"chapter_title,omitempty"`
+	// 章节内容
+	ChapterContent string `protobuf:"bytes,4,opt,name=chapter_content,json=chapterContent,proto3" json:"chapter_content,omitempty"`
+	// 目标平台：douyin/kuaishou/bilibili/xiaohongshu/weibo
+	Platform string `protobuf:"bytes,5,opt,name=platform,proto3" json:"platform,omitempty"`
+	// 视频时长（秒）
+	Duration int32 `protobuf:"varint,6,opt,name=duration,proto3" json:"duration,omitempty"`
+	// 风格：dramatic/humorous/suspenseful/romantic/action
+	Style string `protobuf:"bytes,7,opt,name=style,proto3" json:"style,omitempty"`
+	// 特殊要求
+	Requirements string `protobuf:"bytes,8,opt,name=requirements,proto3" json:"requirements,omitempty"`
 }
 
 func (x *GenerateVideoScriptRequest) Reset() {
@@ -180,9 +188,12 @@ type OptimizeVideoScriptRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ProjectId    string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"` // 项目ID
-	ScriptId     string `protobuf:"bytes,2,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`    // 视频脚本ID
-	Requirements string `protobuf:"bytes,3,opt,name=requirements,proto3" json:"requirements,omitempty"`            // 优化要求
+	// 项目ID
+	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// 视频脚本ID
+	ScriptId string `protobuf:"bytes,2,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+	// 优化要求
+	Requirements string `protobuf:"bytes,3,opt,name=requirements,proto3" json:"requirements,omitempty"`
 }
 
 func (x *OptimizeVideoScriptRequest) Reset() {
@@ -244,6 +255,7 @@ type OptimizeVideoScriptResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 优化后的短视频脚本
 	VideoScript *VideoScript `protobuf:"bytes,1,opt,name=video_script,json=videoScript,proto3" json:"video_script,omitempty"`
 }
 
@@ -292,7 +304,9 @@ type GeneratePlatformVariantsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BaseScriptId    string   `protobuf:"bytes,1,opt,name=base_script_id,json=baseScriptId,proto3" json:"base_script_id,omitempty"`
+	// 基础视频脚本ID
+	BaseScriptId string `protobuf:"bytes,1,opt,name=base_script_id,json=baseScriptId,proto3" json:"base_script_id,omitempty"`
+	// 目标平台列表：douyin/kuaishou/bilibili/xiaohongshu/weibo
 	TargetPlatforms []string `protobuf:"bytes,2,rep,name=target_platforms,json=targetPlatforms,proto3" json:"target_platforms,omitempty"`
 }
 
@@ -348,6 +362,7 @@ type GeneratePlatformVariantsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 生成的平台变体视频脚本列表
 	Variants []*VideoScript `protobuf:"bytes,1,rep,name=variants,proto3" json:"variants,omitempty"`
 }
 
@@ -396,9 +411,12 @@ type ListVideoScriptsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 项目ID
 	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	Page      int32  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize  int32  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// 分页页码
+	Page int32 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	// 分页大小
+	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 }
 
 func (x *ListVideoScriptsRequest) Reset() {
@@ -460,8 +478,10 @@ type ListVideoScriptsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 视频脚本列表
 	Scripts []*VideoScript `protobuf:"bytes,1,rep,name=scripts,proto3" json:"scripts,omitempty"`
-	Total   int32          `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	// 总视频脚本数量
+	Total int32 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
 }
 
 func (x *ListVideoScriptsResponse) Reset() {
@@ -516,6 +536,7 @@ type GetVideoScriptRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 视频脚本ID
 	ScriptId string `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
 }
 
@@ -564,6 +585,7 @@ type GetVideoScriptResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 视频脚本详情
 	VideoScript *VideoScript `protobuf:"bytes,1,opt,name=video_script,json=videoScript,proto3" json:"video_script,omitempty"`
 }
 
@@ -612,6 +634,7 @@ type DeleteVideoScriptRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 视频脚本ID
 	ScriptId string `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
 }
 
@@ -660,6 +683,7 @@ type DeleteVideoScriptResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// 删除是否成功
 	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
 
@@ -708,20 +732,34 @@ type VideoScript struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id          string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ProjectId   string        `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	ChapterId   string        `protobuf:"bytes,3,opt,name=chapter_id,json=chapterId,proto3" json:"chapter_id,omitempty"`
-	Title       string        `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Duration    int32         `protobuf:"varint,5,opt,name=duration,proto3" json:"duration,omitempty"`       // 视频时长（秒）
-	Platform    string        `protobuf:"bytes,6,opt,name=platform,proto3" json:"platform,omitempty"`        // 目标平台
-	Style       string        `protobuf:"bytes,7,opt,name=style,proto3" json:"style,omitempty"`              // 风格
-	Scenes      []*VideoScene `protobuf:"bytes,8,rep,name=scenes,proto3" json:"scenes,omitempty"`            // 分镜场景
-	Hooks       *VideoHooks   `protobuf:"bytes,9,opt,name=hooks,proto3" json:"hooks,omitempty"`              // 钩子点
-	Hashtags    []string      `protobuf:"bytes,10,rep,name=hashtags,proto3" json:"hashtags,omitempty"`       // 标签
-	Description string        `protobuf:"bytes,11,opt,name=description,proto3" json:"description,omitempty"` // 视频描述
-	Status      string        `protobuf:"bytes,12,opt,name=status,proto3" json:"status,omitempty"`           // 状态：draft/optimized/variant/published
-	CreatedAt   int64         `protobuf:"varint,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt   int64         `protobuf:"varint,14,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// 视频脚本ID
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// 项目ID
+	ProjectId string `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// 章节ID
+	ChapterId string `protobuf:"bytes,3,opt,name=chapter_id,json=chapterId,proto3" json:"chapter_id,omitempty"`
+	// 视频脚本标题
+	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	// 视频时长（秒）
+	Duration int32 `protobuf:"varint,5,opt,name=duration,proto3" json:"duration,omitempty"`
+	// 目标平台
+	Platform string `protobuf:"bytes,6,opt,name=platform,proto3" json:"platform,omitempty"`
+	// 风格
+	Style string `protobuf:"bytes,7,opt,name=style,proto3" json:"style,omitempty"`
+	// 分镜场景
+	Scenes []*VideoScene `protobuf:"bytes,8,rep,name=scenes,proto3" json:"scenes,omitempty"`
+	// 钩子点
+	Hooks *VideoHooks `protobuf:"bytes,9,opt,name=hooks,proto3" json:"hooks,omitempty"`
+	// 标签
+	Hashtags []string `protobuf:"bytes,10,rep,name=hashtags,proto3" json:"hashtags,omitempty"`
+	// 视频描述
+	Description string `protobuf:"bytes,11,opt,name=description,proto3" json:"description,omitempty"`
+	// 状态：draft/optimized/variant/published
+	Status string `protobuf:"bytes,12,opt,name=status,proto3" json:"status,omitempty"`
+	// 创建时间
+	CreatedAt int64 `protobuf:"varint,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// 更新时间
+	UpdatedAt int64 `protobuf:"varint,14,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 }
 
 func (x *VideoScript) Reset() {
@@ -860,15 +898,24 @@ type VideoScene struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Index             int32    `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`                                                 // 场景序号
-	Duration          int32    `protobuf:"varint,2,opt,name=duration,proto3" json:"duration,omitempty"`                                           // 场景时长（秒）
-	ShotType          string   `protobuf:"bytes,3,opt,name=shot_type,json=shotType,proto3" json:"shot_type,omitempty"`                            // 镜头类型
-	VisualDescription string   `protobuf:"bytes,4,opt,name=visual_description,json=visualDescription,proto3" json:"visual_description,omitempty"` // 画面描述
-	Narration         string   `protobuf:"bytes,5,opt,name=narration,proto3" json:"narration,omitempty"`                                          // 旁白内容
-	Subtitle          string   `protobuf:"bytes,6,opt,name=subtitle,proto3" json:"subtitle,omitempty"`                                            // 字幕内容
-	SoundEffects      []string `protobuf:"bytes,7,rep,name=sound_effects,json=soundEffects,proto3" json:"sound_effects,omitempty"`                // 音效
-	Transition        string   `protobuf:"bytes,8,opt,name=transition,proto3" json:"transition,omitempty"`                                        // 转场效果
-	KeyElements       []string `protobuf:"bytes,9,rep,name=key_elements,json=keyElements,proto3" json:"key_elements,omitempty"`                   // 关键元素
+	// 场景序号
+	Index int32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	// 场景时长（秒）
+	Duration int32 `protobuf:"varint,2,opt,name=duration,proto3" json:"duration,omitempty"`
+	// 镜头类型
+	ShotType string `protobuf:"bytes,3,opt,name=shot_type,json=shotType,proto3" json:"shot_type,omitempty"`
+	// 画面描述
+	VisualDescription string `protobuf:"bytes,4,opt,name=visual_description,json=visualDescription,proto3" json:"visual_description,omitempty"`
+	// 旁白内容
+	Narration string `protobuf:"bytes,5,opt,name=narration,proto3" json:"narration,omitempty"`
+	// 字幕内容
+	Subtitle string `protobuf:"bytes,6,opt,name=subtitle,proto3" json:"subtitle,omitempty"`
+	// 音效
+	SoundEffects []string `protobuf:"bytes,7,rep,name=sound_effects,json=soundEffects,proto3" json:"sound_effects,omitempty"`
+	// 转场效果
+	Transition string `protobuf:"bytes,8,opt,name=transition,proto3" json:"transition,omitempty"`
+	// 关键元素
+	KeyElements []string `protobuf:"bytes,9,rep,name=key_elements,json=keyElements,proto3" json:"key_elements,omitempty"`
 }
 
 func (x *VideoScene) Reset() {
@@ -972,9 +1019,12 @@ type VideoHooks struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Opening string `protobuf:"bytes,1,opt,name=opening,proto3" json:"opening,omitempty"` // 开头吸引点
-	Climax  string `protobuf:"bytes,2,opt,name=climax,proto3" json:"climax,omitempty"`   // 高潮点
-	Ending  string `protobuf:"bytes,3,opt,name=ending,proto3" json:"ending,omitempty"`   // 结尾钩子
+	// 开头吸引点
+	Opening string `protobuf:"bytes,1,opt,name=opening,proto3" json:"opening,omitempty"`
+	// 高潮点
+	Climax string `protobuf:"bytes,2,opt,name=climax,proto3" json:"climax,omitempty"`
+	// 结尾钩子
+	Ending string `protobuf:"bytes,3,opt,name=ending,proto3" json:"ending,omitempty"`
 }
 
 func (x *VideoHooks) Reset() {
