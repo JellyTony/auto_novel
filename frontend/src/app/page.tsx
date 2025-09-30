@@ -5,17 +5,132 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { PlusIcon, BookOpenIcon, UserGroupIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { NovelAPI, Project, ProjectStats } from "@/lib/api";
 
 export default function Home() {
   const router = useRouter();
+  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const [stats, setStats] = useState<ProjectStats>({
+    totalProjects: 0,
+    completedProjects: 0,
+    totalWords: 0,
+    monthlyWords: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  // 加载数据
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // 获取最近项目
+      const projectsResponse = await NovelAPI.listProjects({ page: 1, pageSize: 5 });
+      setRecentProjects(projectsResponse.projects || []);
+      
+      // 获取统计信息
+      try {
+        const statsResponse = await NovelAPI.getStats();
+        setStats(statsResponse.stats);
+      } catch (error) {
+        console.error('获取统计信息失败:', error);
+        // 使用项目数据计算基本统计
+        const projects = projectsResponse.projects || [];
+        const completedCount = projects.filter(p => p.status === '已完成').length;
+        const totalWords = projects.reduce((sum, p) => {
+          // 估算字数：假设每章平均3000字
+          const chapterCount = p.chapters?.length || 0;
+          return sum + (chapterCount * 3000);
+        }, 0);
+        
+        setStats({
+          totalProjects: projects.length,
+          completedProjects: completedCount,
+          totalWords: totalWords,
+          monthlyWords: Math.floor(totalWords * 0.3) // 假设30%是本月创作
+        });
+      }
+    } catch (error) {
+      console.error('加载数据失败:', error);
+      // 使用模拟数据作为后备
+      setRecentProjects([
+        {
+          id: "1",
+          title: "都市修仙传",
+          description: "一个现代都市背景下的修仙故事",
+          genre: "现代都市",
+          targetAudience: "青年",
+          tone: "快节奏",
+          themes: ["修仙", "都市", "成长"],
+          status: "进行中",
+          createdAt: "2024-08-15",
+          updatedAt: "2024-09-29"
+        },
+        {
+          id: "2",
+          title: "星际争霸",
+          description: "未来世界的星际战争",
+          genre: "科幻",
+          targetAudience: "男性向",
+          tone: "冷峻",
+          themes: ["科幻", "战争", "太空"],
+          status: "进行中",
+          createdAt: "2024-09-01",
+          updatedAt: "2024-09-28"
+        }
+      ]);
+      
+      setStats({
+        totalProjects: 12,
+        completedProjects: 3,
+        totalWords: 156000,
+        monthlyWords: 23000
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleCreateProject = () => {
-    router.push('/projects');
+    router.push('/projects/create');
   };
 
   const handleViewProjects = () => {
     router.push('/projects');
   };
+
+  const handleViewProject = (projectId: string) => {
+    router.push(`/projects/${projectId}`);
+  };
+
+  const handleViewCharacters = () => {
+    router.push('/characters');
+  };
+
+  const handleViewWorldview = () => {
+    router.push('/worldview');
+  };
+
+  const handleViewChapters = () => {
+    router.push('/chapters');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header title="AI小说创作助手" />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg text-gray-600">加载中...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const handleManageCharacters = () => {
     router.push('/characters');
@@ -32,8 +147,21 @@ export default function Home() {
   };
 
   const handleStartCreating = () => {
-    router.push('/projects');
+    router.push('/projects/create');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header title="AI小说创作助手" />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg text-gray-600">加载中...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col h-full">
       <Header 
@@ -112,55 +240,34 @@ export default function Home() {
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">最近项目</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">都市修仙传</CardTitle>
-                <CardDescription>现代都市 · 玄幻</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">进度</span>
-                    <span className="text-gray-900">15/30 章</span>
+            {recentProjects.map((project) => (
+              <Card key={project.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">{project.title}</CardTitle>
+                  <CardDescription>{project.genre} · {project.targetAudience}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">状态</span>
+                      <span className="text-gray-900">{project.status}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>更新时间: {project.updatedAt}</span>
+                      <span>{project.chapters?.length || 0} 章</span>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '50%' }}></div>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>更新时间: 2024-09-29</span>
-                    <span>45,000 字</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full mt-4" size="sm" onClick={() => handleContinueEdit('project1')}>
-                  继续编辑
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">星际争霸</CardTitle>
-                <CardDescription>科幻 · 太空歌剧</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">进度</span>
-                    <span className="text-gray-900">8/25 章</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '32%' }}></div>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>更新时间: 2024-09-28</span>
-                    <span>28,000 字</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full mt-4" size="sm" onClick={() => handleContinueEdit('project2')}>
-                  继续编辑
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4" 
+                    size="sm" 
+                    onClick={() => handleViewProject(project.id)}
+                  >
+                    查看详情
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
 
             <Card className="border-dashed border-2 border-gray-300 flex items-center justify-center min-h-[200px]">
               <div className="text-center">
@@ -174,32 +281,32 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 统计信息 */}
+        {/* 创作统计 */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">创作统计</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>总项目数</CardDescription>
-                <CardTitle className="text-2xl">12</CardTitle>
+                <CardTitle className="text-2xl">{stats.totalProjects}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>完成项目</CardDescription>
-                <CardTitle className="text-2xl">3</CardTitle>
+                <CardTitle className="text-2xl">{stats.completedProjects}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>总字数</CardDescription>
-                <CardTitle className="text-2xl">156K</CardTitle>
+                <CardTitle className="text-2xl">{Math.floor(stats.totalWords / 1000)}K</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>本月创作</CardDescription>
-                <CardTitle className="text-2xl">23K</CardTitle>
+                <CardTitle className="text-2xl">{Math.floor(stats.monthlyWords / 1000)}K</CardTitle>
               </CardHeader>
             </Card>
           </div>

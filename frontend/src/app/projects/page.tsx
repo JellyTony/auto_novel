@@ -111,11 +111,16 @@ export default function ProjectsPage() {
   }, []);
 
   // 过滤项目
-  const filteredProjects = projects.filter(project =>
-    project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.genre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProjects = projects.filter(project => {
+    // 确保project存在且不为null/undefined
+    if (!project) return false;
+    
+    return (
+      (project.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (project.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (project.genre?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -136,7 +141,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header title="我的项目" />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 页面标题和操作 */}

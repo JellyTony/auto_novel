@@ -297,6 +297,18 @@ export interface LLMOptions {
   topP: number;
 }
 
+// 统计信息相关类型
+export interface ProjectStats {
+  totalProjects: number;
+  completedProjects: number;
+  totalWords: number;
+  monthlyWords: number;
+}
+
+export interface GetStatsResponse {
+  stats: ProjectStats;
+}
+
 // ==================== 小说服务API类 ====================
 
 export class NovelAPI {
@@ -385,6 +397,11 @@ export class NovelAPI {
       method: 'POST',
       body: JSON.stringify(request),
     });
+  }
+
+  // 获取统计信息
+  static async getStats(): Promise<GetStatsResponse> {
+    return apiRequest<GetStatsResponse>('/api/v1/novel/stats');
   }
 }
 
