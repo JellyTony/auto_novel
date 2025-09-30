@@ -25,8 +25,8 @@ Auto Novel 是一个基于 AI 的智能小说生成平台，采用前后端分�
 - **核心框架**：Next.js 15.5.4 + React 19.1.0
 - **开发语言**：TypeScript 5.9.2
 - **样式框架**：Tailwind CSS v4
-- **UI 组件库**：Radix UI + Headless UI
-- **图标库**：Heroicons + Lucide React
+- **UI 组件库**：shadcn/ui（主要）+ Radix UI（底层）
+- **图标库**：Lucide React
 - **构建工具**：Turbopack
 
 ## 三、项目结构规范
@@ -148,17 +148,28 @@ frontend/
 - **组件命名**：使用 PascalCase
 - **文件命名**：使用 kebab-case
 
-#### 4.2.2 API 集成规范
+#### 4.2.2 shadcn/ui 组件使用规范
+- **优先使用 shadcn/ui 组件**：能复用 shadcn/ui 组件的功能尽量复用
+- **组件复用原则**：充分利用 shadcn/ui 的预构建组件（Button、Input、Dialog、Card 等）
+- **自定义组件规范**：只有在 shadcn/ui 无法满足需求时才创建自定义组件
+- **样式一致性**：遵循 shadcn/ui 的设计系统和主题配置
+- **组件安装**：使用 `npx shadcn@latest add <component>` 安装新组件
+- **主题配置**：基于 components.json 配置，使用 "new-york" 风格
+- **CSS 变量**：利用 shadcn/ui 的 CSS 变量系统进行主题定制
+
+#### 4.2.3 API 集成规范
 - **类型安全**：基于 OpenAPI 规范生成 TypeScript 类型
 - **统一错误处理**：使用 APIError 类处理 API 错误
 - **请求封装**：通过 `lib/api.ts` 统一管理 API 请求
 - **环境配置**：通过环境变量配置 API 基础 URL
 
-#### 4.2.3 样式规范
+#### 4.2.4 样式规范
 - **Tailwind CSS**：优先使用 Tailwind 工具类
 - **响应式设计**：移动端优先的响应式布局
-- **组件库**：使用 Radix UI 作为基础组件库
-- **主题一致性**：遵循统一的设计系统
+- **shadcn/ui 设计系统**：遵循 shadcn/ui 的设计规范和主题配置
+- **主题一致性**：基于 components.json 配置的统一设计系统
+- **颜色系统**：使用 shadcn/ui 的 CSS 变量颜色系统
+- **组件变体**：充分利用 shadcn/ui 组件的内置变体（size、variant 等）
 
 ## 五、服务启动和部署
 

@@ -4,119 +4,186 @@ import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  GlobeAltIcon,
-  SparklesIcon,
-  BookOpenIcon,
-  Cog6ToothIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon
-} from "@heroicons/react/24/outline";
+  Globe,
+  Sparkles,
+  BookOpen,
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  Clock,
+  Users
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { NovelAPI, WorldView, GenerateWorldViewRequest, Project } from "@/lib/api";
+import { useApiList, useApiMutation } from "@/lib/hooks/useApi";
+import { Loading, CardSkeleton } from "@/components/ui/loading";
+import { ApiError, EmptyState } from "@/components/ui/error-boundary";
 
 export default function WorldviewPage() {
-  const [worldViews, setWorldViews] = useState<WorldView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<string>("1");
+  const [selectedProject, setSelectedProject] = useState<string>("");
   const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  // 项目列表状态管理
+  const projectsApi = useApiList<Project>({
+    onSuccess: (data) => {
+      setProjects(data);
+      if (data.length > 0 && !selectedProject) {
+        setSelectedProject(data[0].id);
+      }
+    },
+    onError: (error) => {
+      console.error('项目列表加载失败:', error);
+    }
+  });
+
+  // 世界观生成状态管理
+  const generateWorldViewApi = useApiMutation<{ world_view: WorldView }, GenerateWorldViewRequest>({
+    onSuccess: (data) => {
+      console.log('世界观生成成功:', data);
+      setShowGenerateForm(false);
+      setGenerateRequest({
+        project_id: selectedProject,
+        genre: '',
+        setting: '',
+        key_rules: [],
+        tone: '',
+        target_audience: '',
+        themes: []
+      });
+      // 重新加载项目详情以获取最新的世界观
+      loadProjectDetail();
+    },
+    onError: (error) => {
+      console.error('世界观生成失败:', error);
+    }
+  });
+
+  // 项目详情状态管理
+  const projectDetailApi = useApiList<Project>({
+    onSuccess: (data) => {
+      console.log('项目详情加载成功:', data);
+    },
+    onError: (error) => {
+      console.error('项目详情加载失败:', error);
+    }
+  });
+
+  // 生成请求表单状态
   const [generateRequest, setGenerateRequest] = useState<GenerateWorldViewRequest>({
-    projectId: "1",
-    genre: "现代都市",
-    setting: "现代都市背景",
-    keyRules: [],
-    tone: "轻松幽默",
-    targetAudience: "青年读者",
+    project_id: "",
+    genre: "",
+    setting: "",
+    key_rules: [],
+    tone: "",
+    target_audience: "",
     themes: []
   });
 
-  // 模拟世界观数据作为后备
-  const mockWorldViews: WorldView[] = [
-    {
-      id: "1",
-      projectId: "1",
-      genre: "现代都市",
-      setting: "现代都市背景下，隐藏着修仙者的世界",
-      keyRules: [
-        "修仙者必须隐藏身份，不能在普通人面前暴露超自然能力",
-        "灵气主要集中在城市的特定区域，如古建筑、公园等",
-        "修仙等级分为：练气、筑基、金丹、元婴、化神",
-        "现代科技对修仙有一定影响，需要平衡传统修仙与现代生活"
-      ],
-      tone: "轻松幽默",
-      targetAudience: "青年读者",
-      themes: ["修仙", "都市", "成长"],
-      description: "在现代都市背景下，隐藏着修仙者的世界。高楼大厦之间存在着灵气节点，修仙者需要在现代社会中隐藏身份，同时追求修仙之道。",
-      createdAt: "2024-09-15T10:30:00Z"
-    },
-    {
-      id: "2",
-      projectId: "2",
-      genre: "科幻",
-      setting: "公元2387年，星际联邦宇宙",
-      keyRules: [
-        "星际联邦由人类主导，包含12个主要外星种族",
-        "超光速旅行通过虫洞网络实现",
-        "每个种族都有独特的生理特征和文化背景",
-        "存在古老的先驱者文明遗迹，蕴含强大科技"
-      ],
-      tone: "严肃正经",
-      targetAudience: "成年读者",
-      themes: ["科幻", "太空", "冒险"],
-      description: "公元2387年，人类已经建立了跨越银河系的星际联邦。各种外星种族共存，科技高度发达，但也面临着来自未知星域的威胁。",
-      createdAt: "2024-09-01T10:30:00Z"
-    }
-  ];
-
-  // 加载世界观列表
-  const loadWorldViews = async () => {
+  // 加载项目列表
+  const loadProjects = async () => {
     try {
-      setLoading(true);
-      // 这里应该调用API获取世界观列表
-      // const response = await NovelAPI.listWorldViews(selectedProject);
-      // setWorldViews(response.worldViews);
-      
-      // 暂时使用模拟数据
-      setWorldViews(mockWorldViews);
+      await projectsApi.execute(() => NovelAPI.listProjects().then(res => res.projects));
     } catch (error) {
-      console.error('加载世界观失败:', error);
-      setWorldViews(mockWorldViews); // 使用模拟数据作为后备
-    } finally {
-      setLoading(false);
+      console.error('加载项目列表失败:', error);
+    }
+  };
+
+  // 加载项目详情
+  const loadProjectDetail = async () => {
+    if (!selectedProject) return;
+    
+    try {
+      await projectDetailApi.execute(() => NovelAPI.getProject(selectedProject).then(res => res.project));
+    } catch (error) {
+      console.error('加载项目详情失败:', error);
     }
   };
 
   // 生成世界观
   const handleGenerateWorldView = async () => {
+    if (!selectedProject) return;
+
+    const requestData = {
+      ...generateRequest,
+      project_id: selectedProject
+    };
+
     try {
-      setGenerating(true);
-      const response = await NovelAPI.generateWorldView(generateRequest);
-      setWorldViews([...worldViews, response.worldView]);
-      setShowGenerateForm(false);
+      await generateWorldViewApi.mutate(
+        (data: GenerateWorldViewRequest) => NovelAPI.generateWorldView(data),
+        requestData
+      );
     } catch (error) {
       console.error('生成世界观失败:', error);
-      alert('生成世界观失败，请重试');
-    } finally {
-      setGenerating(false);
     }
   };
 
+  // 页面加载时获取项目列表
   useEffect(() => {
-    loadWorldViews();
+    loadProjects();
+  }, []);
+
+  // 当选中项目变化时，加载项目详情
+  useEffect(() => {
+    if (selectedProject) {
+      setGenerateRequest(prev => ({ ...prev, project_id: selectedProject }));
+      loadProjectDetail();
+    }
   }, [selectedProject]);
 
-  const genreOptions = [
-    { value: "现代都市", label: "现代都市", subGenres: ["都市生活", "玄幻", "异能", "重生"] },
-    { value: "古代言情", label: "古代言情", subGenres: ["宫廷", "江湖", "穿越", "重生"] },
-    { value: "科幻", label: "科幻", subGenres: ["太空歌剧", "赛博朋克", "末世", "机甲"] },
-    { value: "悬疑推理", label: "悬疑推理", subGenres: ["刑侦", "心理", "灵异", "密室"] },
-    { value: "奇幻", label: "奇幻", subGenres: ["西方奇幻", "东方玄幻", "魔法", "异世界"] }
+  // 获取当前项目的世界观
+  const currentProject = projectDetailApi.data;
+  const worldView = currentProject?.world_view;
+
+  // 主题选项
+  const themeOptions = [
+    '爱情', '友情', '成长', '冒险', '悬疑', '科幻', '奇幻', 
+    '历史', '都市', '校园', '职场', '家庭', '战争', '武侠'
   ];
 
+  // 处理主题选择
+  const handleThemeChange = (theme: string, checked: boolean) => {
+    setGenerateRequest(prev => ({
+      ...prev,
+      themes: checked 
+        ? [...prev.themes, theme]
+        : prev.themes.filter(t => t !== theme)
+    }));
+  };
+
+  // 处理核心规则输入
+  const handleKeyRuleChange = (index: number, value: string) => {
+    setGenerateRequest(prev => ({
+      ...prev,
+      key_rules: prev.key_rules.map((rule, i) => i === index ? value : rule)
+    }));
+  };
+
+  const addKeyRule = () => {
+    setGenerateRequest(prev => ({
+      ...prev,
+      key_rules: [...prev.key_rules, '']
+    }));
+  };
+
+  const removeKeyRule = (index: number) => {
+    setGenerateRequest(prev => ({
+      ...prev,
+      key_rules: prev.key_rules.filter((_, i) => i !== index)
+    }));
+  };
+
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto px-4 py-8">
       <Header 
         title="世界观设定" 
         description="创建和管理小说的世界观设定，包括背景、规则和氛围"
@@ -124,198 +191,328 @@ export default function WorldviewPage() {
       
       <div className="space-y-6">
         {/* 操作栏 */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center space-x-4">
-            <select 
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="1">项目1 - 都市修仙</option>
-              <option value="2">项目2 - 星际冒险</option>
-            </select>
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="选择项目" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
-          <Button 
-            onClick={() => setShowGenerateForm(true)}
-            className="flex items-center space-x-2"
-          >
-            <PlusIcon className="h-4 w-4" />
-            <span>生成世界观</span>
-          </Button>
-        </div>
-
-        {/* 生成表单 */}
-        {showGenerateForm && (
-          <Card>
-            <CardHeader>
-              <CardTitle>生成世界观</CardTitle>
-              <CardDescription>设置世界观的基本参数</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">类型</label>
-                  <select
-                    value={generateRequest.genre}
-                    onChange={(e) => setGenerateRequest({...generateRequest, genre: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {genreOptions.map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
+          <Dialog open={showGenerateForm} onOpenChange={setShowGenerateForm}>
+            <DialogTrigger asChild>
+              <Button 
+                className="flex items-center gap-2"
+                disabled={!selectedProject}
+              >
+                <Plus className="w-4 h-4" />
+                生成世界观
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>生成世界观</DialogTitle>
+                <DialogDescription>
+                  设置世界观的基本参数，AI将为您生成详细的世界观设定
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="genre">体裁类型</Label>
+                    <Select value={generateRequest.genre} onValueChange={(value) => setGenerateRequest(prev => ({ ...prev, genre: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择体裁" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="现代都市">现代都市</SelectItem>
+                        <SelectItem value="古代言情">古代言情</SelectItem>
+                        <SelectItem value="科幻">科幻</SelectItem>
+                        <SelectItem value="悬疑推理">悬疑推理</SelectItem>
+                        <SelectItem value="奇幻">奇幻</SelectItem>
+                        <SelectItem value="武侠">武侠</SelectItem>
+                        <SelectItem value="历史">历史</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="tone">基调风格</Label>
+                    <Select value={generateRequest.tone} onValueChange={(value) => setGenerateRequest(prev => ({ ...prev, tone: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择基调" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="轻松幽默">轻松幽默</SelectItem>
+                        <SelectItem value="严肃正经">严肃正经</SelectItem>
+                        <SelectItem value="悬疑紧张">悬疑紧张</SelectItem>
+                        <SelectItem value="浪漫温馨">浪漫温馨</SelectItem>
+                        <SelectItem value="热血激昂">热血激昂</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium mb-2">基调</label>
-                  <select
-                    value={generateRequest.tone}
-                    onChange={(e) => setGenerateRequest({...generateRequest, tone: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="轻松幽默">轻松幽默</option>
-                    <option value="严肃正经">严肃正经</option>
-                    <option value="悬疑紧张">悬疑紧张</option>
-                    <option value="浪漫温馨">浪漫温馨</option>
-                  </select>
+                <div className="space-y-2">
+                  <Label htmlFor="setting">背景设定</Label>
+                  <Textarea
+                    id="setting"
+                    placeholder="描述世界观的基本背景设定，如时代背景、地理环境、社会结构等..."
+                    value={generateRequest.setting}
+                    onChange={(e) => setGenerateRequest(prev => ({ ...prev, setting: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="target_audience">目标读者</Label>
+                  <Select value={generateRequest.target_audience} onValueChange={(value) => setGenerateRequest(prev => ({ ...prev, target_audience: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择目标读者" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">大众读者</SelectItem>
+                      <SelectItem value="young_adult">青少年</SelectItem>
+                      <SelectItem value="adult">成人读者</SelectItem>
+                      <SelectItem value="children">儿童读者</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>核心规则</Label>
+                  <div className="space-y-2">
+                    {generateRequest.key_rules.map((rule, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          placeholder={`核心规则 ${index + 1}`}
+                          value={rule}
+                          onChange={(e) => handleKeyRuleChange(index, e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeKeyRule(index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addKeyRule}
+                      className="w-full"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      添加规则
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>主题标签</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {themeOptions.map((theme) => (
+                      <div key={theme} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={theme}
+                          checked={generateRequest.themes.includes(theme)}
+                          onCheckedChange={(checked: boolean) => handleThemeChange(theme, checked)}
+                        />
+                        <Label htmlFor={theme} className="text-sm font-normal">
+                          {theme}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">背景设定</label>
-                <Input
-                  value={generateRequest.setting}
-                  onChange={(e) => setGenerateRequest({...generateRequest, setting: e.target.value})}
-                  placeholder="描述世界观的基本背景设定..."
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">目标读者</label>
-                <select
-                  value={generateRequest.targetAudience}
-                  onChange={(e) => setGenerateRequest({...generateRequest, targetAudience: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="青年读者">青年读者</option>
-                  <option value="成年读者">成年读者</option>
-                  <option value="全年龄">全年龄</option>
-                </select>
-              </div>
-              
-              <div className="flex justify-end space-x-2">
+
+              <div className="flex justify-end gap-3">
                 <Button 
                   variant="outline" 
                   onClick={() => setShowGenerateForm(false)}
+                  disabled={generateWorldViewApi.loading}
                 >
                   取消
                 </Button>
                 <Button 
                   onClick={handleGenerateWorldView}
-                  disabled={generating}
+                  disabled={!generateRequest.genre || !generateRequest.setting || generateWorldViewApi.loading}
                 >
-                  {generating ? '生成中...' : '生成世界观'}
+                  {generateWorldViewApi.loading ? (
+                    <>
+                      <Loading size="sm" className="mr-2" />
+                      生成中...
+                    </>
+                  ) : (
+                    '生成世界观'
+                  )}
                 </Button>
               </div>
+              
+              {generateWorldViewApi.error && (
+                <ApiError 
+                  error={generateWorldViewApi.error} 
+                  onRetry={() => handleGenerateWorldView()}
+                  className="mt-4"
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* 世界观展示 */}
+        {projectsApi.loading ? (
+          <div className="grid gap-6">
+            <CardSkeleton />
+          </div>
+        ) : projectsApi.error ? (
+          <ApiError 
+            error={projectsApi.error} 
+            onRetry={loadProjects}
+            className="mb-6"
+          />
+        ) : !selectedProject ? (
+          <EmptyState
+            title="请选择项目"
+            description="选择一个项目来查看或生成世界观设定"
+            icon={<Globe className="w-12 h-12 text-gray-400" />}
+          />
+        ) : projectDetailApi.loading ? (
+          <CardSkeleton />
+        ) : projectDetailApi.error ? (
+          <ApiError 
+            error={projectDetailApi.error} 
+            onRetry={loadProjectDetail}
+            className="mb-6"
+          />
+        ) : !worldView ? (
+          <EmptyState
+            title="还没有世界观设定"
+            description="为这个项目生成世界观设定，建立小说的基础世界框架"
+            action={
+              <Button onClick={() => setShowGenerateForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                生成世界观
+              </Button>
+            }
+            icon={<Globe className="w-12 h-12 text-gray-400" />}
+          />
+        ) : (
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                    <span>{worldView.title || '世界观设定'}</span>
+                  </CardTitle>
+                  <CardDescription className="mt-2">
+                    {worldView.synopsis}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowGenerateForm(true)}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-6">
+              {/* 基本信息 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    背景设定
+                  </h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">{worldView.setting}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <Users className="w-4 h-4 mr-2" />
+                    基调与受众
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">基调</Badge>
+                      <span className="text-sm text-gray-600">{worldView.tone_examples?.[0] || '未设定'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 核心规则 */}
+              {worldView.key_rules && worldView.key_rules.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <Settings className="w-4 h-4 mr-2" />
+                    核心规则
+                  </h4>
+                  <ul className="space-y-2">
+                    {worldView.key_rules.map((rule, index) => (
+                      <li key={index} className="text-sm text-gray-600 flex items-start">
+                        <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        <span className="leading-relaxed">{rule}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* 主题标签 */}
+              {worldView.themes && worldView.themes.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">主题标签</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {worldView.themes.map((theme, index) => (
+                      <Badge key={index} variant="outline">
+                        {theme}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* 基调示例 */}
+              {worldView.tone_examples && worldView.tone_examples.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    基调示例
+                  </h4>
+                  <div className="space-y-2">
+                    {worldView.tone_examples.map((example, index) => (
+                      <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-600 italic">"{example}"</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
-
-        {/* 世界观列表 */}
-        {loading ? (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">加载中...</p>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {worldViews.map((worldView) => (
-              <Card key={worldView.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="flex items-center space-x-2">
-                        <GlobeAltIcon className="h-5 w-5 text-blue-600" />
-                        <span>{worldView.genre} 世界观</span>
-                      </CardTitle>
-                      <CardDescription className="mt-2">
-                        {worldView.description}
-                      </CardDescription>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* 基本信息 */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-                        <BookOpenIcon className="h-4 w-4 mr-2" />
-                        背景设定
-                      </h4>
-                      <p className="text-sm text-gray-600">{worldView.setting}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-                        <SparklesIcon className="h-4 w-4 mr-2" />
-                        基调与受众
-                      </h4>
-                      <div className="space-y-1">
-                        <p className="text-sm text-gray-600">基调: {worldView.tone}</p>
-                        <p className="text-sm text-gray-600">受众: {worldView.targetAudience}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* 核心规则 */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-                      <Cog6ToothIcon className="h-4 w-4 mr-2" />
-                      核心规则
-                    </h4>
-                    <ul className="space-y-1">
-                      {worldView.keyRules.map((rule, index) => (
-                        <li key={index} className="text-sm text-gray-600 flex items-start">
-                          <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                          {rule}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
-                  {/* 主题标签 */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">主题标签</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {worldView.themes.map((theme, index) => (
-                        <span 
-                          key={index}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                        >
-                          {theme}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* 创建时间 */}
-                  <div className="text-xs text-gray-500 border-t pt-2">
-                    创建时间: {worldView.createdAt ? new Date(worldView.createdAt).toLocaleString('zh-CN') : '未知'}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         )}
       </div>
     </div>

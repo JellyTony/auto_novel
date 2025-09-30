@@ -4,510 +4,703 @@ import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  DocumentTextIcon,
-  SparklesIcon,
-  PlayIcon,
-  PauseIcon,
-  EyeIcon,
-  Cog6ToothIcon,
-  BookOpenIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  ArrowPathIcon
-} from "@heroicons/react/24/outline";
+  FileText,
+  Sparkles,
+  Play,
+  Pause,
+  Eye,
+  Settings,
+  BookOpen,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  RefreshCw,
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  Download,
+  Share
+} from "lucide-react";
 import { useState, useEffect } from "react";
-import { NovelAPI, Chapter, GenerateChapterRequest, PolishChapterRequest, Project } from "@/lib/api";
+import { NovelAPI, Chapter, GenerateChapterRequest, PolishChapterRequest, Project, QualityCheckRequest } from "@/lib/api";
+import { useApiList, useApiMutation } from "@/lib/hooks/useApi";
+import { Loading, CardSkeleton } from "@/components/ui/loading";
+import { ApiError, EmptyState } from "@/components/ui/error-boundary";
 
 export default function ChaptersPage() {
-  const [chapter, setChapter] = useState<Chapter | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [polishing, setPolishing] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<string>("1");
-  const [chapterIndex, setChapterIndex] = useState<number>(3);
+  const [selectedProject, setSelectedProject] = useState<string>("");
+  const [selectedChapter, setSelectedChapter] = useState<number>(1);
   const [showGenerateForm, setShowGenerateForm] = useState(false);
   const [showPolishForm, setShowPolishForm] = useState(false);
+  const [showQualityForm, setShowQualityForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  // 模拟章节数据作为后备
-  const mockChapter: Chapter = {
-    id: "3",
-    projectId: "1",
-    index: 3,
-    title: "第3章：神秘师父",
-    summary: "张师父出现，指导林逸正确的修炼方法，揭示修仙世界的秘密。",
-    rawContent: `林逸回到家中，心情久久不能平静。刚才在路上发生的事情，让他意识到自己获得的力量远比想象中更加神奇。
+  // 项目列表状态管理
+  const projectsApi = useApiList<Project>({
+    onSuccess: (data) => {
+      setProjects(data);
+      if (data.length > 0 && !selectedProject) {
+        setSelectedProject(data[0].id);
+      }
+    },
+    onError: (error) => {
+      console.error('项目列表加载失败:', error);
+    }
+  });
 
-他坐在电脑前，试图专心工作，但脑海中不断浮现出那个玉佩发出的光芒，以及体内那股奇异的暖流。
+  // 项目详情状态管理
+  const projectDetailApi = useApiList<Project>({
+    onSuccess: (data) => {
+      console.log('项目详情加载成功:', data);
+    },
+    onError: (error) => {
+      console.error('项目详情加载失败:', error);
+    }
+  });
 
-"这到底是什么？"林逸喃喃自语，下意识地摸了摸胸前的玉佩。
+  // 章节生成状态管理
+  const generateChapterApi = useApiMutation<{ chapter: Chapter }, GenerateChapterRequest>({
+    onSuccess: (data) => {
+      console.log('章节生成成功:', data);
+      setShowGenerateForm(false);
+      setGenerateRequest({
+        project_id: selectedProject,
+        chapter_index: selectedChapter,
+        chapter_outline: {
+          index: selectedChapter,
+          title: `第${selectedChapter}章`,
+          summary: "",
+          goal: "",
+          twist_hint: "",
+          important_items: []
+        }
+      });
+      // 重新加载项目详情以获取最新的章节
+      loadProjectDetail();
+    },
+    onError: (error) => {
+      console.error('章节生成失败:', error);
+    }
+  });
 
-就在这时，一个苍老的声音突然在他身后响起："年轻人，你终于觉醒了。"
+  // 章节润色状态管理
+  const polishChapterApi = useApiMutation<{ chapter: Chapter }, PolishChapterRequest>({
+    onSuccess: (data) => {
+      console.log('章节润色成功:', data);
+      setShowPolishForm(false);
+      setPolishRequest({
+        project_id: selectedProject,
+        chapter_id: "",
+        requirements: "语言表达优化、情节连贯性、人物刻画深度"
+      });
+      // 重新加载项目详情以获取最新的章节
+      loadProjectDetail();
+    },
+    onError: (error) => {
+      console.error('章节润色失败:', error);
+    }
+  });
 
-林逸猛地转身，只见一个白发苍苍的老者不知何时出现在他的房间里。老者身穿朴素的灰色长袍，面容慈祥，但眼中却闪烁着深邃的光芒。
+  // 质量检测状态管理
+  const qualityCheckApi = useApiMutation<any, QualityCheckRequest>({
+    onSuccess: (data) => {
+      console.log('质量检测成功:', data);
+      setShowQualityForm(false);
+    },
+    onError: (error) => {
+      console.error('质量检测失败:', error);
+    }
+  });
 
-"你...你是谁？怎么进来的？"林逸警惕地问道。
+  // 生成请求表单状态
+  const [generateRequest, setGenerateRequest] = useState<GenerateChapterRequest>({
+    project_id: "",
+    chapter_index: 1,
+    chapter_outline: {
+      index: 1,
+      title: "第1章",
+      summary: "",
+      goal: "",
+      twist_hint: "",
+      important_items: []
+    }
+  });
 
-老者微微一笑："我叫张无忌，是这枚玉佩的前任主人。准确地说，我是留在玉佩中的一缕神识。"
+  // 润色请求表单状态
+  const [polishRequest, setPolishRequest] = useState<PolishChapterRequest>({
+    project_id: "",
+    chapter_id: "",
+    requirements: "语言表达优化、情节连贯性、人物刻画深度"
+  });
 
-"神识？"林逸一头雾水。
+  // 质量检测请求表单状态
+  const [qualityRequest, setQualityRequest] = useState<QualityCheckRequest>({
+    project_id: "",
+    chapter_ids: []
+  });
 
-"看来你对修仙一无所知。"张师父摇了摇头，"也难怪，现在这个时代，修仙者已经极其稀少了。"
-
-张师父缓缓走到林逸面前，仔细打量着他："不错，你的根骨很好，而且已经初步引气入体。不过，你的修炼方法完全错误，如果继续下去，不仅无法进步，还可能走火入魔。"
-
-"修炼？走火入魔？"林逸感觉自己像是在听天书。
-
-"坐下，我来告诉你什么是修仙。"张师父指了指椅子。
-
-林逸半信半疑地坐下，张师父开始娓娓道来：
-
-"修仙，就是通过特殊的方法，吸收天地间的灵气，强化自身，最终达到超凡脱俗的境界。修仙者可以延年益寿，拥有常人难以想象的力量。"
-
-"但是，"张师父话锋一转，"修仙并非易事。首先，需要有修仙的资质，也就是能够感知和吸收灵气的能力。其次，需要正确的修炼方法，否则轻则修为停滞，重则走火入魔，性命不保。"
-
-林逸听得入神，忍不住问道："那我现在是什么境界？"
-
-"你现在刚刚踏入修仙的门槛，按照修仙界的划分，属于练气期初期。"张师父解释道，"修仙境界从低到高分为：练气、筑基、金丹、元婴、化神等。每个大境界又分为初期、中期、后期和大圆满四个小境界。"
-
-"练气期主要是感知灵气，将灵气引入体内，强化身体。筑基期则是在体内建立灵气循环系统，为后续修炼打下基础。"
-
-林逸点点头，又问："那我应该怎么修炼？"
-
-张师父伸出手，一道柔和的光芒从他手中发出，笼罩了林逸的全身。林逸感到一股温暖的力量在体内流淌，原本混乱的灵气开始变得有序。
-
-"这是正确的灵气运行路线。"张师父说道，"你要记住，修炼时要心静如水，按照这个路线引导灵气在体内循环。切记不可急躁，欲速则不达。"
-
-林逸闭上眼睛，仔细感受着体内灵气的流动。在张师父的指导下，他很快掌握了正确的修炼方法。
-
-"很好，你的悟性不错。"张师父满意地点头，"不过，现在的世界已经不是我那个时代了。灵气稀薄，修仙者稀少，你在修炼的同时，也要学会隐藏自己的实力，不要在普通人面前暴露修仙者的身份。"
-
-"为什么？"林逸不解。
-
-"因为普通人无法理解修仙者的存在，如果被发现，可能会引来不必要的麻烦。而且，现在的修仙界鱼龙混杂，有正道修士，也有邪修。你实力尚弱，过早暴露只会给自己招来危险。"
-
-张师父的话让林逸意识到，自己踏上的这条路并不平坦。
-
-"师父，那我以后应该怎么办？"林逸恭敬地问道。
-
-"首先，你要坚持修炼，提升实力。其次，要学会在现代社会中生存，保持普通人的身份。最后，如果遇到其他修仙者，要谨慎判断对方的善恶，不可轻信。"
-
-张师父说完，身影开始变得模糊："我的神识力量有限，不能长时间显现。记住我教你的修炼方法，有什么问题可以通过玉佩联系我。"
-
-"师父！"林逸急忙叫道，但张师父已经消失不见。
-
-房间里重新恢复了安静，仿佛刚才的一切都是幻觉。但林逸知道，这不是梦，他真的踏上了修仙之路。
-
-他深吸一口气，按照张师父教的方法开始修炼。这一次，灵气的流动变得顺畅许多，体内的暖流也更加温和。
-
-修炼了一个小时后，林逸睁开眼睛，感觉精神饱满，身体也比之前更加轻盈。
-
-"看来师父说得对，正确的修炼方法确实很重要。"林逸心中暗想。
-
-从今天开始，他的人生将彻底改变。白天，他还是那个普通的程序员；但到了夜晚，他就是一个修仙者，在这条神秘而危险的道路上不断前行。
-
-林逸看了看时间，已经是深夜了。他关掉电脑，准备休息。明天还要上班，他必须保持普通人的生活节奏。
-
-但在睡前，他再次摸了摸胸前的玉佩，心中充满了对未来的期待和忐忑。
-
-修仙之路，从此开始...`,
-    wordCount: 1950,
-    status: "draft",
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T14:20:00Z"
+  // 加载项目列表
+  const loadProjects = async () => {
+    try {
+      await projectsApi.execute(() => NovelAPI.listProjects().then(res => res.projects));
+    } catch (error) {
+      console.error('加载项目列表失败:', error);
+    }
   };
 
-  // 加载章节
-  const loadChapter = async (projectId: string, chapterIndex: number) => {
+  // 加载项目详情
+  const loadProjectDetail = async () => {
+    if (!selectedProject) return;
+    
     try {
-      setLoading(true);
-      // 这里应该调用API获取章节
-      // const response = await NovelAPI.getChapter(projectId, chapterIndex);
-      // setChapter(response);
-      
-      // 暂时使用模拟数据
-      setChapter(mockChapter);
+      await projectDetailApi.execute(() => NovelAPI.getProject(selectedProject).then(res => res.project));
     } catch (error) {
-      console.error('加载章节失败:', error);
-      setChapter(mockChapter); // 使用模拟数据作为后备
-    } finally {
-      setLoading(false);
+      console.error('加载项目详情失败:', error);
     }
   };
 
   // 生成章节
   const handleGenerateChapter = async () => {
-    try {
-      setGenerating(true);
-      const request: GenerateChapterRequest = {
-        projectId: selectedProject,
-        chapterIndex: chapterIndex,
-        chapterOutline: {
-          index: chapterIndex,
-          title: `第${chapterIndex}章`,
-          summary: "章节摘要",
-          goal: "章节目标",
-          twistHint: "转折提示",
-          importantItems: []
-        },
-        generationContext: {
-          previousSummary: "前文摘要",
-          characters: [],
-          timeline: [],
-          props: [],
-          styleExamples: []
-        }
-      };
+    if (!selectedProject) return;
 
-      const response = await NovelAPI.generateChapter(request);
-      setChapter(response.chapter);
-      setShowGenerateForm(false);
+    const requestData = {
+      ...generateRequest,
+      project_id: selectedProject,
+      chapter_index: selectedChapter
+    };
+
+    try {
+      await generateChapterApi.mutate(
+        (data: GenerateChapterRequest) => NovelAPI.generateChapter(data),
+        requestData
+      );
     } catch (error) {
       console.error('生成章节失败:', error);
-      alert('生成章节失败，请重试');
-    } finally {
-      setGenerating(false);
     }
   };
 
   // 润色章节
-  const handlePolishChapter = async () => {
-    if (!chapter) return;
+  const handlePolishChapter = async (chapterId: string) => {
+    if (!selectedProject || !chapterId) return;
+
+    const requestData = {
+      ...polishRequest,
+      project_id: selectedProject,
+      chapter_id: chapterId
+    };
 
     try {
-      setPolishing(true);
-      const request: PolishChapterRequest = {
-        projectId: selectedProject,
-        chapterId: chapter.id,
-        requirements: "语言表达优化、情节连贯性、人物刻画深度"
-      };
-
-      const response = await NovelAPI.polishChapter(request);
-      setChapter(response.chapter);
-      setShowPolishForm(false);
+      await polishChapterApi.mutate(
+        (data: PolishChapterRequest) => NovelAPI.polishChapter(data),
+        requestData
+      );
     } catch (error) {
       console.error('润色章节失败:', error);
-      alert('润色章节失败，请重试');
-    } finally {
-      setPolishing(false);
     }
   };
 
+  // 质量检测
+  const handleQualityCheck = async () => {
+    if (!selectedProject) return;
+
+    const requestData = {
+      ...qualityRequest,
+      project_id: selectedProject
+    };
+
+    try {
+      await qualityCheckApi.mutate(
+        (data: QualityCheckRequest) => NovelAPI.checkQuality(data),
+        requestData
+      );
+    } catch (error) {
+      console.error('质量检测失败:', error);
+    }
+  };
+
+  // 页面加载时获取项目列表
   useEffect(() => {
-    loadChapter(selectedProject, chapterIndex);
-  }, [selectedProject, chapterIndex]);
+    loadProjects();
+  }, []);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col h-full">
-        <Header 
-          title="章节写作" 
-          description="AI辅助章节生成与编辑"
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">加载中...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 当选中项目变化时，加载项目详情
+  useEffect(() => {
+    if (selectedProject) {
+      setGenerateRequest(prev => ({ ...prev, project_id: selectedProject }));
+      setPolishRequest(prev => ({ ...prev, project_id: selectedProject }));
+      setQualityRequest(prev => ({ ...prev, project_id: selectedProject }));
+      loadProjectDetail();
+    }
+  }, [selectedProject]);
 
-  if (!chapter) {
-    return (
-      <div className="flex flex-col h-full">
-        <Header 
-          title="章节写作" 
-          description="AI辅助章节生成与编辑"
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">暂无章节数据</p>
-            <Button onClick={() => setShowGenerateForm(true)}>
-              <SparklesIcon className="h-4 w-4 mr-2" />
-              生成章节
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 获取当前项目的章节
+  const currentProject = projectDetailApi.data;
+  const chapters = currentProject?.chapters || [];
+
+  // 过滤章节
+  const filteredChapters = chapters.filter(chapter => {
+    const matchesSearch = searchTerm === "" || 
+      chapter.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (chapter.summary && chapter.summary.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesStatus = statusFilter === "" || chapter.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  // 获取状态颜色
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'published': return 'bg-green-100 text-green-800';
+      case 'draft': return 'bg-yellow-100 text-yellow-800';
+      case 'reviewing': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // 获取状态文本
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'published': return '已发布';
+      case 'draft': return '草稿';
+      case 'reviewing': return '审核中';
+      default: return '未知';
+    }
+  };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="container mx-auto px-4 py-8">
       <Header 
-        title="章节写作" 
-        description="AI辅助章节生成与编辑"
+        title="章节管理" 
+        description="AI辅助章节生成、编辑、润色和质量检测"
       />
       
-      <div className="flex-1 overflow-hidden">
-        <div className="flex h-full">
-          {/* 左侧内容区 */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* 章节信息栏 */}
-            <div className="bg-white border-b border-gray-200 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">{chapter.title}</h1>
-                  <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                    <span className="flex items-center">
-                      <BookOpenIcon className="h-4 w-4 mr-1" />
-                      {chapter.wordCount} 字
-                    </span>
-                    <span className="flex items-center">
-                       <ClockIcon className="h-4 w-4 mr-1" />
-                       {chapter.updatedAt ? new Date(chapter.updatedAt).toLocaleDateString() : '未知'}
-                     </span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                      chapter.status === 'published' ? 'bg-green-100 text-green-800' :
-                      chapter.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {chapter.status === 'published' ? '已发布' : 
-                       chapter.status === 'draft' ? '草稿' : '未知'}
-                    </span>
+      <div className="space-y-6">
+        {/* 操作栏 */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center space-x-4">
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="选择项目" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="搜索章节..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="全部状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">全部状态</SelectItem>
+                <SelectItem value="published">已发布</SelectItem>
+                <SelectItem value="draft">草稿</SelectItem>
+                <SelectItem value="reviewing">审核中</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex space-x-2">
+            <Dialog open={showQualityForm} onOpenChange={setShowQualityForm}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline"
+                  disabled={!selectedProject || chapters.length === 0}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  质量检测
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>质量检测</DialogTitle>
+                  <DialogDescription>
+                    检测章节的质量问题和一致性
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>选择检测章节</Label>
+                    <div className="max-h-40 overflow-y-auto space-y-2">
+                      {chapters.map((chapter) => (
+                        <div key={chapter.id} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={chapter.id}
+                            checked={qualityRequest.chapter_ids.includes(chapter.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setQualityRequest(prev => ({
+                                  ...prev,
+                                  chapter_ids: [...prev.chapter_ids, chapter.id]
+                                }));
+                              } else {
+                                setQualityRequest(prev => ({
+                                  ...prev,
+                                  chapter_ids: prev.chapter_ids.filter(id => id !== chapter.id)
+                                }));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={chapter.id} className="text-sm">
+                            {chapter.title}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowQualityForm(false)}
+                    disabled={qualityCheckApi.loading}
+                  >
+                    取消
+                  </Button>
+                  <Button 
+                    onClick={handleQualityCheck}
+                    disabled={qualityRequest.chapter_ids.length === 0 || qualityCheckApi.loading}
+                  >
+                    {qualityCheckApi.loading ? (
+                      <>
+                        <Loading size="sm" className="mr-2" />
+                        检测中...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        开始检测
+                      </>
+                    )}
+                  </Button>
                 </div>
                 
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
-                    <EyeIcon className="h-4 w-4 mr-2" />
-                    预览
-                  </Button>
-                  <Button onClick={() => setShowPolishForm(true)} size="sm">
-                    <SparklesIcon className="h-4 w-4 mr-2" />
-                    AI润色
-                  </Button>
-                </div>
-              </div>
-            </div>
+                {qualityCheckApi.error && (
+                  <ApiError 
+                    error={qualityCheckApi.error} 
+                    onRetry={() => handleQualityCheck()}
+                    className="mt-4"
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
 
-            {/* 章节内容 */}
-            <div className="flex-1 overflow-auto p-6">
-              <Card>
-                <CardContent className="p-6">
-                   <div className="prose max-w-none">
-                     <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-                       {chapter.rawContent}
-                     </div>
-                   </div>
-                 </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* 右侧工具栏 */}
-          <div className="w-80 bg-gray-50 border-l border-gray-200 overflow-auto">
-            <div className="p-4 space-y-4">
-              {/* 生成设置 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">生成设置</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      章节序号
-                    </label>
+            <Dialog open={showGenerateForm} onOpenChange={setShowGenerateForm}>
+              <DialogTrigger asChild>
+                <Button 
+                  className="flex items-center gap-2"
+                  disabled={!selectedProject}
+                >
+                  <Plus className="w-4 h-4" />
+                  生成章节
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>生成章节</DialogTitle>
+                  <DialogDescription>
+                    设置章节生成参数，AI将为您创建精彩的章节内容
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="chapter_index">章节序号</Label>
                     <Input
+                      id="chapter_index"
                       type="number"
-                      value={chapterIndex}
-                      onChange={(e) => setChapterIndex(parseInt(e.target.value) || 1)}
+                      value={selectedChapter}
+                      onChange={(e) => setSelectedChapter(parseInt(e.target.value) || 1)}
                       min="1"
-                      className="text-sm"
+                      max="1000"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      写作风格
-                    </label>
-                    <select className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md">
-                      <option value="现代都市">现代都市</option>
-                      <option value="古代仙侠">古代仙侠</option>
-                      <option value="科幻未来">科幻未来</option>
-                    </select>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="chapter_title">章节标题</Label>
+                    <Input
+                      id="chapter_title"
+                      value={generateRequest.chapter_outline.title}
+                      onChange={(e) => setGenerateRequest(prev => ({
+                        ...prev,
+                        chapter_outline: {
+                          ...prev.chapter_outline,
+                          title: e.target.value
+                        }
+                      }))}
+                      placeholder="第1章：开始的故事"
+                    />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      目标字数
-                    </label>
-                    <select className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md">
-                      <option value="2000">2000字</option>
-                      <option value="3000">3000字</option>
-                      <option value="4000">4000字</option>
-                      <option value="5000">5000字</option>
-                    </select>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="chapter_summary">章节摘要</Label>
+                    <Input
+                      id="chapter_summary"
+                      value={generateRequest.chapter_outline.summary}
+                      onChange={(e) => setGenerateRequest(prev => ({
+                        ...prev,
+                        chapter_outline: {
+                          ...prev.chapter_outline,
+                          summary: e.target.value
+                        }
+                      }))}
+                      placeholder="简要描述本章节的主要内容"
+                    />
                   </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
                   <Button 
-                    onClick={() => setShowGenerateForm(true)} 
-                    className="w-full" 
-                    size="sm"
-                    disabled={generating}
+                    variant="outline" 
+                    onClick={() => setShowGenerateForm(false)}
+                    disabled={generateChapterApi.loading}
                   >
-                    {generating ? (
+                    取消
+                  </Button>
+                  <Button 
+                    onClick={handleGenerateChapter}
+                    disabled={!generateRequest.chapter_outline.title || generateChapterApi.loading}
+                  >
+                    {generateChapterApi.loading ? (
                       <>
-                        <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
+                        <Loading size="sm" className="mr-2" />
                         生成中...
                       </>
                     ) : (
                       <>
-                        <SparklesIcon className="h-4 w-4 mr-2" />
-                        重新生成
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        生成章节
                       </>
                     )}
                   </Button>
-                </CardContent>
-              </Card>
-
-              {/* 润色工具 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">润色工具</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" className="text-xs">
-                      语言优化
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      情节完善
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      人物刻画
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      对话润色
-                    </Button>
-                  </div>
-                  <Button 
-                    onClick={handlePolishChapter} 
-                    className="w-full" 
-                    size="sm"
-                    disabled={polishing}
-                  >
-                    {polishing ? (
-                      <>
-                        <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
-                        润色中...
-                      </>
-                    ) : (
-                      <>
-                        <SparklesIcon className="h-4 w-4 mr-2" />
-                        全面润色
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* 章节统计 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">章节统计</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-600">总字数</span>
-                    <span className="font-medium">{chapter.wordCount}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                     <span className="text-gray-600">段落数</span>
-                     <span className="font-medium">{chapter.rawContent.split('\n\n').length}</span>
-                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-600">预计阅读</span>
-                    <span className="font-medium">{Math.ceil(chapter.wordCount / 300)}分钟</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+                
+                {generateChapterApi.error && (
+                  <ApiError 
+                    error={generateChapterApi.error} 
+                    onRetry={() => handleGenerateChapter()}
+                    className="mt-4"
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
-      </div>
 
-      {/* 生成章节表单 */}
-      {showGenerateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>生成章节</CardTitle>
-              <CardDescription>设置生成参数</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  章节序号
-                </label>
-                <Input
-                  type="number"
-                  value={chapterIndex}
-                  onChange={(e) => setChapterIndex(parseInt(e.target.value) || 1)}
-                  min="1"
+        {/* 章节展示 */}
+        {projectsApi.loading ? (
+          <div className="space-y-6">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        ) : projectsApi.error ? (
+          <ApiError 
+            error={projectsApi.error} 
+            onRetry={loadProjects}
+            className="mb-6"
+          />
+        ) : !selectedProject ? (
+          <EmptyState
+            title="请选择项目"
+            description="选择一个项目来查看或生成章节"
+            icon={<FileText className="w-12 h-12 text-gray-400" />}
+          />
+        ) : projectDetailApi.loading ? (
+          <div className="space-y-6">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        ) : projectDetailApi.error ? (
+          <ApiError 
+            error={projectDetailApi.error} 
+            onRetry={loadProjectDetail}
+            className="mb-6"
+          />
+        ) : chapters.length === 0 ? (
+          <EmptyState
+            title="还没有章节"
+            description="为这个项目生成第一个章节，开始您的创作之旅"
+            action={
+              <Button onClick={() => setShowGenerateForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                生成章节
+              </Button>
+            }
+            icon={<FileText className="w-12 h-12 text-gray-400" />}
+          />
+        ) : (
+          <>
+            {/* 章节统计 */}
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-900">
+                      {currentProject?.title} - 章节管理
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      共 {chapters.length} 章，总字数 {chapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0)} 字
+                    </CardDescription>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-2" />
+                      导出
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Share className="w-4 h-4 mr-2" />
+                      分享
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{chapters.length}</div>
+                    <div className="text-sm text-gray-500">总章节数</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {chapters.filter(ch => ch.status === 'published').length}
+                    </div>
+                    <div className="text-sm text-gray-500">已发布</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {chapters.filter(ch => ch.status === 'draft').length}
+                    </div>
+                    <div className="text-sm text-gray-500">草稿</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {chapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0)}
+                    </div>
+                    <div className="text-sm text-gray-500">总字数</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 章节列表 */}
+            <div className="space-y-4">
+              {filteredChapters.length === 0 ? (
+                <EmptyState
+                  title="没有找到匹配的章节"
+                  description="尝试调整搜索条件或筛选器"
+                  icon={<Search className="w-12 h-12 text-gray-400" />}
                 />
-              </div>
-              <div className="flex space-x-2">
-                <Button onClick={handleGenerateChapter} className="flex-1" disabled={generating}>
-                  {generating ? '生成中...' : '生成'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowGenerateForm(false)}
-                  className="flex-1"
-                >
-                  取消
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* 润色章节表单 */}
-      {showPolishForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>润色章节</CardTitle>
-              <CardDescription>选择润色重点</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" defaultChecked />
-                  语言表达优化
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" defaultChecked />
-                  情节连贯性
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" defaultChecked />
-                  人物刻画深度
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" />
-                  对话自然度
-                </label>
-              </div>
-              <div className="flex space-x-2">
-                <Button onClick={handlePolishChapter} className="flex-1" disabled={polishing}>
-                  {polishing ? '润色中...' : '开始润色'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowPolishForm(false)}
-                  className="flex-1"
-                >
-                  取消
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              ) : (
+                filteredChapters.map((chapter) => (
+                  <Card key={chapter.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-3">
+                            <Badge variant="outline" className="text-xs">
+                              第{chapter.index}章
+                            </Badge>
+                            <h4 className="font-semibold text-lg text-gray-900">
+                              {chapter.title}
+                            </h4>
+                            <Badge className={`text-xs ${getStatusColor(chapter.status)}`}>
+                              {getStatusText(chapter.status)}
+                            </Badge>
+                          </div>
+                          
+                          {chapter.summary && (
+                            <p className="text-gray-600 mb-4 leading-relaxed">
+                              {chapter.summary}
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center space-x-6 text-sm text-gray-500">
+                            <span className="flex items-center">
+                              <BookOpen className="w-4 h-4 mr-1" />
+                              {chapter.word_count || 0} 字
+                            </span>
+                            <span className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              {chapter.updated_at ? new Date(chapter.updated_at).toLocaleDateString() : '未知'}
+                            </span>
+                            <span className="flex items-center">
+                              <Eye className="w-4 h-4 mr-1" />
+                              预计阅读 {Math.ceil((chapter.word_count || 0) / 300)} 分钟
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2 ml-4">
+                          <Button variant="ghost" size="sm" title="预览">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" title="编辑">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="润色"
+                            onClick={() => handlePolishChapter(chapter.id)}
+                            disabled={polishChapterApi.loading}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" title="删除">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-2 mt-4 pt-4 border-t border-gray-100">
+                        <Button variant="outline" size="sm">
+                          <Eye className="w-4 h-4 mr-2" />
+                          阅读全文
+                        </Button>
+                        <Button size="sm">
+                          <Edit className="w-4 h-4 mr-2" />
+                          编辑章节
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

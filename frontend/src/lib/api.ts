@@ -209,6 +209,12 @@ export interface Chapter {
   updated_at: string;
 }
 
+export interface GenerationContext {
+  previous_chapters?: string[];
+  character_states?: { [key: string]: any };
+  plot_threads?: string[];
+}
+
 export interface GenerateChapterRequest {
   project_id: string;
   chapter_number: number;
@@ -230,56 +236,37 @@ export interface PolishChapterRequest {
 }
 
 export interface PolishChapterResponse {
-  polished_chapter: Chapter;
+  chapter: Chapter;
 }
 
-// 生成上下文
-export interface GenerationContext {
-  previous_summary: string;
-  characters: Character[];
-  timeline: TimelineEvent[];
-  props: PropItem[];
-  style_examples: string[];
-}
-
-export interface TimelineEvent {
-  timestamp: string;
-  event: string;
-  description: string;
-}
-
-export interface PropItem {
-  name: string;
-  description: string;
-  location: string;
-}
-
-// 质量检查相关类型
+// 质量检测相关类型
 export interface QualityIssue {
-  type: 'grammar' | 'punctuation' | 'spelling' | 'style';
-  severity: 'high' | 'medium' | 'low';
+  type: string;
+  severity: 'low' | 'medium' | 'high';
   description: string;
-  position: string;
-  original: string;
-  corrected: string;
+  suggestion: string;
+  line_number?: number;
+  context?: string;
 }
 
 export interface CheckQualityRequest {
   project_id: string;
   chapter_id: string;
-  check_types: string[];
+  check_type: 'polish' | 'proofread' | 'critique' | 'consistency' | 'all';
   llm_options?: LLMOptions;
 }
 
 export interface CheckQualityResponse {
   issues: QualityIssue[];
-  summary: QualitySummary;
+  overall_score: number;
+  recommendations: string[];
+  summary: string;
 }
 
 export interface BatchCheckQualityRequest {
   project_id: string;
   chapter_ids: string[];
-  check_types: string[];
+  check_type: 'polish' | 'proofread' | 'critique' | 'consistency' | 'all';
   llm_options?: LLMOptions;
 }
 
@@ -297,60 +284,87 @@ export interface QualitySummary {
 }
 
 // 一致性检查相关类型
-export interface ConsistencyIssue {
-  type: 'character' | 'plot' | 'setting' | 'timeline';
-  severity: 'high' | 'medium' | 'low';
-  description: string;
-  chapters_involved: string[];
-  suggestions: string[];
-}
-
 export interface CheckConsistencyRequest {
   project_id: string;
-  chapter_ids: string[];
-  check_types: string[];
   llm_options?: LLMOptions;
 }
 
 export interface CheckConsistencyResponse {
-  issues: ConsistencyIssue[];
+  consistency_issues: QualityIssue[];
+  character_consistency: { [key: string]: any };
+  plot_consistency: { [key: string]: any };
+  world_consistency: { [key: string]: any };
+  overall_score: number;
   summary: string;
 }
 
-// 视频脚本相关类型
-export interface VideoScene {
-  screen_index: number;
-  text: string;
-  suggested_bgm_tag: string;
-  suggested_image_tag: string;
-  tts_voice: 'male' | 'female';
-  notes: string;
-}
-
-export interface VideoScriptOptions {
-  scenes_per_chapter?: number;
-  platform: 'tiktok' | 'youtube' | 'bilibili';
-  voice_type: 'male' | 'female' | 'auto';
-}
-
-export interface GenerateVideoScriptRequest {
+// 导出相关类型
+export interface ExportNovelRequest {
   project_id: string;
-  chapter_ids: string[];
-  options: VideoScriptOptions;
+  format: 'txt' | 'epub' | 'pdf' | 'docx';
+  include_metadata: boolean;
+  chapter_range?: {
+    start: number;
+    end: number;
+  };
 }
 
-export interface GenerateVideoScriptResponse {
-  scenes: VideoScene[];
+export interface ExportNovelResponse {
+  download_url: string;
+  file_name: string;
+  file_size: number;
+  expires_at: string;
+}
+
+// 视频脚本相关类型 - 根据OpenAPI规范更新
+export interface VideoScene {
+  index: number;
+  duration: number;
+  shot_type: string;
+  visual_description: string;
+  narration: string;
+  subtitle: string;
+  sound_effects: string[];
+  transition: string;
+  key_elements: string[];
+}
+
+export interface VideoHooks {
+  opening: string;
+  climax: string;
+  ending: string;
 }
 
 export interface VideoScript {
   id: string;
   project_id: string;
+  chapter_id: string;
   title: string;
-  scenes: VideoScene[];
+  duration: number;
   platform: string;
+  style: string;
+  scenes: VideoScene[];
+  hooks: VideoHooks;
+  hashtags: string[];
+  description: string;
+  status: 'draft' | 'optimized' | 'variant' | 'published';
   created_at: string;
   updated_at: string;
+}
+
+export interface GenerateVideoScriptRequest {
+  project_id: string;
+  chapter_id: string;
+  chapter_title: string;
+  chapter_content: string;
+  platform: 'douyin' | 'kuaishou' | 'bilibili' | 'xiaohongshu' | 'weibo';
+  duration: number;
+  style: 'dramatic' | 'humorous' | 'suspenseful' | 'romantic' | 'action';
+  requirements?: string;
+}
+
+export interface GenerateVideoScriptResponse {
+  video_script: VideoScript;
 }
 
 export interface ListVideoScriptsResponse {
@@ -359,7 +373,30 @@ export interface ListVideoScriptsResponse {
 }
 
 export interface GetVideoScriptResponse {
-  script: VideoScript;
+  video_script: VideoScript;
+}
+
+export interface OptimizeVideoScriptRequest {
+  project_id: string;
+  script_id: string;
+  requirements: string;
+}
+
+export interface OptimizeVideoScriptResponse {
+  video_script: VideoScript;
+}
+
+export interface GeneratePlatformVariantsRequest {
+  base_script_id: string;
+  target_platforms: string[];
+}
+
+export interface GeneratePlatformVariantsResponse {
+  variants: VideoScript[];
+}
+
+export interface DeleteVideoScriptResponse {
+  success: boolean;
 }
 
 // 模型管理相关类型
@@ -470,42 +507,87 @@ export class NovelAPI {
     });
   }
 
+  // 导出功能
+  static async exportNovel(data: ExportNovelRequest): Promise<ExportNovelResponse> {
+    return apiRequest<ExportNovelResponse>(`/api/v1/novel/projects/${data.project_id}/export`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 生成完整小说（工作流）
+  static async generateNovel(projectId: string, data: any): Promise<any> {
+    return apiRequest<any>(`/api/v1/novel/projects/${projectId}/generate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 生成短视频分镜脚本
+  static async generateVideoScript(data: GenerateVideoScriptRequest): Promise<GenerateVideoScriptResponse> {
+    return apiRequest<GenerateVideoScriptResponse>(`/api/v1/novel/projects/${data.project_id}/video-script`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // 模型管理
   static async listModels(): Promise<ListModelsResponse> {
     return apiRequest<ListModelsResponse>('/api/v1/novel/models');
   }
 
   static async switchModel(data: SwitchModelRequest): Promise<SwitchModelResponse> {
-    return apiRequest<SwitchModelResponse>('/api/v1/novel/models/switch', {
+    return apiRequest<SwitchModelResponse>('/api/v1/novel/switch-model', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 }
 
-// 视频脚本 API 类
+// 视频脚本 API 类 - 根据OpenAPI规范更新
 export class VideoScriptAPI {
+  // 生成视频脚本 - 使用独立的VideoScript服务
   static async generateVideoScript(data: GenerateVideoScriptRequest): Promise<GenerateVideoScriptResponse> {
-    return apiRequest<GenerateVideoScriptResponse>('/api/v1/novel/video-scripts/generate', {
+    return apiRequest<GenerateVideoScriptResponse>('/api/v1/video-scripts/generate', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  static async listVideoScripts(params?: { projectId?: string }): Promise<ListVideoScriptsResponse> {
+  // 获取视频脚本列表
+  static async listVideoScripts(projectId: string, params?: { page?: number; pageSize?: number }): Promise<ListVideoScriptsResponse> {
     const searchParams = new URLSearchParams();
-    if (params?.projectId) searchParams.append('project_id', params.projectId);
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
     
-    const url = `/api/v1/novel/video-scripts${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    const url = `/api/v1/projects/${projectId}/video-scripts${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     return apiRequest<ListVideoScriptsResponse>(url);
   }
 
+  // 获取视频脚本详情
   static async getVideoScript(id: string): Promise<GetVideoScriptResponse> {
-    return apiRequest<GetVideoScriptResponse>(`/api/v1/novel/video-scripts/${id}`);
+    return apiRequest<GetVideoScriptResponse>(`/api/v1/video-scripts/${id}`);
   }
 
-  static async deleteVideoScript(id: string): Promise<void> {
-    return apiRequest<void>(`/api/v1/novel/video-scripts/${id}`, {
+  // 优化视频脚本
+  static async optimizeVideoScript(scriptId: string, data: OptimizeVideoScriptRequest): Promise<OptimizeVideoScriptResponse> {
+    return apiRequest<OptimizeVideoScriptResponse>(`/api/v1/video-scripts/${scriptId}/optimize`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 生成平台变体
+  static async generatePlatformVariants(baseScriptId: string, data: { platforms: string[]; requirements?: string }): Promise<GeneratePlatformVariantsResponse> {
+    return apiRequest<GeneratePlatformVariantsResponse>(`/api/v1/video-scripts/${baseScriptId}/variants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 删除视频脚本
+  static async deleteVideoScript(id: string): Promise<DeleteVideoScriptResponse> {
+    return apiRequest<DeleteVideoScriptResponse>(`/api/v1/video-scripts/${id}`, {
       method: 'DELETE',
     });
   }
