@@ -14,12 +14,6 @@ data:
     read_timeout: 0.2s
     write_timeout: 0.2s
   vector:
-    milvus:
-      host: 127.0.0.1
-      port: 19530
-      username: ""
-      password: ""
-      database: "default"
     embedding:
       provider: "openai"  # openai, azure, local
       api_key: ""

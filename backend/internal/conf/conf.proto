@@ -38,13 +38,6 @@ message Data {
     google.protobuf.Duration write_timeout = 4;
   }
   message Vector {
-    message Milvus {
-      string host = 1;
-      int32 port = 2;
-      string username = 3;
-      string password = 4;
-      string database = 5;
-    }
     message Embedding {
       string provider = 1;
       string api_key = 2;
@@ -52,7 +45,6 @@ message Data {
       string model = 4;
       int32 timeout = 5;
     }
-    Milvus milvus = 1;
     Embedding embedding = 2;
   }
   Database database = 1;

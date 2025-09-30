@@ -32,7 +32,7 @@ paths:
                   schema:
                     type: integer
                     format: int32
-                - name: pageSize
+                - name: page_size
                   in: query
                   description: 每页项目数
                   schema:
@@ -63,14 +63,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.CreateProjectResponse'
-    /api/v1/novel/projects/{projectId}:
+    /api/v1/novel/projects/{project_id}:
         get:
             tags:
                 - NovelService
             description: 获取项目详情
             operationId: NovelService_GetProject
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -83,14 +83,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GetProjectResponse'
-    /api/v1/novel/projects/{projectId}/chapters:
+    /api/v1/novel/projects/{project_id}/chapters:
         post:
             tags:
                 - NovelService
             description: 生成章节内容
             operationId: NovelService_GenerateChapter
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -109,20 +109,20 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GenerateChapterResponse'
-    /api/v1/novel/projects/{projectId}/chapters/{chapterId}/polish:
+    /api/v1/novel/projects/{project_id}/chapters/{chapter_id}/polish:
         post:
             tags:
                 - NovelService
             description: 润色章节
             operationId: NovelService_PolishChapter
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
                   schema:
                     type: string
-                - name: chapterId
+                - name: chapter_id
                   in: path
                   description: 章节ID
                   required: true
@@ -141,20 +141,20 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.PolishChapterResponse'
-    /api/v1/novel/projects/{projectId}/chapters/{chapterId}/quality:
+    /api/v1/novel/projects/{project_id}/chapters/{chapter_id}/quality:
         post:
             tags:
                 - NovelService
             description: 质量检测
             operationId: NovelService_CheckQuality
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
                   schema:
                     type: string
-                - name: chapterId
+                - name: chapter_id
                   in: path
                   description: 章节ID
                   required: true
@@ -173,14 +173,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.CheckQualityResponse'
-    /api/v1/novel/projects/{projectId}/characters:
+    /api/v1/novel/projects/{project_id}/characters:
         post:
             tags:
                 - NovelService
             description: 生成人物卡
             operationId: NovelService_GenerateCharacters
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -199,14 +199,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GenerateCharactersResponse'
-    /api/v1/novel/projects/{projectId}/consistency:
+    /api/v1/novel/projects/{project_id}/consistency:
         post:
             tags:
                 - NovelService
             description: 一致性检查
             operationId: NovelService_CheckConsistency
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -225,14 +225,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.CheckConsistencyResponse'
-    /api/v1/novel/projects/{projectId}/export:
+    /api/v1/novel/projects/{project_id}/export:
         post:
             tags:
                 - NovelService
             description: 导出小说
             operationId: NovelService_ExportNovel
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -251,14 +251,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.ExportNovelResponse'
-    /api/v1/novel/projects/{projectId}/generate:
+    /api/v1/novel/projects/{project_id}/generate:
         post:
             tags:
                 - NovelService
             description: 生成完整小说（工作流）
             operationId: NovelService_GenerateNovel
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -277,14 +277,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GenerateNovelResponse'
-    /api/v1/novel/projects/{projectId}/outline:
+    /api/v1/novel/projects/{project_id}/outline:
         post:
             tags:
                 - NovelService
             description: 生成章节大纲
             operationId: NovelService_GenerateOutline
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -303,14 +303,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GenerateOutlineResponse'
-    /api/v1/novel/projects/{projectId}/quality/batch:
+    /api/v1/novel/projects/{project_id}/quality/batch:
         post:
             tags:
                 - NovelService
             description: 批量质量检测
             operationId: NovelService_BatchCheckQuality
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -329,14 +329,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.BatchCheckQualityResponse'
-    /api/v1/novel/projects/{projectId}/video-script:
+    /api/v1/novel/projects/{project_id}/video-script:
         post:
             tags:
                 - NovelService
             description: 生成短视频分镜脚本
             operationId: NovelService_GenerateVideoScript
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -355,14 +355,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GenerateVideoScriptResponse'
-    /api/v1/novel/projects/{projectId}/worldview:
+    /api/v1/novel/projects/{project_id}/worldview:
         post:
             tags:
                 - NovelService
             description: 生成世界观
             operationId: NovelService_GenerateWorldView
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -400,14 +400,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.SwitchModelResponse'
-    /api/v1/projects/{projectId}/video-scripts:
+    /api/v1/projects/{project_id}/video-scripts:
         get:
             tags:
                 - VideoScriptService
             description: 获取视频脚本列表
             operationId: VideoScriptService_ListVideoScripts
             parameters:
-                - name: projectId
+                - name: project_id
                   in: path
                   description: 项目ID
                   required: true
@@ -419,7 +419,7 @@ paths:
                   schema:
                     type: integer
                     format: int32
-                - name: pageSize
+                - name: page_size
                   in: query
                   description: 分页大小
                   schema:
@@ -451,14 +451,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/api.video_script.v1.GenerateVideoScriptResponse'
-    /api/v1/video-scripts/{baseScriptId}/variants:
+    /api/v1/video-scripts/{base_script_id}/variants:
         post:
             tags:
                 - VideoScriptService
             description: 生成平台变体
             operationId: VideoScriptService_GeneratePlatformVariants
             parameters:
-                - name: baseScriptId
+                - name: base_script_id
                   in: path
                   description: 基础视频脚本ID
                   required: true
@@ -477,14 +477,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/api.video_script.v1.GeneratePlatformVariantsResponse'
-    /api/v1/video-scripts/{scriptId}:
+    /api/v1/video-scripts/{script_id}:
         get:
             tags:
                 - VideoScriptService
             description: 获取视频脚本详情
             operationId: VideoScriptService_GetVideoScript
             parameters:
-                - name: scriptId
+                - name: script_id
                   in: path
                   description: 视频脚本ID
                   required: true
@@ -503,7 +503,7 @@ paths:
             description: 删除视频脚本
             operationId: VideoScriptService_DeleteVideoScript
             parameters:
-                - name: scriptId
+                - name: script_id
                   in: path
                   description: 视频脚本ID
                   required: true
@@ -516,14 +516,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/api.video_script.v1.DeleteVideoScriptResponse'
-    /api/v1/video-scripts/{scriptId}/optimize:
+    /api/v1/video-scripts/{script_id}/optimize:
         put:
             tags:
                 - VideoScriptService
             description: 优化短视频脚本
             operationId: VideoScriptService_OptimizeVideoScript
             parameters:
-                - name: scriptId
+                - name: script_id
                   in: path
                   description: 视频脚本ID
                   required: true
@@ -573,10 +573,10 @@ components:
         api.video_script.v1.GeneratePlatformVariantsRequest:
             type: object
             properties:
-                baseScriptId:
+                base_script_id:
                     type: string
                     description: 基础视频脚本ID
-                targetPlatforms:
+                target_platforms:
                     type: array
                     items:
                         type: string
@@ -594,16 +594,16 @@ components:
         api.video_script.v1.GenerateVideoScriptRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterId:
+                chapter_id:
                     type: string
                     description: 章节ID
-                chapterTitle:
+                chapter_title:
                     type: string
                     description: 章节标题
-                chapterContent:
+                chapter_content:
                     type: string
                     description: 章节内容
                 platform:
@@ -623,7 +623,7 @@ components:
         api.video_script.v1.GenerateVideoScriptResponse:
             type: object
             properties:
-                videoScript:
+                video_script:
                     allOf:
                         - $ref: '#/components/schemas/api.video_script.v1.VideoScript'
                     description: 生成的短视频脚本
@@ -631,7 +631,7 @@ components:
         api.video_script.v1.GetVideoScriptResponse:
             type: object
             properties:
-                videoScript:
+                video_script:
                     allOf:
                         - $ref: '#/components/schemas/api.video_script.v1.VideoScript'
                     description: 视频脚本详情
@@ -652,10 +652,10 @@ components:
         api.video_script.v1.OptimizeVideoScriptRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                scriptId:
+                script_id:
                     type: string
                     description: 视频脚本ID
                 requirements:
@@ -665,7 +665,7 @@ components:
         api.video_script.v1.OptimizeVideoScriptResponse:
             type: object
             properties:
-                videoScript:
+                video_script:
                     allOf:
                         - $ref: '#/components/schemas/api.video_script.v1.VideoScript'
                     description: 优化后的短视频脚本
@@ -694,10 +694,10 @@ components:
                     type: integer
                     description: 场景时长（秒）
                     format: int32
-                shotType:
+                shot_type:
                     type: string
                     description: 镜头类型
-                visualDescription:
+                visual_description:
                     type: string
                     description: 画面描述
                 narration:
@@ -706,7 +706,7 @@ components:
                 subtitle:
                     type: string
                     description: 字幕内容
-                soundEffects:
+                sound_effects:
                     type: array
                     items:
                         type: string
@@ -714,7 +714,7 @@ components:
                 transition:
                     type: string
                     description: 转场效果
-                keyElements:
+                key_elements:
                     type: array
                     items:
                         type: string
@@ -726,10 +726,10 @@ components:
                 id:
                     type: string
                     description: 视频脚本ID
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterId:
+                chapter_id:
                     type: string
                     description: 章节ID
                 title:
@@ -765,10 +765,10 @@ components:
                 status:
                     type: string
                     description: 状态：draft/optimized/variant/published
-                createdAt:
+                created_at:
                     type: string
                     description: 创建时间
-                updatedAt:
+                updated_at:
                     type: string
                     description: 更新时间
             description: 短视频脚本
@@ -781,18 +781,18 @@ components:
         novel.v1.BatchCheckQualityRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterIds:
+                chapter_ids:
                     type: array
                     items:
                         type: string
                     description: 章节ID列表
-                checkType:
+                check_type:
                     type: string
                     description: polish/proofread/critique/consistency/all
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -809,7 +809,7 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.QualitySummary'
                     description: 质量检测摘要
-                overallScore:
+                overall_score:
                     type: number
                     description: 总质量分
                     format: double
@@ -820,7 +820,7 @@ components:
                 id:
                     type: string
                     description: 章节ID
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
                 index:
@@ -833,10 +833,10 @@ components:
                 summary:
                     type: string
                     description: 章节摘要
-                rawContent:
+                raw_content:
                     type: string
                     description: 原始内容
-                wordCount:
+                word_count:
                     type: integer
                     description: |-
                         polished_content = 7;
@@ -845,11 +845,11 @@ components:
                 status:
                     type: string
                     description: 章节状态：draft/generated/polished/reviewed
-                createdAt:
+                created_at:
                     type: string
                     description: 创建时间
                     format: date-time
-                updatedAt:
+                updated_at:
                     type: string
                     description: 更新时间
                     format: date-time
@@ -870,10 +870,10 @@ components:
                 goal:
                     type: string
                     description: 章节目标描述
-                twistHint:
+                twist_hint:
                     type: string
                     description: 章节 Twist 提示
-                importantItems:
+                important_items:
                     type: array
                     items:
                         type: string
@@ -885,7 +885,7 @@ components:
                 id:
                     type: string
                     description: 人物角色ID
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
                 name:
@@ -912,7 +912,7 @@ components:
                     items:
                         type: string
                     description: 人物角色缺陷描述列表
-                speechTone:
+                speech_tone:
                     type: string
                     description: 人物角色语音语调描述
                 secrets:
@@ -920,7 +920,7 @@ components:
                     items:
                         type: string
                     description: 人物角色秘密描述列表
-                relationshipMap:
+                relationship_map:
                     type: object
                     additionalProperties:
                         type: string
@@ -929,18 +929,18 @@ components:
         novel.v1.CheckConsistencyRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                checkType:
+                check_type:
                     type: string
                     description: 检查类型：character/plot/world/timeline/all
-                chapterIds:
+                chapter_ids:
                     type: array
                     items:
                         type: string
                     description: 章节ID列表
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -958,7 +958,7 @@ components:
                     items:
                         type: string
                     description: 一致性修正建议列表
-                overallScore:
+                overall_score:
                     type: number
                     description: 总质量分
                     format: double
@@ -966,16 +966,16 @@ components:
         novel.v1.CheckQualityRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterId:
+                chapter_id:
                     type: string
                     description: 章节ID
-                checkType:
+                check_type:
                     type: string
                     description: polish/proofread/critique/consistency/all
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -983,24 +983,24 @@ components:
         novel.v1.CheckQualityResponse:
             type: object
             properties:
-                polishedChapter:
+                polished_chapter:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.Chapter'
                     description: 润色后的章节内容
-                proofreadResult:
+                proofread_result:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.ProofreadResult'
                     description: 语法检查结果
-                critiqueResult:
+                critique_result:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.CritiqueResult'
                     description: 逻辑检查结果
-                consistencyIssues:
+                consistency_issues:
                     type: array
                     items:
                         $ref: '#/components/schemas/novel.v1.ConsistencyIssue'
                     description: 一致性检查结果
-                overallScore:
+                overall_score:
                     type: number
                     description: 总质量分
                     format: double
@@ -1041,7 +1041,7 @@ components:
                 genre:
                     type: string
                     description: 体裁：现代都市/悬疑/玄幻/科幻/古代言情
-                targetAudience:
+                target_audience:
                     type: string
                     description: 目标读者：青年/女性向/男性向/泛读者
                 tone:
@@ -1056,7 +1056,7 @@ components:
         novel.v1.CreateProjectResponse:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
                 title:
@@ -1065,7 +1065,7 @@ components:
                 status:
                     type: string
                     description: 项目状态
-                createdAt:
+                created_at:
                     type: string
                     description: 创建时间
                     format: date-time
@@ -1073,17 +1073,17 @@ components:
         novel.v1.CritiqueResult:
             type: object
             properties:
-                logicalIssues:
+                logical_issues:
                     type: array
                     items:
                         type: string
                     description: 逻辑错误列表
-                characterIssues:
+                character_issues:
                     type: array
                     items:
                         type: string
                     description: 人物关系错误列表
-                pacingIssues:
+                pacing_issues:
                     type: array
                     items:
                         type: string
@@ -1093,10 +1093,10 @@ components:
                     items:
                         type: string
                     description: 改进建议列表
-                fixedExample:
+                fixed_example:
                     type: string
                     description: 修正后的示例段落
-                overallScore:
+                overall_score:
                     type: integer
                     description: 总质量分
                     format: int32
@@ -1104,7 +1104,7 @@ components:
         novel.v1.ExportNovelRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
                 format:
@@ -1118,29 +1118,29 @@ components:
         novel.v1.ExportNovelResponse:
             type: object
             properties:
-                downloadUrl:
+                download_url:
                     type: string
                     description: 下载URL
-                fileName:
+                file_name:
                     type: string
                     description: 文件名
-                fileSize:
+                file_size:
                     type: string
                     description: 文件大小（字节）
             description: 导出响应
         novel.v1.ExportOptions:
             type: object
             properties:
-                includeMetadata:
+                include_metadata:
                     type: boolean
                     description: 是否包含元数据，默认true
-                includeOutline:
+                include_outline:
                     type: boolean
                     description: 是否包含大纲，默认true
-                fontFamily:
+                font_family:
                     type: string
                     description: 字体家族，默认"宋体"
-                fontSize:
+                font_size:
                     type: integer
                     description: 字体大小，默认14
                     format: int32
@@ -1148,10 +1148,10 @@ components:
         novel.v1.GenerateChapterRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterOutline:
+                chapter_outline:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.ChapterOutline'
                     description: 章节大纲
@@ -1159,11 +1159,11 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.GenerationContext'
                     description: 生成上下文
-                targetWordCount:
+                target_word_count:
                     type: integer
                     description: 目标单词数
                     format: int32
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -1179,19 +1179,19 @@ components:
         novel.v1.GenerateCharactersRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                characterNames:
+                character_names:
                     type: array
                     items:
                         type: string
                     description: 人物名称列表
-                worldView:
+                world_view:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.WorldView'
                     description: 世界观
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -1208,7 +1208,7 @@ components:
         novel.v1.GenerateNovelRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
                 options:
@@ -1226,7 +1226,7 @@ components:
                     type: number
                     description: 生成进度：0.0-1.0
                     format: double
-                currentStage:
+                current_stage:
                     type: string
                     description: 当前生成阶段：worldbuilding/character/outline/chapter/polish/consistency
                 message:
@@ -1246,21 +1246,21 @@ components:
         novel.v1.GenerateOptions:
             type: object
             properties:
-                maxChapters:
+                max_chapters:
                     type: integer
                     description: 最大生成章节数，默认10
                     format: int32
-                wordsPerChapter:
+                words_per_chapter:
                     type: integer
                     description: 每章最大单词数，默认2000
                     format: int32
-                polishEnabled:
+                polish_enabled:
                     type: boolean
                     description: 是否启用内容 polished，默认false
-                consistencyCheck:
+                consistency_check:
                     type: boolean
                     description: 是否启用一致性检查，默认false
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM 选项
@@ -1268,14 +1268,14 @@ components:
         novel.v1.GenerateOutlineRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterCount:
+                chapter_count:
                     type: integer
                     description: 章节数
                     format: int32
-                worldView:
+                world_view:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.WorldView'
                     description: 世界观
@@ -1284,7 +1284,7 @@ components:
                     items:
                         $ref: '#/components/schemas/novel.v1.Character'
                     description: 人物列表
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -1300,10 +1300,10 @@ components:
         novel.v1.GenerateVideoScriptRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterIds:
+                chapter_ids:
                     type: array
                     items:
                         type: string
@@ -1325,7 +1325,7 @@ components:
         novel.v1.GenerateWorldViewRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
                 genre:
@@ -1334,7 +1334,7 @@ components:
                 setting:
                     type: string
                     description: 时代与地点
-                keyRules:
+                key_rules:
                     type: array
                     items:
                         type: string
@@ -1342,7 +1342,7 @@ components:
                 tone:
                     type: string
                     description: 调性
-                targetAudience:
+                target_audience:
                     type: string
                     description: 目标读者
                 themes:
@@ -1350,7 +1350,7 @@ components:
                     items:
                         type: string
                     description: 主题
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -1358,7 +1358,7 @@ components:
         novel.v1.GenerateWorldViewResponse:
             type: object
             properties:
-                worldView:
+                world_view:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.WorldView'
                     description: 世界观
@@ -1366,7 +1366,7 @@ components:
         novel.v1.GenerationContext:
             type: object
             properties:
-                previousSummary:
+                previous_summary:
                     type: string
                     description: 上一章节摘要
                 characters:
@@ -1384,7 +1384,7 @@ components:
                     items:
                         $ref: '#/components/schemas/novel.v1.PropItem'
                     description: 道具物品列表
-                styleExamples:
+                style_examples:
                     type: array
                     items:
                         type: string
@@ -1405,19 +1405,19 @@ components:
                     type: number
                     description: 温度参数，控制生成文本的随机性，默认0.7
                     format: double
-                topP:
+                top_p:
                     type: number
                     description: Top-p（nucleus sampling）参数，控制生成文本的多样性，默认0.9
                     format: double
-                maxTokens:
+                max_tokens:
                     type: integer
                     description: 最大生成令牌数，默认2048
                     format: int32
-                frequencyPenalty:
+                frequency_penalty:
                     type: number
                     description: 频率惩罚参数，控制生成文本中重复令牌的惩罚，默认0.0
                     format: double
-                presencePenalty:
+                presence_penalty:
                     type: number
                     description: 存在惩罚参数，控制生成文本中新令牌的惩罚，默认0.0
                     format: double
@@ -1433,7 +1433,7 @@ components:
                     items:
                         $ref: '#/components/schemas/novel.v1.ModelInfo'
                     description: 模型列表
-                currentModel:
+                current_model:
                     type: string
                     description: 当前使用的模型名称
             description: 模型列表响应
@@ -1475,7 +1475,7 @@ components:
                 id:
                     type: string
                     description: 章节大纲ID
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
                 chapters:
@@ -1487,10 +1487,10 @@ components:
         novel.v1.PolishChapterRequest:
             type: object
             properties:
-                projectId:
+                project_id:
                     type: string
                     description: 项目ID
-                chapterId:
+                chapter_id:
                     type: string
                     description: 章节ID
                 style:
@@ -1501,7 +1501,7 @@ components:
                     items:
                         type: string
                     description: 润色焦点：语法/流程/对话/描述
-                llmOptions:
+                llm_options:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.LLMOptions'
                     description: LLM选项
@@ -1509,7 +1509,7 @@ components:
         novel.v1.PolishChapterResponse:
             type: object
             properties:
-                polishedChapter:
+                polished_chapter:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.Chapter'
                     description: 润色后的章节内容
@@ -1529,7 +1529,7 @@ components:
                 genre:
                     type: string
                     description: 项目类型：novel/short_story
-                targetAudience:
+                target_audience:
                     type: string
                     description: 目标受众：general/adult
                 tone:
@@ -1542,7 +1542,7 @@ components:
                 status:
                     type: string
                     description: 项目状态：draft/generating/completed/error
-                worldView:
+                world_view:
                     allOf:
                         - $ref: '#/components/schemas/novel.v1.WorldView'
                     description: 世界视图
@@ -1560,11 +1560,11 @@ components:
                     items:
                         $ref: '#/components/schemas/novel.v1.Chapter'
                     description: 章节列表
-                createdAt:
+                created_at:
                     type: string
                     description: 创建时间
                     format: date-time
-                updatedAt:
+                updated_at:
                     type: string
                     description: 更新时间
                     format: date-time
@@ -1572,7 +1572,7 @@ components:
         novel.v1.ProofreadResult:
             type: object
             properties:
-                correctedContent:
+                corrected_content:
                     type: string
                     description: 修正后的章节内容
                 issues:
@@ -1624,17 +1624,17 @@ components:
         novel.v1.QualitySummary:
             type: object
             properties:
-                totalIssues:
+                total_issues:
                     type: integer
                     description: 总问题数
                     format: int32
-                issuesByType:
+                issues_by_type:
                     type: object
                     additionalProperties:
                         type: integer
                         format: int32
                     description: 按类型统计问题数
-                issuesBySeverity:
+                issues_by_severity:
                     type: object
                     additionalProperties:
                         type: integer
@@ -1645,7 +1645,7 @@ components:
                     items:
                         type: string
                     description: 质量检测建议
-                qualityTrends:
+                quality_trends:
                     type: array
                     items:
                         type: number
@@ -1655,7 +1655,7 @@ components:
         novel.v1.SwitchModelRequest:
             type: object
             properties:
-                modelName:
+                model_name:
                     type: string
                     description: 模型名称，如 "default", "creative", "reasoning"
             description: 模型切换相关消息
@@ -1668,7 +1668,7 @@ components:
                 message:
                     type: string
                     description: 切换消息
-                currentModel:
+                current_model:
                     type: string
                     description: 当前使用的模型名称
             description: 模型切换响应
@@ -1688,20 +1688,20 @@ components:
         novel.v1.VideoScene:
             type: object
             properties:
-                screenIndex:
+                screen_index:
                     type: integer
                     description: 场景索引
                     format: int32
                 text:
                     type: string
                     description: 场景文本内容
-                suggestedBgmTag:
+                suggested_bgm_tag:
                     type: string
                     description: 建议背景音乐标签
-                suggestedImageTag:
+                suggested_image_tag:
                     type: string
                     description: 建议图片标签
-                ttsVoice:
+                tts_voice:
                     type: string
                     description: 建议TTS语音类型：male/female
                 notes:
@@ -1711,14 +1711,14 @@ components:
         novel.v1.VideoScriptOptions:
             type: object
             properties:
-                scenesPerChapter:
+                scenes_per_chapter:
                     type: integer
                     description: 每章分几个场景，默认8-12
                     format: int32
                 platform:
                     type: string
                     description: 视频平台：tiktok/youtube/bilibili
-                voiceType:
+                voice_type:
                     type: string
                     description: 语音类型：male/female/auto
             description: 视频脚本选项
@@ -1734,12 +1734,12 @@ components:
                 setting:
                     type: string
                     description: 世界视图设置描述
-                keyRules:
+                key_rules:
                     type: array
                     items:
                         type: string
                     description: 世界视图关键规则列表
-                toneExamples:
+                tone_examples:
                     type: array
                     items:
                         type: string
