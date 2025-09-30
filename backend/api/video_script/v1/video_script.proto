@@ -56,10 +56,10 @@ service VideoScriptService {
 
 // 生成短视频脚本请求
 message GenerateVideoScriptRequest {
-  string project_id = 1;
-  string chapter_id = 2;
-  string chapter_title = 3;
-  string chapter_content = 4;
+  string project_id = 1;       // 项目ID
+  string chapter_id = 2;       // 章节ID
+  string chapter_title = 3;    // 章节标题
+  string chapter_content = 4;  // 章节内容
   string platform = 5;        // 目标平台：douyin/kuaishou/bilibili/xiaohongshu/weibo
   int32 duration = 6;          // 视频时长（秒）
   string style = 7;            // 风格：dramatic/humorous/suspenseful/romantic/action
@@ -68,13 +68,15 @@ message GenerateVideoScriptRequest {
 
 // 生成短视频脚本响应
 message GenerateVideoScriptResponse {
+  // 生成的短视频脚本
   VideoScript video_script = 1;
 }
 
 // 优化短视频脚本请求
 message OptimizeVideoScriptRequest {
-  string script_id = 1;
-  string requirements = 2;     // 优化要求
+  string project_id = 1;       // 项目ID
+  string script_id = 2;        // 视频脚本ID
+  string requirements = 3;     // 优化要求
 }
 
 // 优化短视频脚本响应
