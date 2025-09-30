@@ -110,6 +110,20 @@ export interface CreateProjectRequest {
   themes: string[];
 }
 
+export interface UpdateProjectRequest {
+  project_id: string;
+  title?: string;
+  description?: string;
+  genre?: string;
+  target_audience?: string;
+  tone?: string;
+  themes?: string[];
+}
+
+export interface UpdateProjectResponse {
+  project: Project;
+}
+
 // 根据后端实际返回格式调整
 export interface CreateProjectResponse {
   project_id: string;
@@ -446,6 +460,13 @@ export class NovelAPI {
 
   static async getProject(id: string): Promise<GetProjectResponse> {
     return apiRequest<GetProjectResponse>(`/api/v1/novel/projects/${id}`);
+  }
+
+  static async updateProject(data: UpdateProjectRequest): Promise<UpdateProjectResponse> {
+    return apiRequest<UpdateProjectResponse>(`/api/v1/novel/projects/${data.project_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   static async deleteProject(id: string): Promise<void> {

@@ -27,6 +27,7 @@ import {
   BarChart3,
   Clock,
   CheckCircle,
+  CheckCircle2,
   Download,
   Trash2,
   AlertTriangle,
@@ -37,7 +38,7 @@ import {
   Video,
   Sparkles
 } from 'lucide-react';
-import { NovelAPI, type Project, APIError, type CreateProjectRequest, type ExportNovelRequest, type CheckConsistencyRequest } from '@/lib/api';
+import { NovelAPI, type Project, APIError, type CreateProjectRequest, type UpdateProjectRequest, type ExportNovelRequest, type CheckConsistencyRequest } from '@/lib/api';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -58,13 +59,13 @@ export default function ProjectDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   // 编辑表单状态
-  const [editForm, setEditForm] = useState<CreateProjectRequest>({
+  const [editForm, setEditForm] = useState({
     title: '',
     description: '',
     genre: '',
     target_audience: '',
     tone: '',
-    themes: []
+    themes: [] as string[]
   });
   
   // 导出状态
@@ -87,18 +88,31 @@ export default function ProjectDetailPage() {
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading project:', projectId);
+      
       const response = await NovelAPI.getProject(projectId);
+      console.log('Project loaded:', response.project);
+      
       setProject(response.project);
       
-      // 初始化编辑表单
-      setEditForm({
-        title: response.project.title,
+      // 初始化编辑表单，确保所有字段都有默认值
+      const formData = {
+        title: response.project.title || '',
         description: response.project.description || '',
-        genre: response.project.genre,
+        genre: response.project.genre || '',
+        target_audience: response.project.target_audience || '',
+        tone: response.project.tone || '',
+        themes: Array.isArray(response.project.themes) ? response.project.themes : []
+      };
+      
+      console.log('Setting edit form data:', formData);
+      console.log('Raw project data fields:', {
         target_audience: response.project.target_audience,
         tone: response.project.tone,
-        themes: response.project.themes || []
+        genre: response.project.genre
       });
+      
+      setEditForm(formData);
     } catch (error) {
       console.error('Failed to load project:', error);
       if (error instanceof APIError) {
@@ -124,21 +138,51 @@ export default function ProjectDetailPage() {
   // 保存项目编辑
   const handleSaveEdit = async () => {
     try {
-      // 这里应该调用更新项目的API，但目前API中没有定义
-      // 暂时使用toast提示
-      toast.success('项目信息已更新');
-      setEditDialogOpen(false);
+      console.log('Saving edit form data:', editForm);
+      
+      // 验证必填字段
+      if (!editForm.title.trim()) {
+        toast.error('项目标题不能为空');
+        return;
+      }
+      
+      const updateRequest: UpdateProjectRequest = {
+        project_id: projectId,
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        genre: editForm.genre,
+        target_audience: editForm.target_audience,
+        tone: editForm.tone,
+        themes: editForm.themes
+      };
+
+      console.log('Sending update request:', updateRequest);
+      const response = await NovelAPI.updateProject(updateRequest);
+      console.log('Update response:', response);
       
       // 更新本地状态
-      if (project) {
-        setProject({
-          ...project,
-          ...editForm
-        });
-      }
+      setProject(response.project);
+      
+      // 同步更新编辑表单状态
+      const updatedFormData = {
+        title: response.project.title || '',
+        description: response.project.description || '',
+        genre: response.project.genre || '',
+        target_audience: response.project.target_audience || '',
+        tone: response.project.tone || '',
+        themes: Array.isArray(response.project.themes) ? response.project.themes : []
+      };
+      setEditForm(updatedFormData);
+      
+      toast.success('项目信息已更新');
+      setEditDialogOpen(false);
     } catch (error) {
       console.error('Failed to update project:', error);
-      toast.error('更新项目失败');
+      if (error instanceof APIError) {
+        toast.error(`更新项目失败: ${error.message}`);
+      } else {
+        toast.error('更新项目失败，请重试');
+      }
     }
   };
 
@@ -591,103 +635,159 @@ export default function ProjectDetailPage() {
                 编辑
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>编辑项目信息</DialogTitle>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
+              <DialogHeader className="pb-4">
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Edit className="h-5 w-5" />
+                  编辑项目信息
+                </DialogTitle>
                 <DialogDescription>
-                  修改项目的基本信息和设置
+                  修改项目的基本信息和设置，所有更改将立即保存
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                <div>
-                  <Label htmlFor="edit-title">项目标题</Label>
-                  <Input
-                    id="edit-title"
-                    value={editForm.title}
-                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  />
+              
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                {/* 基本信息 */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">基本信息</h4>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-title" className="text-sm font-medium">项目标题 *</Label>
+                      <Input
+                        id="edit-title"
+                        value={editForm.title}
+                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                        placeholder="请输入项目标题"
+                        className="h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-description" className="text-sm font-medium">项目描述</Label>
+                      <Textarea
+                        id="edit-description"
+                        value={editForm.description}
+                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        placeholder="简要描述您的小说项目..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="edit-description">项目描述</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={editForm.description}
-                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-genre">小说类型</Label>
-                    <Select value={editForm.genre} onValueChange={(value) => setEditForm({ ...editForm, genre: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
+
+                {/* 创作设定 */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">创作设定</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-genre" className="text-sm font-medium">小说类型</Label>
+                      <Select value={editForm.genre || ''} onValueChange={(value) => setEditForm({ ...editForm, genre: value })}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="选择小说类型" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fantasy">🧙‍♂️ 奇幻</SelectItem>
+                          <SelectItem value="romance">💕 言情</SelectItem>
+                          <SelectItem value="mystery">🔍 悬疑</SelectItem>
+                          <SelectItem value="scifi">🚀 科幻</SelectItem>
+                          <SelectItem value="historical">📜 历史</SelectItem>
+                          <SelectItem value="urban">🏙️ 都市</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-audience" className="text-sm font-medium">目标读者</Label>
+                      <Select value={editForm.target_audience || ''} onValueChange={(value) => setEditForm({ ...editForm, target_audience: value })}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="选择目标读者" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="young_adult">👨‍🎓 青少年</SelectItem>
+                          <SelectItem value="adult">👩‍💼 成人</SelectItem>
+                          <SelectItem value="general">👥 大众</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-tone" className="text-sm font-medium">写作风格</Label>
+                    <Select value={editForm.tone || ''} onValueChange={(value) => setEditForm({ ...editForm, tone: value })}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="选择写作风格" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fantasy">奇幻</SelectItem>
-                        <SelectItem value="romance">言情</SelectItem>
-                        <SelectItem value="mystery">悬疑</SelectItem>
-                        <SelectItem value="scifi">科幻</SelectItem>
-                        <SelectItem value="historical">历史</SelectItem>
-                        <SelectItem value="urban">都市</SelectItem>
+                        <SelectItem value="serious">🎭 严肃</SelectItem>
+                        <SelectItem value="humorous">😄 幽默</SelectItem>
+                        <SelectItem value="dramatic">🎪 戏剧性</SelectItem>
+                        <SelectItem value="light">☀️ 轻松</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="edit-audience">目标读者</Label>
-                    <Select value={editForm.target_audience} onValueChange={(value) => setEditForm({ ...editForm, target_audience: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="young_adult">青少年</SelectItem>
-                        <SelectItem value="adult">成人</SelectItem>
-                        <SelectItem value="general">大众</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="edit-tone">写作风格</Label>
-                  <Select value={editForm.tone} onValueChange={(value) => setEditForm({ ...editForm, tone: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="serious">严肃</SelectItem>
-                      <SelectItem value="humorous">幽默</SelectItem>
-                      <SelectItem value="dramatic">戏剧性</SelectItem>
-                      <SelectItem value="light">轻松</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>主题标签</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {editForm.themes.map((theme, index) => (
-                      <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => handleRemoveTheme(index)}>
-                        {theme} ×
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      placeholder="添加主题标签"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddTheme(e.currentTarget.value);
-                          e.currentTarget.value = '';
-                        }
-                      }}
-                    />
+
+                {/* 主题标签 */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">主题标签</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2 min-h-[2.5rem] p-3 border rounded-lg bg-muted/30">
+                      {editForm.themes.length > 0 ? (
+                        editForm.themes.map((theme, index) => (
+                          <Badge 
+                            key={index} 
+                            variant="secondary" 
+                            className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors px-3 py-1"
+                            onClick={() => handleRemoveTheme(index)}
+                          >
+                            {theme}
+                            <span className="ml-1 text-xs">×</span>
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">暂无标签，请在下方添加</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="输入主题标签，按回车添加"
+                        className="flex-1 h-10"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            const value = e.currentTarget.value.trim();
+                            if (value) {
+                              handleAddTheme(value);
+                              e.currentTarget.value = '';
+                            }
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          const input = e.currentTarget.parentElement?.querySelector('input');
+                          if (input) {
+                            const value = input.value.trim();
+                            if (value) {
+                              handleAddTheme(value);
+                              input.value = '';
+                            }
+                          }
+                        }}
+                      >
+                        添加
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-              <DialogFooter>
+              
+              <DialogFooter className="pt-4 border-t">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                   取消
                 </Button>
-                <Button onClick={handleSaveEdit}>
+                <Button onClick={handleSaveEdit} className="min-w-[80px]">
+                  <CheckCircle className="h-4 w-4 mr-2" />
                   保存
                 </Button>
               </DialogFooter>

@@ -83,6 +83,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GetProjectResponse'
+        put:
+            tags:
+                - NovelService
+            description: 更新项目
+            operationId: NovelService_UpdateProject
+            parameters:
+                - name: project_id
+                  in: path
+                  description: 项目ID
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.UpdateProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.UpdateProjectResponse'
     /api/v1/novel/projects/{project_id}/chapters:
         post:
             tags:
@@ -1724,6 +1749,41 @@ components:
                     type: string
                     description: 事件详细描述
             description: 时间线事件
+        novel.v1.UpdateProjectRequest:
+            type: object
+            properties:
+                project_id:
+                    type: string
+                    description: 项目ID
+                title:
+                    type: string
+                    description: 项目标题
+                description:
+                    type: string
+                    description: 项目描述
+                genre:
+                    type: string
+                    description: 小说类型
+                target_audience:
+                    type: string
+                    description: 目标读者
+                tone:
+                    type: string
+                    description: 写作风格
+                themes:
+                    type: array
+                    items:
+                        type: string
+                    description: 主题标签
+            description: 更新项目请求
+        novel.v1.UpdateProjectResponse:
+            type: object
+            properties:
+                project:
+                    allOf:
+                        - $ref: '#/components/schemas/novel.v1.Project'
+                    description: 更新后的项目详情
+            description: 更新项目响应
         novel.v1.VideoScene:
             type: object
             properties:

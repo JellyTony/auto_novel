@@ -149,6 +149,45 @@ func (s *NovelService) ListProjects(ctx context.Context, req *pb.ListProjectsReq
 	}, nil
 }
 
+// UpdateProject 更新项目
+func (s *NovelService) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.UpdateProjectResponse, error) {
+	// 获取现有项目
+	project, err := s.uc.GetProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新项目字段
+	if req.Title != "" {
+		project.Title = req.Title
+	}
+	if req.Description != "" {
+		project.Description = req.Description
+	}
+	if req.Genre != "" {
+		project.Genre = req.Genre
+	}
+	if req.TargetAudience != "" {
+		project.TargetAudience = req.TargetAudience
+	}
+	if req.Tone != "" {
+		project.Tone = req.Tone
+	}
+	if len(req.Themes) > 0 {
+		project.Themes = req.Themes
+	}
+
+	// 保存更新
+	updatedProject, err := s.uc.UpdateProject(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.UpdateProjectResponse{
+		Project: convertProjectToProto(updatedProject),
+	}, nil
+}
+
 // GenerateWorldView 生成世界观
 func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWorldViewRequest) (*pb.GenerateWorldViewResponse, error) {
 	log.Printf("=== GenerateWorldView called ===")

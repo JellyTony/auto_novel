@@ -35,6 +35,7 @@ const OperationNovelServiceListModels = "/novel.v1.NovelService/ListModels"
 const OperationNovelServiceListProjects = "/novel.v1.NovelService/ListProjects"
 const OperationNovelServicePolishChapter = "/novel.v1.NovelService/PolishChapter"
 const OperationNovelServiceSwitchModel = "/novel.v1.NovelService/SwitchModel"
+const OperationNovelServiceUpdateProject = "/novel.v1.NovelService/UpdateProject"
 
 type NovelServiceHTTPServer interface {
 	// BatchCheckQuality 批量质量检测
@@ -69,6 +70,8 @@ type NovelServiceHTTPServer interface {
 	PolishChapter(context.Context, *PolishChapterRequest) (*PolishChapterResponse, error)
 	// SwitchModel 切换AI模型
 	SwitchModel(context.Context, *SwitchModelRequest) (*SwitchModelResponse, error)
+	// UpdateProject 更新项目
+	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 }
 
 func RegisterNovelServiceHTTPServer(s *http.Server, srv NovelServiceHTTPServer) {
@@ -76,6 +79,7 @@ func RegisterNovelServiceHTTPServer(s *http.Server, srv NovelServiceHTTPServer) 
 	r.POST("/api/v1/novel/projects", _NovelService_CreateProject0_HTTP_Handler(srv))
 	r.GET("/api/v1/novel/projects/{project_id}", _NovelService_GetProject0_HTTP_Handler(srv))
 	r.GET("/api/v1/novel/projects", _NovelService_ListProjects0_HTTP_Handler(srv))
+	r.PUT("/api/v1/novel/projects/{project_id}", _NovelService_UpdateProject0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/worldview", _NovelService_GenerateWorldView0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/characters", _NovelService_GenerateCharacters0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/outline", _NovelService_GenerateOutline0_HTTP_Handler(srv))
@@ -150,6 +154,31 @@ func _NovelService_ListProjects0_HTTP_Handler(srv NovelServiceHTTPServer) func(c
 			return err
 		}
 		reply := out.(*ListProjectsResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _NovelService_UpdateProject0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateProjectRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationNovelServiceUpdateProject)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateProject(ctx, req.(*UpdateProjectRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateProjectResponse)
 		return ctx.Result(200, reply)
 	}
 }
@@ -481,6 +510,7 @@ type NovelServiceHTTPClient interface {
 	ListProjects(ctx context.Context, req *ListProjectsRequest, opts ...http.CallOption) (rsp *ListProjectsResponse, err error)
 	PolishChapter(ctx context.Context, req *PolishChapterRequest, opts ...http.CallOption) (rsp *PolishChapterResponse, err error)
 	SwitchModel(ctx context.Context, req *SwitchModelRequest, opts ...http.CallOption) (rsp *SwitchModelResponse, err error)
+	UpdateProject(ctx context.Context, req *UpdateProjectRequest, opts ...http.CallOption) (rsp *UpdateProjectResponse, err error)
 }
 
 type NovelServiceHTTPClientImpl struct {
@@ -693,6 +723,19 @@ func (c *NovelServiceHTTPClientImpl) SwitchModel(ctx context.Context, in *Switch
 	opts = append(opts, http.Operation(OperationNovelServiceSwitchModel))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *NovelServiceHTTPClientImpl) UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...http.CallOption) (*UpdateProjectResponse, error) {
+	var out UpdateProjectResponse
+	pattern := "/api/v1/novel/projects/{project_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationNovelServiceUpdateProject))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

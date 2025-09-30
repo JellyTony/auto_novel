@@ -34,6 +34,14 @@ service NovelService {
     };
   }
 
+  // 更新项目
+  rpc UpdateProject (UpdateProjectRequest) returns (UpdateProjectResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/novel/projects/{project_id}"
+      body: "*"
+    };
+  }
+
   // 生成世界观
   rpc GenerateWorldView (GenerateWorldViewRequest) returns (GenerateWorldViewResponse) {
     option (google.api.http) = {
@@ -199,6 +207,30 @@ message ListProjectsResponse {
   repeated Project projects = 1;
   // 总项目数
   int32 total = 2;
+}
+
+// 更新项目请求
+message UpdateProjectRequest {
+  // 项目ID
+  string project_id = 1;
+  // 项目标题
+  string title = 2;
+  // 项目描述
+  string description = 3;
+  // 小说类型
+  string genre = 4;
+  // 目标读者
+  string target_audience = 5;
+  // 写作风格
+  string tone = 6;
+  // 主题标签
+  repeated string themes = 7;
+}
+
+// 更新项目响应
+message UpdateProjectResponse {
+  // 更新后的项目详情
+  Project project = 1;
 }
 
 // 世界观相关消息

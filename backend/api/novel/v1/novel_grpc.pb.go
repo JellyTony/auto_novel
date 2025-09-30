@@ -22,6 +22,7 @@ const (
 	NovelService_CreateProject_FullMethodName       = "/novel.v1.NovelService/CreateProject"
 	NovelService_GetProject_FullMethodName          = "/novel.v1.NovelService/GetProject"
 	NovelService_ListProjects_FullMethodName        = "/novel.v1.NovelService/ListProjects"
+	NovelService_UpdateProject_FullMethodName       = "/novel.v1.NovelService/UpdateProject"
 	NovelService_GenerateWorldView_FullMethodName   = "/novel.v1.NovelService/GenerateWorldView"
 	NovelService_GenerateCharacters_FullMethodName  = "/novel.v1.NovelService/GenerateCharacters"
 	NovelService_GenerateOutline_FullMethodName     = "/novel.v1.NovelService/GenerateOutline"
@@ -48,6 +49,8 @@ type NovelServiceClient interface {
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 	// 列出项目
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
+	// 更新项目
+	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
 	// 生成世界观
 	GenerateWorldView(ctx context.Context, in *GenerateWorldViewRequest, opts ...grpc.CallOption) (*GenerateWorldViewResponse, error)
 	// 生成人物卡
@@ -107,6 +110,15 @@ func (c *novelServiceClient) GetProject(ctx context.Context, in *GetProjectReque
 func (c *novelServiceClient) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error) {
 	out := new(ListProjectsResponse)
 	err := c.cc.Invoke(ctx, NovelService_ListProjects_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *novelServiceClient) UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error) {
+	out := new(UpdateProjectResponse)
+	err := c.cc.Invoke(ctx, NovelService_UpdateProject_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -272,6 +284,8 @@ type NovelServiceServer interface {
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// 列出项目
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
+	// 更新项目
+	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 	// 生成世界观
 	GenerateWorldView(context.Context, *GenerateWorldViewRequest) (*GenerateWorldViewResponse, error)
 	// 生成人物卡
@@ -315,6 +329,9 @@ func (UnimplementedNovelServiceServer) GetProject(context.Context, *GetProjectRe
 }
 func (UnimplementedNovelServiceServer) ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
+}
+func (UnimplementedNovelServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
 }
 func (UnimplementedNovelServiceServer) GenerateWorldView(context.Context, *GenerateWorldViewRequest) (*GenerateWorldViewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateWorldView not implemented")
@@ -421,6 +438,24 @@ func _NovelService_ListProjects_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(NovelServiceServer).ListProjects(ctx, req.(*ListProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NovelService_UpdateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NovelServiceServer).UpdateProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NovelService_UpdateProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NovelServiceServer).UpdateProject(ctx, req.(*UpdateProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -698,6 +733,10 @@ var NovelService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjects",
 			Handler:    _NovelService_ListProjects_Handler,
+		},
+		{
+			MethodName: "UpdateProject",
+			Handler:    _NovelService_UpdateProject_Handler,
 		},
 		{
 			MethodName: "GenerateWorldView",
