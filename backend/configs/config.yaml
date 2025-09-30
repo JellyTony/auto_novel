@@ -15,11 +15,8 @@ data:
     write_timeout: 0.2s
   vector:
     embedding:
-      provider: "openai"  # openai, azure, local
-      api_key: ""
-      base_url: "https://api.openai.com/v1"
-      model: "text-embedding-ada-002"
-      timeout: 30
+      model_ref: "default"  # 引用ai.models中的模型配置
+      model: "text-embedding-ada-002"  # embedding专用模型名称
 ai:
   models:
     # 默认模型配置

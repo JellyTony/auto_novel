@@ -10,11 +10,21 @@ import (
 func TestVectorServiceFactory_CreateVectorClient(t *testing.T) {
 	config := &conf.Data_Vector{
 		Embedding: &conf.Data_Vector_Embedding{
-			Provider: "local",
+			ModelRef: "default",
+			Model:    "local",
 		},
 	}
 
-	factory := NewVectorServiceFactory(config)
+	aiConfig := &conf.AI{
+		Models: map[string]*conf.AI_ModelConfig{
+			"default": {
+				Provider:  "local",
+				ModelName: "local-768",
+			},
+		},
+	}
+
+	factory := NewVectorServiceFactory(config, aiConfig)
 	client, err := factory.CreateVectorClient()
 	if err != nil {
 		t.Fatalf("Failed to create vector client: %v", err)
@@ -34,12 +44,21 @@ func TestVectorServiceFactory_CreateVectorClient(t *testing.T) {
 func TestVectorServiceFactory_CreateEmbeddingService(t *testing.T) {
 	config := &conf.Data_Vector{
 		Embedding: &conf.Data_Vector_Embedding{
-			Provider: "local",
+			ModelRef: "default",
 			Model:    "local-768",
 		},
 	}
 
-	factory := NewVectorServiceFactory(config)
+	aiConfig := &conf.AI{
+		Models: map[string]*conf.AI_ModelConfig{
+			"default": {
+				Provider:  "local",
+				ModelName: "local-768",
+			},
+		},
+	}
+
+	factory := NewVectorServiceFactory(config, aiConfig)
 	service, err := factory.CreateEmbeddingService()
 	if err != nil {
 		t.Fatalf("Failed to create embedding service: %v", err)
@@ -63,12 +82,21 @@ func TestVectorServiceFactory_CreateEmbeddingService(t *testing.T) {
 func TestVectorServiceFactory_CreateRAGService(t *testing.T) {
 	config := &conf.Data_Vector{
 		Embedding: &conf.Data_Vector_Embedding{
-			Provider: "local",
-			Model:    "local-256",
+			ModelRef: "default",
+			Model:    "local-768",
 		},
 	}
 
-	factory := NewVectorServiceFactory(config)
+	aiConfig := &conf.AI{
+		Models: map[string]*conf.AI_ModelConfig{
+			"default": {
+				Provider:  "local",
+				ModelName: "local-768",
+			},
+		},
+	}
+
+	factory := NewVectorServiceFactory(config, aiConfig)
 	ragService, err := factory.CreateRAGService()
 	if err != nil {
 		t.Fatalf("Failed to create RAG service: %v", err)
@@ -82,12 +110,21 @@ func TestVectorServiceFactory_CreateRAGService(t *testing.T) {
 func TestVectorServiceFactory_InitializeServices(t *testing.T) {
 	config := &conf.Data_Vector{
 		Embedding: &conf.Data_Vector_Embedding{
-			Provider: "local",
-			Model:    "local-128",
+			ModelRef: "default",
+			Model:    "local-768",
 		},
 	}
 
-	factory := NewVectorServiceFactory(config)
+	aiConfig := &conf.AI{
+		Models: map[string]*conf.AI_ModelConfig{
+			"default": {
+				Provider:  "local",
+				ModelName: "local-768",
+			},
+		},
+	}
+
+	factory := NewVectorServiceFactory(config, aiConfig)
 	ctx := context.Background()
 	
 	ragService, err := factory.InitializeServices(ctx)
@@ -103,12 +140,21 @@ func TestVectorServiceFactory_InitializeServices(t *testing.T) {
 func TestVectorServiceFactory_CloseServices(t *testing.T) {
 	config := &conf.Data_Vector{
 		Embedding: &conf.Data_Vector_Embedding{
-			Provider: "local",
+			ModelRef: "default",
 			Model:    "local-128",
 		},
 	}
 
-	factory := NewVectorServiceFactory(config)
+	aiConfig := &conf.AI{
+		Models: map[string]*conf.AI_ModelConfig{
+			"default": {
+				Provider:  "local",
+				ModelName: "local-128",
+			},
+		},
+	}
+
+	factory := NewVectorServiceFactory(config, aiConfig)
 	ctx := context.Background()
 	
 	// 先初始化服务
@@ -126,12 +172,21 @@ func TestVectorServiceFactory_CloseServices(t *testing.T) {
 
 func TestVectorServiceFactory_MissingEmbeddingConfig(t *testing.T) {
 	config := &conf.Data_Vector{
-		// 缺少 Embedding 配置
+		Embedding: nil,
 	}
 
-	factory := NewVectorServiceFactory(config)
+	aiConfig := &conf.AI{
+		Models: map[string]*conf.AI_ModelConfig{
+			"default": {
+				Provider:  "local",
+				ModelName: "local-768",
+			},
+		},
+	}
+
+	factory := NewVectorServiceFactory(config, aiConfig)
 	_, err := factory.CreateEmbeddingService()
 	if err == nil {
-		t.Fatal("Expected error when embedding configuration is missing")
+		t.Fatal("Expected error for missing embedding config")
 	}
 }

@@ -49,7 +49,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger l
 	}
 	llmClient := llm.NewRealLLMClient(einoLLMClient)
 	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
-	ragService, err := vector.NewRAGServiceProvider(confData)
+	ragService, err := vector.NewRAGServiceProvider(confData, ai)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

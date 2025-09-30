@@ -39,11 +39,8 @@ message Data {
   }
   message Vector {
     message Embedding {
-      string provider = 1;
-      string api_key = 2;
-      string base_url = 3;
-      string model = 4;
-      int32 timeout = 5;
+      string model_ref = 1;  // 引用ai.models中的模型配置key
+      string model = 2;      // embedding专用模型名称
     }
     Embedding embedding = 2;
   }

@@ -9,13 +9,15 @@ import (
 
 // VectorServiceFactory 向量服务工厂
 type VectorServiceFactory struct {
-	config *conf.Data_Vector
+	config   *conf.Data_Vector
+	aiConfig *conf.AI
 }
 
 // NewVectorServiceFactory 创建向量服务工厂
-func NewVectorServiceFactory(config *conf.Data_Vector) *VectorServiceFactory {
+func NewVectorServiceFactory(config *conf.Data_Vector, aiConfig *conf.AI) *VectorServiceFactory {
 	return &VectorServiceFactory{
-		config: config,
+		config:   config,
+		aiConfig: aiConfig,
 	}
 }
 
@@ -31,12 +33,28 @@ func (f *VectorServiceFactory) CreateEmbeddingService() (EmbeddingService, error
 		return nil, fmt.Errorf("embedding configuration is required")
 	}
 
+	// 获取引用的模型配置
+	modelRef := f.config.Embedding.ModelRef
+	if modelRef == "" {
+		modelRef = "default" // 默认使用default模型
+	}
+
+	// 从AI配置中获取模型配置
+	if f.aiConfig == nil || f.aiConfig.Models == nil {
+		return nil, fmt.Errorf("AI configuration is required")
+	}
+
+	modelConfig, exists := f.aiConfig.Models[modelRef]
+	if !exists {
+		return nil, fmt.Errorf("model configuration not found: %s", modelRef)
+	}
+
 	embeddingConfig := &EmbeddingConfig{
-		Provider: f.config.Embedding.Provider,
-		APIKey:   f.config.Embedding.ApiKey,
-		BaseURL:  f.config.Embedding.BaseUrl,
-		Model:    f.config.Embedding.Model,
-		Timeout:  int(f.config.Embedding.Timeout),
+		Provider: modelConfig.Provider,
+		APIKey:   modelConfig.ApiKey,
+		BaseURL:  modelConfig.BaseUrl,
+		Model:    f.config.Embedding.Model, // 使用embedding专用的模型名称
+		Timeout:  int(modelConfig.Timeout.AsDuration().Seconds()),
 	}
 
 	factory := &EmbeddingServiceFactory{}
