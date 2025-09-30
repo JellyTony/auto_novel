@@ -39,40 +39,40 @@ type NovelService struct {
 }
 
 // NewNovelService 创建小说服务
-func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent) *NovelService {
+func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, llmClient llm.LLMClient) *NovelService {
 	service := &NovelService{
 		uc:           uc,
 		orchestrator: orchestratorAgent,
-		worldAgent:   worldbuilding.NewWorldBuildingAgent(nil), // TODO: 注入 LLM client
-		charAgent:    character.NewCharacterAgent(nil),
-		outlineAgent: outline.NewOutlineAgent(nil),
-		chapterAgent: chapter.NewChapterAgent(nil),
-		polishAgent:  polish.NewPolishAgent(nil),
-		consistencyAgent: consistency.NewConsistencyAgent(nil),
+		worldAgent:   worldbuilding.NewWorldBuildingAgent(llmClient),
+		charAgent:    character.NewCharacterAgent(llmClient),
+		outlineAgent: outline.NewOutlineAgent(llmClient),
+		chapterAgent: chapter.NewChapterAgent(llmClient),
+		polishAgent:  polish.NewPolishAgent(llmClient),
+		consistencyAgent: consistency.NewConsistencyAgent(llmClient),
 	}
 	
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
-	service.qualityAgent = quality.NewQualityAgent(nil, service.polishAgent, service.consistencyAgent)
+	service.qualityAgent = quality.NewQualityAgent(llmClient, service.polishAgent, service.consistencyAgent)
 	
 	return service
 }
 
 // NewNovelServiceWithRAG 创建带RAG功能的小说服务
 func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, 
-	einoClient eino.EinoLLMClient, ragService *vector.RAGService) *NovelService {
+	einoClient eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient) *NovelService {
 	service := &NovelService{
 		uc:           uc,
 		orchestrator: orchestratorAgent,
-		worldAgent:   worldbuilding.NewWorldBuildingAgent(nil), // TODO: 注入 LLM client
-		charAgent:    character.NewCharacterAgent(nil),
-		outlineAgent: outline.NewOutlineAgent(nil),
-		chapterAgent: chapter.NewChapterAgent(nil),
-		polishAgent:  polish.NewPolishAgent(nil),
-		consistencyAgent: consistency.NewConsistencyAgentWithRAG(nil, einoClient, ragService),
+		worldAgent:   worldbuilding.NewWorldBuildingAgent(llmClient),
+		charAgent:    character.NewCharacterAgent(llmClient),
+		outlineAgent: outline.NewOutlineAgent(llmClient),
+		chapterAgent: chapter.NewChapterAgent(llmClient),
+		polishAgent:  polish.NewPolishAgent(llmClient),
+		consistencyAgent: consistency.NewConsistencyAgentWithRAG(llmClient, einoClient, ragService),
 	}
 	
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
-	service.qualityAgent = quality.NewQualityAgent(nil, service.polishAgent, service.consistencyAgent)
+	service.qualityAgent = quality.NewQualityAgent(llmClient, service.polishAgent, service.consistencyAgent)
 	
 	return service
 }

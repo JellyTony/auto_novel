@@ -42,7 +42,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
 	llmClient := llm.NewMockLLMClient()
 	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
-	novelService := service.NewNovelService(novelUsecase, orchestratorAgent)
+	novelService := service.NewNovelService(novelUsecase, orchestratorAgent, llmClient)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, videoScriptService, novelService, logger)
 	httpServer := server.NewHTTPServer(confServer, greeterService, videoScriptService, novelService, logger)
 	app := newApp(logger, grpcServer, httpServer)

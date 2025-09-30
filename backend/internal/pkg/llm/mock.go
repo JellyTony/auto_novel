@@ -66,6 +66,54 @@ func (m *MockLLMClient) GenerateJSON(ctx context.Context, prompt string, opts *G
 	time.Sleep(m.delay)
 	
 	// 根据提示词返回不同的 JSON 响应
+	if contains(prompt, "大纲") || contains(prompt, "章") || contains(prompt, "outline") || contains(prompt, "chapter") {
+		return map[string]interface{}{
+			"title": "魔法学院传说",
+			"chapters": []interface{}{
+				map[string]interface{}{
+					"index":   1,
+					"title":   "初入学院",
+					"summary": "艾莉亚第一次踏入魔法学院，遇到了各种奇异的魔法现象",
+					"goal":    "介绍世界观和主角",
+					"twist_hint": "发现自己拥有罕见的时间魔法天赋",
+					"important_items": []interface{}{"入学通知书", "时间魔法水晶"},
+				},
+				map[string]interface{}{
+					"index":   2,
+					"title":   "神秘的导师",
+					"summary": "遇到了神秘的时间魔法导师，开始学习基础魔法理论",
+					"goal":    "建立师生关系，揭示主角天赋",
+					"twist_hint": "导师似乎隐藏着什么秘密",
+					"important_items": []interface{}{"古老的魔法书", "导师的徽章"},
+				},
+				map[string]interface{}{
+					"index":   3,
+					"title":   "禁忌的魔法",
+					"summary": "意外发现了被禁止的时间魔法书籍，引发了危险的魔法实验",
+					"goal":    "推进情节，增加冲突",
+					"twist_hint": "时间魔法实验失控，影响了整个学院",
+					"important_items": []interface{}{"禁忌魔法书", "时间裂缝"},
+				},
+				map[string]interface{}{
+					"index":   4,
+					"title":   "真相大白",
+					"summary": "揭开学院隐藏的秘密，发现时间魔法的真正力量和危险",
+					"goal":    "高潮部分，揭示核心秘密",
+					"twist_hint": "学院的创立者就是时间魔法的始祖",
+					"important_items": []interface{}{"创始人的日记", "时间之心"},
+				},
+				map[string]interface{}{
+					"index":   5,
+					"title":   "新的开始",
+					"summary": "经历考验后，艾莉亚成长为真正的魔法师，准备面对更大的挑战",
+					"goal":    "结局，角色成长完成",
+					"twist_hint": "新的威胁正在逼近学院",
+					"important_items": []interface{}{"毕业证书", "新的使命"},
+				},
+			},
+		}, nil
+	}
+	
 	if contains(prompt, "世界观") || contains(prompt, "world") {
 		return map[string]interface{}{
 			"title":    "魔法学院传说",
@@ -104,14 +152,44 @@ func (m *MockLLMClient) GenerateJSON(ctx context.Context, prompt string, opts *G
 			"title": "魔法学院传说",
 			"chapters": []map[string]interface{}{
 				{
+					"index":   1,
 					"title":   "初入学院",
-					"summary": "艾莉亚第一次踏入魔法学院",
+					"summary": "艾莉亚第一次踏入魔法学院，遇到了各种奇异的魔法现象",
 					"goal":    "介绍世界观和主角",
+					"twist_hint": "发现自己拥有罕见的时间魔法天赋",
+					"important_items": []interface{}{"入学通知书", "时间魔法水晶"},
 				},
 				{
+					"index":   2,
 					"title":   "神秘的导师",
-					"summary": "遇到了神秘的时间魔法导师",
-					"goal":    "建立师生关系",
+					"summary": "遇到了神秘的时间魔法导师，开始学习基础魔法理论",
+					"goal":    "建立师生关系，揭示主角天赋",
+					"twist_hint": "导师似乎隐藏着什么秘密",
+					"important_items": []interface{}{"古老的魔法书", "导师的徽章"},
+				},
+				{
+					"index":   3,
+					"title":   "禁忌的魔法",
+					"summary": "意外发现了被禁止的时间魔法书籍，引发了危险的魔法实验",
+					"goal":    "推进情节，增加冲突",
+					"twist_hint": "时间魔法实验失控，影响了整个学院",
+					"important_items": []interface{}{"禁忌魔法书", "时间裂缝"},
+				},
+				{
+					"index":   4,
+					"title":   "真相大白",
+					"summary": "揭开学院隐藏的秘密，发现时间魔法的真正力量和危险",
+					"goal":    "高潮部分，揭示核心秘密",
+					"twist_hint": "学院的创立者就是时间魔法的始祖",
+					"important_items": []interface{}{"创始人的日记", "时间之心"},
+				},
+				{
+					"index":   5,
+					"title":   "新的开始",
+					"summary": "经历考验后，艾莉亚成长为真正的魔法师，准备面对更大的挑战",
+					"goal":    "结局，角色成长完成",
+					"twist_hint": "新的威胁正在逼近学院",
+					"important_items": []interface{}{"毕业证书", "新的使命"},
 				},
 			},
 		}, nil
