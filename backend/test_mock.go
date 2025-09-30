@@ -10,14 +10,17 @@ import (
 )
 
 func main() {
-	client := llm.NewMockLLMClient()
-	
-	prompt := `基于以下世界观和人物设定，生成 5 章的小说大纲：
+	// 创建 Mock LLM 客户端
+	mockLLM := llm.NewMockLLMClient()
 
-世界观：魔法学院
+	// 模拟 OutlineAgent 的实际调用
+	prompt := `
+基于以下世界观和人物设定，生成 5 章的小说大纲：
+
+世界观：
 
 主要人物：
-姓名：艾莉亚，角色：学生，动机：成为强大的魔法师
+
 
 要求：
 1. 每章都要有明确的剧情目标
@@ -38,35 +41,43 @@ func main() {
       "important_items": ["关键道具1", "关键线索2"]
     }
   ]
-}`
-	
-	result, err := client.GenerateJSON(context.Background(), prompt, nil)
+}
+`
+
+	// 调用 GenerateJSON 方法（这是 OutlineAgent 实际使用的方法）
+	result, err := mockLLM.GenerateJSON(context.Background(), prompt, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("GenerateJSON failed: %v", err)
 	}
-	
-	// 打印原始结果
-	fmt.Println("Raw result:")
-	jsonBytes, _ := json.MarshalIndent(result, "", "  ")
-	fmt.Println(string(jsonBytes))
-	
-	// 检查chapters字段
-	fmt.Println("\nChecking 'chapters' field:")
+
+	// 检查返回的结果
+	fmt.Printf("Raw result type: %T\n", result)
+	fmt.Printf("Raw result: %+v\n", result)
+
+	// 检查是否有 chapters 字段
 	if chaptersData, ok := result["chapters"]; ok {
-		fmt.Printf("chapters field exists, type: %T\n", chaptersData)
-		if chaptersArray, ok := chaptersData.([]interface{}); ok {
-			fmt.Printf("chapters is []interface{} with %d elements\n", len(chaptersArray))
-			for i, chapter := range chaptersArray {
+		fmt.Printf("Found 'chapters' field, type: %T\n", chaptersData)
+		if chapters, ok := chaptersData.([]interface{}); ok {
+			fmt.Printf("Chapters array length: %d\n", len(chapters))
+			for i, chapter := range chapters {
 				fmt.Printf("Chapter %d type: %T\n", i, chapter)
+				if chapterMap, ok := chapter.(map[string]interface{}); ok {
+					fmt.Printf("Chapter %d: %+v\n", i, chapterMap)
+				}
 			}
 		} else {
-			fmt.Printf("chapters is NOT []interface{}, actual type: %T\n", chaptersData)
+			fmt.Printf("Chapters is not []interface{}, actual type: %T\n", chaptersData)
 		}
 	} else {
-		fmt.Println("chapters field does NOT exist")
-		fmt.Println("Available keys:")
-		for key := range result {
-			fmt.Printf("  - %s\n", key)
+		fmt.Println("ERROR: 'chapters' field not found in result")
+		// 打印所有可用的字段
+		fmt.Println("Available fields:")
+		for key, value := range result {
+			fmt.Printf("  %s: %T = %v\n", key, value, value)
 		}
 	}
+
+	// 将结果转换为 JSON 字符串以便查看
+	jsonBytes, _ := json.MarshalIndent(result, "", "  ")
+	fmt.Printf("JSON result:\n%s\n", string(jsonBytes))
 }
