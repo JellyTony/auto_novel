@@ -13,6 +13,7 @@ import (
 	"backend/internal/agent/worldbuilding"
 	"backend/internal/pkg/llm"
 	"backend/internal/pkg/models"
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 // 请求和响应结构
@@ -60,10 +61,10 @@ type OrchestratorAgent struct {
 }
 
 // NewOrchestratorAgent 创建主调度代理
-func NewOrchestratorAgent(llmClient llm.LLMClient) *OrchestratorAgent {
+func NewOrchestratorAgent(llmClient llm.LLMClient, logger log.Logger) *OrchestratorAgent {
 	return &OrchestratorAgent{
 		llmClient:        llmClient,
-		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient),
+		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient, logger),
 		characterAgent:   character.NewCharacterAgent(llmClient),
 		outlineAgent:     outline.NewOutlineAgent(llmClient),
 		chapterAgent:     chapter.NewChapterAgent(llmClient),

@@ -154,24 +154,24 @@ func (s *NovelService) ListProjects(ctx context.Context, req *pb.ListProjectsReq
 
 // UpdateProject 更新项目
 func (s *NovelService) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.UpdateProjectResponse, error) {
-	log.Printf("=== UpdateProject called ===")
-	log.Printf("Request: %+v", req)
-	log.Printf("ProjectId: %s", req.ProjectId)
-	log.Printf("Title: %s", req.Title)
-	log.Printf("Description: %s", req.Description)
-	log.Printf("Genre: %s", req.Genre)
-	log.Printf("TargetAudience: %s", req.TargetAudience)
-	log.Printf("Tone: %s", req.Tone)
-	log.Printf("Themes: %v", req.Themes)
+	s.log.Infof("=== UpdateProject called ===")
+	s.log.Infof("Request: %+v", req)
+	s.log.Infof("ProjectId: %s", req.ProjectId)
+	s.log.Infof("Title: %s", req.Title)
+	s.log.Infof("Description: %s", req.Description)
+	s.log.Infof("Genre: %s", req.Genre)
+	s.log.Infof("TargetAudience: %s", req.TargetAudience)
+	s.log.Infof("Tone: %s", req.Tone)
+	s.log.Infof("Themes: %v", req.Themes)
 
 	// 获取现有项目
 	project, err := s.uc.GetProject(ctx, req.ProjectId)
 	if err != nil {
-		log.Printf("Error getting project: %v", err)
+		s.log.Errorf("Error getting project: %v", err)
 		return nil, err
 	}
 
-	log.Printf("Original project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v", 
+	s.log.Infof("Original project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v", 
 		project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
 
 	// 更新项目字段 - 直接更新所有字段，允许设置为空值
@@ -182,41 +182,42 @@ func (s *NovelService) UpdateProject(ctx context.Context, req *pb.UpdateProjectR
 	project.Tone = req.Tone
 	project.Themes = req.Themes
 
-	log.Printf("Updated project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v", 
+	s.log.Infof("Updated project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v",
 		project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
 
-	// 保存更新
-	updatedProject, err := s.uc.UpdateProject(ctx, project)
+	// 保存更新后的项目
+	_, err = s.uc.UpdateProject(ctx, project)
 	if err != nil {
-		log.Printf("Error updating project: %v", err)
+		s.log.Errorf("Error updating project: %v", err)
 		return nil, err
 	}
 
-	log.Printf("Successfully updated project")
+	s.log.Infof("Successfully updated project")
+
 	return &pb.UpdateProjectResponse{
-		Project: convertProjectToProto(updatedProject),
+		Project: convertProjectToProto(project),
 	}, nil
 }
 
 // GenerateWorldView 生成世界观
 func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWorldViewRequest) (*pb.GenerateWorldViewResponse, error) {
-	log.Printf("=== GenerateWorldView called ===")
-	log.Printf("Request: %+v", req)
-	log.Printf("ProjectId: %s", req.ProjectId)
-	log.Printf("Genre: %s", req.Genre)
-	log.Printf("Setting: %s", req.Setting)
+	s.log.Infof("=== GenerateWorldView called ===")
+	s.log.Infof("Request: %+v", req)
+	s.log.Infof("ProjectId: %s", req.ProjectId)
+	s.log.Infof("Genre: %s", req.Genre)
+	s.log.Infof("Setting: %s", req.Setting)
 
-	// 获取项目
-	log.Printf("Getting project with ID: %s", req.ProjectId)
+	// 获取项目信息
+	s.log.Infof("Getting project with ID: %s", req.ProjectId)
 	project, err := s.uc.GetProject(ctx, req.ProjectId)
 	if err != nil {
-		log.Printf("Error getting project: %v", err)
+		s.log.Errorf("Error getting project: %v", err)
 		return nil, err
 	}
-	log.Printf("Project retrieved successfully: %+v", project)
+	s.log.Infof("Project retrieved successfully: %+v", project)
 
 	// 构建世界观生成请求
-	log.Printf("Building worldview generation request...")
+	s.log.Infof("Building worldview generation request...")
 	worldReq := &worldbuilding.GenerateWorldViewRequest{
 		ProjectID: req.ProjectId,
 		Genre:     req.Genre,
@@ -226,31 +227,31 @@ func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWo
 		Audience:  req.TargetAudience,
 		Themes:    req.Themes,
 	}
-	log.Printf("Worldview request: %+v", worldReq)
+	s.log.Infof("Worldview request: %+v", worldReq)
 
-	// 调用世界观生成Agent
-	log.Printf("Calling world agent GenerateWorldView...")
+	// 生成世界观
+	s.log.Infof("Calling world agent GenerateWorldView...")
 	worldView, err := s.worldAgent.GenerateWorldView(ctx, worldReq)
 	if err != nil {
-		log.Printf("Error generating worldview: %v", err)
+		s.log.Errorf("Error generating worldview: %v", err)
 		return nil, err
 	}
-	log.Printf("Worldview generated successfully: %+v", worldView)
+	s.log.Infof("Worldview generated successfully: %+v", worldView)
 
 	// 更新项目的世界观
-	log.Printf("Updating project worldview...")
+	s.log.Infof("Updating project worldview...")
 	project.WorldView = worldView
 
 	// 保存项目
-	log.Printf("Saving updated project...")
+	s.log.Infof("Saving updated project...")
 	_, err = s.uc.UpdateProject(ctx, project)
 	if err != nil {
-		log.Printf("Error updating project: %v", err)
+		s.log.Errorf("Error updating project: %v", err)
 		return nil, err
 	}
-	log.Printf("Project updated successfully")
+	s.log.Infof("Project updated successfully")
 
-	log.Printf("=== GenerateWorldView completed ===")
+	s.log.Infof("=== GenerateWorldView completed ===")
 	return &pb.GenerateWorldViewResponse{
 		WorldView: &pb.WorldView{
 			Title:        worldView.Title,

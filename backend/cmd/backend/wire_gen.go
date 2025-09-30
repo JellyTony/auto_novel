@@ -50,7 +50,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger l
 	bizVideoScriptService := biz.NewVideoScriptServiceImpl(logger)
 	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
 	llmClient := llm.NewRealLLMClient(einoLLMClient)
-	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
+	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient, logger)
 	ragService, err := vector.NewRAGServiceProvider(confData, ai)
 	if err != nil {
 		cleanup()
@@ -62,7 +62,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger l
 		return nil, nil, err
 	}
 	modelSwitcher := eino.NewModelSwitcher(modelFactory)
-	novelService := service.NewNovelServiceWithRAG(novelUsecase, orchestratorAgent, einoLLMClient, ragService, llmClient, modelSwitcher)
+	novelService := service.NewNovelServiceWithRAG(novelUsecase, orchestratorAgent, einoLLMClient, ragService, llmClient, modelSwitcher, logger)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, videoScriptService, novelService, logger)
 	httpServer := server.NewHTTPServer(confServer, greeterService, videoScriptService, novelService, logger)
 	app := newApp(logger, grpcServer, httpServer)
