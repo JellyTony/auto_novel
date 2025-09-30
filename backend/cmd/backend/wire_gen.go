@@ -7,9 +7,11 @@
 package main
 
 import (
+	"backend/internal/agent/orchestrator"
 	"backend/internal/biz"
 	"backend/internal/conf"
 	"backend/internal/data"
+	"backend/internal/pkg/llm"
 	"backend/internal/server"
 	"backend/internal/service"
 	"github.com/go-kratos/kratos/v2"
@@ -34,8 +36,15 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	videoScriptRepo := data.NewVideoScriptRepo(dataData, logger)
 	videoScriptUseCase := biz.NewVideoScriptUseCase(videoScriptRepo, logger)
 	videoScriptService := service.NewVideoScriptService(videoScriptUseCase, logger)
-	grpcServer := server.NewGRPCServer(confServer, greeterService, videoScriptService, logger)
-	httpServer := server.NewHTTPServer(confServer, greeterService, videoScriptService, logger)
+	novelRepo := data.NewNovelRepo(dataData, logger)
+	exportService := service.NewExportService(logger)
+	bizVideoScriptService := biz.NewVideoScriptServiceImpl(logger)
+	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
+	llmClient := llm.NewMockLLMClient()
+	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient)
+	novelService := service.NewNovelService(novelUsecase, orchestratorAgent)
+	grpcServer := server.NewGRPCServer(confServer, greeterService, videoScriptService, novelService, logger)
+	httpServer := server.NewHTTPServer(confServer, greeterService, videoScriptService, novelService, logger)
 	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()

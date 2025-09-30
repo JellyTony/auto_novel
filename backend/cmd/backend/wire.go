@@ -11,6 +11,8 @@ import (
 	"backend/internal/data"
 	"backend/internal/server"
 	"backend/internal/service"
+	"backend/internal/pkg/llm"
+	"backend/internal/agent/orchestrator"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
@@ -19,5 +21,5 @@ import (
 
 // wireApp init kratos application.
 func wireApp(*conf.Server, *conf.Data, log.Logger) (*kratos.App, func(), error) {
-	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, newApp))
+	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, llm.ProviderSet, orchestrator.ProviderSet, newApp))
 }

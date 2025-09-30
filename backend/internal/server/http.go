@@ -2,6 +2,7 @@ package server
 
 import (
 	v1 "backend/api/helloworld/v1"
+	novelv1 "backend/api/novel/v1"
 	videoscriptv1 "backend/api/video_script/v1"
 	"backend/internal/conf"
 	"backend/internal/service"
@@ -12,7 +13,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, videoScript *service.VideoScriptService, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, videoScript *service.VideoScriptService, novel *service.NovelService, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -31,5 +32,6 @@ func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, videoScript 
 	
 	v1.RegisterGreeterHTTPServer(srv, greeter)
 	videoscriptv1.RegisterVideoScriptServiceHTTPServer(srv, videoScript)
+	novelv1.RegisterNovelServiceHTTPServer(srv, novel)
 	return srv
 }

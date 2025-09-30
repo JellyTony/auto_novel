@@ -2,6 +2,7 @@ package server
 
 import (
 	v1 "backend/api/helloworld/v1"
+	novelv1 "backend/api/novel/v1"
 	videoscriptv1 "backend/api/video_script/v1"
 	"backend/internal/conf"
 	"backend/internal/service"
@@ -12,7 +13,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, videoScript *service.VideoScriptService, logger log.Logger) *grpc.Server {
+func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, videoScript *service.VideoScriptService, novel *service.NovelService, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
@@ -30,5 +31,6 @@ func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, videoScript 
 	srv := grpc.NewServer(opts...)
 	v1.RegisterGreeterServer(srv, greeter)
 	videoscriptv1.RegisterVideoScriptServiceServer(srv, videoScript)
+	novelv1.RegisterNovelServiceServer(srv, novel)
 	return srv
 }
