@@ -213,5 +213,5 @@ message VideoHooks {
   // 高潮点
   string climax = 2;
   // 结尾钩子
-  string ending = 3;           
+  string ending = 3;
 }

@@ -5,15 +5,14 @@ import (
 	"os"
 
 	"backend/internal/conf"
-
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
+	"github.com/go-kratos/kratos/v2/encoding/json"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
-
 	_ "go.uber.org/automaxprocs"
 )
 
@@ -30,6 +29,11 @@ var (
 )
 
 func init() {
+	// MarshalOptions is a configurable JSON format marshaller.
+	json.MarshalOptions.Multiline = true
+	json.MarshalOptions.UseProtoNames = true
+	json.MarshalOptions.EmitUnpopulated = false
+
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }
 

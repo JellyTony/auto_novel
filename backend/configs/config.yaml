@@ -1,10 +1,10 @@
 server:
   http:
     addr: 0.0.0.0:8000
-    timeout: 1s
+    timeout: 600s
   grpc:
     addr: 0.0.0.0:9000
-    timeout: 1s
+    timeout: 600s
 data:
   database:
     driver: mysql
@@ -31,13 +31,13 @@ ai:
     # 默认模型配置
     default:
       provider: "deepseek"
-      model_name: "deepseek-reasoner"
+      model_name: "deepseek-chat"
       api_key: "sk-037a79e3a5cd41b9ba49e92bd2a54e35"
       base_url: "https://api.deepseek.com/"
       temperature: 0.8
       max_tokens: 4096
       top_p: 1.0
-      timeout: 300s
+      timeout: 600s
     # 可选的其他模型配置
     creative:
       provider: "deepseek"
@@ -47,7 +47,7 @@ ai:
       temperature: 1.0
       max_tokens: 4096
       top_p: 0.9
-      timeout: 300s
+      timeout: 600s
     # Qwen模型配置
     qwen:
       provider: "qwen"
