@@ -34,16 +34,16 @@ func (a *WorldBuildingAgent) GenerateWorldView(ctx context.Context, req *Generat
 	// 使用模板生成提示词
 	prompt := a.templates.WorldBuildingPrompt()
 	
-	// 生成 JSON 响应
-	result, err := a.llmClient.GenerateWithTemplate(ctx, prompt, data, llm.PreciseOptions())
+	// 使用模板生成 JSON 响应
+	finalPrompt, err := a.llmClient.GenerateWithTemplate(ctx, prompt, data, llm.PreciseOptions())
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate world view: %w", err)
+		return nil, fmt.Errorf("failed to generate prompt: %w", err)
 	}
 
-	// 解析 JSON 响应
-	jsonResult, err := a.llmClient.GenerateJSON(ctx, result, llm.PreciseOptions())
+	// 生成 JSON 响应
+	jsonResult, err := a.llmClient.GenerateJSON(ctx, finalPrompt, llm.PreciseOptions())
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse world view JSON: %w", err)
+		return nil, fmt.Errorf("failed to generate world view JSON: %w", err)
 	}
 
 	// 转换为 WorldView 模型

@@ -56,20 +56,17 @@ func NewEinoLLMClient(ctx context.Context, config *Config) (*EinoLLMClient, erro
 		chatModel, err = qwen.NewChatModel(ctx, &qwen.ChatModelConfig{
 			APIKey:      config.APIKey,
 			Model:       config.ModelName,
-			MaxTokens:   config.MaxTokens,
-			Temperature: config.Temperature,
-			TopP:        config.TopP,
+			MaxTokens:   &config.MaxTokens,
+			Temperature: &config.Temperature,
+			TopP:        &config.TopP,
 			BaseURL:     config.BaseURL,
 			Timeout:     config.Timeout,
 		})
 	case "ollama":
 		chatModel, err = ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
-			Model:       config.ModelName,
-			MaxTokens:   config.MaxTokens,
-			Temperature: config.Temperature,
-			TopP:        config.TopP,
-			BaseURL:     config.BaseURL,
-			Timeout:     config.Timeout,
+			Model:   config.ModelName,
+			BaseURL: config.BaseURL,
+			Timeout: config.Timeout,
 		})
 	default:
 		return nil, fmt.Errorf("unsupported model provider: %s", config.Provider)
