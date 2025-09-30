@@ -589,7 +589,9 @@ components:
             type: object
             properties:
                 videoScript:
-                    $ref: '#/components/schemas/api.video_script.v1.VideoScript'
+                    allOf:
+                        - $ref: '#/components/schemas/api.video_script.v1.VideoScript'
+                    description: 生成的短视频脚本
             description: 生成短视频脚本响应
         api.video_script.v1.GetVideoScriptResponse:
             type: object
@@ -611,6 +613,8 @@ components:
         api.video_script.v1.OptimizeVideoScriptRequest:
             type: object
             properties:
+                projectId:
+                    type: string
                 scriptId:
                     type: string
                 requirements:
