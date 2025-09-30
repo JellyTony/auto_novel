@@ -123,7 +123,17 @@ func (s *NovelService) GetProject(ctx context.Context, req *pb.GetProjectRequest
 
 // ListProjects 获取项目列表
 func (s *NovelService) ListProjects(ctx context.Context, req *pb.ListProjectsRequest) (*pb.ListProjectsResponse, error) {
-	projects, total, err := s.uc.ListProjects(ctx, int(req.Page), int(req.PageSize))
+	// 设置默认分页参数
+	page := int(req.Page)
+	pageSize := int(req.PageSize)
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	projects, total, err := s.uc.ListProjects(ctx, page, pageSize)
 	if err != nil {
 		return nil, err
 	}

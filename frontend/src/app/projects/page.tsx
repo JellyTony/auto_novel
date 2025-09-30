@@ -1,401 +1,443 @@
-"use client";
+'use client';
 
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  PlusIcon, 
-  MagnifyingGlassIcon,
-  EllipsisVerticalIcon,
-  BookOpenIcon,
-  CalendarIcon,
-  DocumentTextIcon
-} from "@heroicons/react/24/outline";
-import { useState, useEffect } from "react";
-import { NovelAPI, Project, CreateProjectRequest } from "@/lib/api";
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, BookOpen, Clock, Users, TrendingUp, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { NovelAPI, Project, CreateProjectRequest, CreateProjectResponse } from '@/lib/api';
+import { useApiList, useApiMutation } from '@/lib/hooks/useApi';
+import { Loading, CardSkeleton } from '@/components/ui/loading';
+import { ApiError, EmptyState } from '@/components/ui/error-boundary';
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [genreFilter, setGenreFilter] = useState<string>('all');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  // 项目列表状态管理
+  const projectsApi = useApiList<Project>({
+    onSuccess: (data) => {
+      console.log('项目列表加载成功:', data);
+    },
+    onError: (error) => {
+      console.error('项目列表加载失败:', error);
+    }
+  });
+
+  // 创建项目状态管理
+  const createProjectApi = useApiMutation<CreateProjectResponse, CreateProjectRequest>({
+    onSuccess: (data) => {
+      console.log('项目创建成功:', data);
+      setIsCreateDialogOpen(false);
+      setNewProject({
+        title: '',
+        description: '',
+        genre: '',
+        target_audience: '',
+        tone: '',
+        themes: []
+      });
+      // 重新加载项目列表
+      loadProjects();
+    },
+    onError: (error) => {
+      console.error('项目创建失败:', error);
+    }
+  });
+
+  // 新项目表单状态
   const [newProject, setNewProject] = useState<CreateProjectRequest>({
-    title: "",
-    description: "",
-    genre: "",
-    targetAudience: "",
-    tone: "",
+    title: '',
+    description: '',
+    genre: '',
+    target_audience: '',
+    tone: '',
     themes: []
   });
 
   // 加载项目列表
   const loadProjects = async () => {
     try {
-      setLoading(true);
-      const response = await NovelAPI.listProjects({ page: 1, pageSize: 20 });
-      setProjects(response.projects || []);
+      await projectsApi.execute(() => NovelAPI.listProjects().then(res => res.projects));
     } catch (error) {
       console.error('加载项目列表失败:', error);
-      // 使用模拟数据作为后备
-      setProjects([
-        {
-          id: "1",
-          title: "都市修仙传",
-          description: "一个现代都市背景下的修仙故事，主角在都市中修炼成仙的传奇经历。",
-          genre: "现代都市",
-          targetAudience: "青年",
-          tone: "快节奏",
-          themes: ["修仙", "都市", "成长"],
-          status: "进行中",
-          createdAt: "2024-08-15",
-          updatedAt: "2024-09-29"
-        },
-        {
-          id: "2",
-          title: "星际争霸",
-          description: "未来世界的星际战争，人类与外星种族的生死较量。",
-          genre: "科幻",
-          targetAudience: "男性向",
-          tone: "冷峻",
-          themes: ["科幻", "战争", "太空"],
-          status: "进行中",
-          createdAt: "2024-09-01",
-          updatedAt: "2024-09-28"
-        },
-        {
-          id: "3",
-          title: "古代宫廷秘史",
-          description: "古代宫廷中的权谋斗争和爱恨情仇。",
-          genre: "古代言情",
-          targetAudience: "女性向",
-          tone: "温情",
-          themes: ["宫廷", "权谋", "爱情"],
-          status: "已完成",
-          createdAt: "2024-07-10",
-          updatedAt: "2024-09-20"
-        }
-      ]);
-    } finally {
-      setLoading(false);
     }
   };
 
   // 创建新项目
   const handleCreateProject = async () => {
-    try {
-      if (!newProject.title || !newProject.description || !newProject.genre) {
-        alert('请填写必要的项目信息');
-        return;
-      }
+    if (!newProject.title.trim()) {
+      return;
+    }
 
-      const response = await NovelAPI.createProject(newProject);
-      setProjects(prev => [response.project, ...prev]);
-      setShowCreateForm(false);
-      setNewProject({
-        title: "",
-        description: "",
-        genre: "",
-        targetAudience: "",
-        tone: "",
-        themes: []
-      });
+    try {
+      await createProjectApi.mutate(
+        (data: CreateProjectRequest) => NovelAPI.createProject(data),
+        newProject
+      );
     } catch (error) {
       console.error('创建项目失败:', error);
-      alert('创建项目失败，请重试');
     }
   };
 
+  // 页面加载时获取项目列表
   useEffect(() => {
     loadProjects();
   }, []);
 
   // 过滤项目
-  const filteredProjects = projects.filter(project => {
-    // 确保project存在且不为null/undefined
-    if (!project) return false;
+  const filteredProjects = (projectsApi.data || []).filter(project => {
+    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+    const matchesGenre = genreFilter === 'all' || project.genre === genreFilter;
     
-    return (
-      (project.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (project.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (project.genre?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
+    return matchesSearch && matchesStatus && matchesGenre;
   });
 
+  // 获取状态颜色
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "进行中": return "bg-blue-100 text-blue-800";
-      case "已完成": return "bg-green-100 text-green-800";
-      case "已暂停": return "bg-yellow-100 text-yellow-800";
-      case "草稿": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'generating': return 'bg-blue-100 text-blue-800';
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'error': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getProgressPercentage = (project: Project) => {
-    if (!project.chapters || !project.outline) return 0;
-    const totalChapters = project.outline.chapters.length;
-    const completedChapters = project.chapters.filter(c => c.status === 'completed').length;
-    return totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
+  // 获取状态文本
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed': return '已完成';
+      case 'generating': return '生成中';
+      case 'draft': return '草稿';
+      case 'error': return '错误';
+      default: return status;
+    }
+  };
+
+  // 计算项目进度
+  const calculateProgress = (project: Project) => {
+    const totalSteps = 4; // 世界观、角色、大纲、章节
+    let completedSteps = 0;
+    
+    if (project.world_view) completedSteps++;
+    if (project.characters && project.characters.length > 0) completedSteps++;
+    if (project.outline) completedSteps++;
+    if (project.chapters && project.chapters.length > 0) completedSteps++;
+    
+    return Math.round((completedSteps / totalSteps) * 100);
+  };
+
+  // 主题选项
+  const themeOptions = [
+    '爱情', '友情', '成长', '冒险', '悬疑', '科幻', '奇幻', 
+    '历史', '都市', '校园', '职场', '家庭', '战争', '武侠'
+  ];
+
+  // 处理主题选择
+  const handleThemeChange = (theme: string, checked: boolean) => {
+    setNewProject(prev => ({
+      ...prev,
+      themes: checked 
+        ? [...prev.themes, theme]
+        : prev.themes.filter(t => t !== theme)
+    }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title="我的项目" />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 页面标题和操作 */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">我的项目</h1>
-            <p className="mt-2 text-gray-600">管理您的小说创作项目</p>
-          </div>
-          <Button 
-            onClick={() => setShowCreateForm(true)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            新建项目
-          </Button>
+    <div className="container mx-auto px-4 py-8">
+      {/* 页面标题和操作栏 */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">我的项目</h1>
+          <p className="text-gray-600 mt-2">管理您的小说创作项目</p>
         </div>
+        
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              新建项目
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>创建新项目</DialogTitle>
+              <DialogDescription>
+                填写项目基本信息，开始您的创作之旅
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                 <Label htmlFor="title">项目标题 *</Label>
+                 <Input
+                   id="title"
+                   placeholder="输入您的小说标题"
+                   value={newProject.title}
+                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
+                 />
+               </div>
 
-        {/* 搜索栏 */}
-        <div className="mb-6">
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="搜索项目..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+               <div className="space-y-2">
+                 <Label htmlFor="description">项目描述</Label>
+                 <Textarea
+                   id="description"
+                   placeholder="简要描述您的小说内容和创作想法"
+                   value={newProject.description}
+                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
+                   rows={3}
+                 />
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="genre">体裁类型</Label>
+                   <Select value={newProject.genre} onValueChange={(value: string) => setNewProject(prev => ({ ...prev, genre: value }))}>
+                     <SelectTrigger>
+                       <SelectValue placeholder="选择体裁" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="novel">长篇小说</SelectItem>
+                       <SelectItem value="short_story">短篇小说</SelectItem>
+                       <SelectItem value="novella">中篇小说</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
+
+                 <div className="space-y-2">
+                   <Label htmlFor="target_audience">目标读者</Label>
+                   <Select value={newProject.target_audience} onValueChange={(value: string) => setNewProject(prev => ({ ...prev, target_audience: value }))}>
+                     <SelectTrigger>
+                       <SelectValue placeholder="选择目标读者" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="general">大众读者</SelectItem>
+                       <SelectItem value="young_adult">青少年</SelectItem>
+                       <SelectItem value="adult">成人读者</SelectItem>
+                       <SelectItem value="children">儿童读者</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
+               </div>
+
+               <div className="space-y-2">
+                 <Label htmlFor="tone">写作风格</Label>
+                 <Select value={newProject.tone} onValueChange={(value: string) => setNewProject(prev => ({ ...prev, tone: value }))}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="选择写作风格" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="formal">正式严肃</SelectItem>
+                     <SelectItem value="casual">轻松随意</SelectItem>
+                     <SelectItem value="humorous">幽默风趣</SelectItem>
+                     <SelectItem value="dramatic">戏剧化</SelectItem>
+                     <SelectItem value="poetic">诗意优美</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+
+               <div className="space-y-3">
+                 <Label>主题标签</Label>
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                   {themeOptions.map((theme) => (
+                     <div key={theme} className="flex items-center space-x-2">
+                       <Checkbox
+                         id={theme}
+                         checked={newProject.themes.includes(theme)}
+                         onCheckedChange={(checked: boolean) => handleThemeChange(theme, checked)}
+                       />
+                       <Label htmlFor={theme} className="text-sm font-normal">
+                         {theme}
+                       </Label>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCreateDialogOpen(false)}
+                disabled={createProjectApi.loading}
+              >
+                取消
+              </Button>
+              <Button 
+                onClick={handleCreateProject}
+                disabled={!newProject.title.trim() || createProjectApi.loading}
+              >
+                {createProjectApi.loading ? (
+                  <>
+                    <Loading size="sm" className="mr-2" />
+                    创建中...
+                  </>
+                ) : (
+                  '创建项目'
+                )}
+              </Button>
+            </div>
+            
+            {createProjectApi.error && (
+              <ApiError 
+                error={createProjectApi.error} 
+                onRetry={() => handleCreateProject()}
+                className="mt-4"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* 搜索和筛选栏 */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="搜索项目..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
+        
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部状态</SelectItem>
+              <SelectItem value="draft">草稿</SelectItem>
+              <SelectItem value="generating">生成中</SelectItem>
+              <SelectItem value="completed">已完成</SelectItem>
+              <SelectItem value="error">错误</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={genreFilter} onValueChange={setGenreFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部体裁</SelectItem>
+              <SelectItem value="novel">长篇小说</SelectItem>
+              <SelectItem value="short_story">短篇小说</SelectItem>
+              <SelectItem value="novella">中篇小说</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-        {/* 创建项目表单 */}
-        {showCreateForm && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>创建新项目</CardTitle>
-              <CardDescription>填写项目基本信息开始创作</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">项目标题</label>
-                  <Input
-                    value={newProject.title}
-                    onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="输入项目标题"
-                  />
+      {/* 项目列表 */}
+      {projectsApi.loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <CardSkeleton key={index} />
+          ))}
+        </div>
+      ) : projectsApi.error ? (
+        <ApiError 
+          error={projectsApi.error} 
+          onRetry={loadProjects}
+          className="mb-6"
+        />
+      ) : filteredProjects.length === 0 ? (
+        <EmptyState
+          title={searchTerm || statusFilter !== 'all' || genreFilter !== 'all' ? "没有找到匹配的项目" : "还没有项目"}
+          description={searchTerm || statusFilter !== 'all' || genreFilter !== 'all' ? "尝试调整搜索条件或筛选器" : "创建您的第一个小说项目，开始创作之旅"}
+          action={
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              创建项目
+            </Button>
+          }
+          icon={<BookOpen className="w-12 h-12 text-gray-400" />}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map((project) => (
+            <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg mb-2">{project.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {project.description || '暂无描述'}
+                    </CardDescription>
+                  </div>
+                  <Badge className={getStatusColor(project.status)}>
+                    {getStatusText(project.status)}
+                  </Badge>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">体裁</label>
-                  <select
-                    value={newProject.genre}
-                    onChange={(e) => setNewProject(prev => ({ ...prev, genre: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">选择体裁</option>
-                    <option value="现代都市">现代都市</option>
-                    <option value="古代言情">古代言情</option>
-                    <option value="玄幻">玄幻</option>
-                    <option value="科幻">科幻</option>
-                    <option value="悬疑">悬疑</option>
-                    <option value="历史">历史</option>
-                  </select>
-                </div>
-              </div>
+              </CardHeader>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">项目描述</label>
-                <textarea
-                  value={newProject.description}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="描述您的项目内容和特色"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">目标读者</label>
-                  <select
-                    value={newProject.targetAudience}
-                    onChange={(e) => setNewProject(prev => ({ ...prev, targetAudience: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">选择目标读者</option>
-                    <option value="青年">青年</option>
-                    <option value="女性向">女性向</option>
-                    <option value="男性向">男性向</option>
-                    <option value="泛读者">泛读者</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">调性</label>
-                  <select
-                    value={newProject.tone}
-                    onChange={(e) => setNewProject(prev => ({ ...prev, tone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">选择调性</option>
-                    <option value="温情">温情</option>
-                    <option value="冷峻">冷峻</option>
-                    <option value="快节奏">快节奏</option>
-                    <option value="慢热">慢热</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">主题标签</label>
-                <Input
-                  placeholder="输入主题标签，用逗号分隔"
-                  onChange={(e) => {
-                    const themes = e.target.value.split(',').map(t => t.trim()).filter(t => t);
-                    setNewProject(prev => ({ ...prev, themes }));
-                  }}
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowCreateForm(false)}
-                >
-                  取消
-                </Button>
-                <Button onClick={handleCreateProject}>
-                  创建项目
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 项目列表 */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">加载中...</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
-              <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold text-gray-900 mb-1">
-                        {project.title}
-                      </CardTitle>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                          {project.status}
-                        </span>
-                        <span className="text-xs text-gray-500">{project.genre}</span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <EllipsisVerticalIcon className="h-4 w-4" />
-                    </Button>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>体裁: {project.genre}</span>
+                    <span>进度: {calculateProgress(project)}%</span>
                   </div>
-                  <CardDescription className="text-sm text-gray-600 line-clamp-2">
-                    {project.description}
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  {/* 进度条 */}
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>进度</span>
-                      <span>{getProgressPercentage(project)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${getProgressPercentage(project)}%` }}
-                      ></div>
-                    </div>
+                  
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${calculateProgress(project)}%` }}
+                    />
                   </div>
-
-                  {/* 统计信息 */}
-                  <div className="grid grid-cols-3 gap-4 text-center text-sm">
-                    <div>
-                      <div className="flex items-center justify-center mb-1">
-                        <BookOpenIcon className="h-4 w-4 text-gray-400 mr-1" />
-                      </div>
-                      <div className="font-medium text-gray-900">
-                        {project.chapters?.length || 0}
-                      </div>
-                      <div className="text-gray-500">章节</div>
+                  
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="w-4 h-4" />
+                        {project.chapters?.length || 0} 章节
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        {project.characters?.length || 0} 角色
+                      </span>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-center mb-1">
-                        <DocumentTextIcon className="h-4 w-4 text-gray-400 mr-1" />
-                      </div>
-                      <div className="font-medium text-gray-900">
-                        {project.chapters?.reduce((sum, ch) => sum + (ch.wordCount || 0), 0) || 0}
-                      </div>
-                      <div className="text-gray-500">字数</div>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-center mb-1">
-                        <CalendarIcon className="h-4 w-4 text-gray-400 mr-1" />
-                      </div>
-                      <div className="font-medium text-gray-900">
-                        {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : '-'}
-                      </div>
-                      <div className="text-gray-500">更新</div>
-                    </div>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {new Date(project.updated_at).toLocaleDateString()}
+                    </span>
                   </div>
-
-                  {/* 主题标签 */}
+                  
                   {project.themes && project.themes.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex flex-wrap gap-1">
-                        {project.themes.slice(0, 3).map((theme, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">
-                            {theme}
-                          </span>
-                        ))}
-                        {project.themes.length > 3 && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">
-                            +{project.themes.length - 3}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex flex-wrap gap-1">
+                      {project.themes.slice(0, 3).map((theme) => (
+                        <Badge
+                          key={theme}
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          {theme}
+                        </Badge>
+                      ))}
+                      {project.themes.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{project.themes.length - 3}
+                        </Badge>
+                      )}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* 空状态 */}
-        {!loading && filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <BookOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">没有找到项目</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm ? '尝试调整搜索条件' : '开始创建您的第一个项目'}
-            </p>
-            {!searchTerm && (
-              <div className="mt-6">
-                <Button onClick={() => setShowCreateForm(true)}>
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  新建项目
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

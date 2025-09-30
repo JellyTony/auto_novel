@@ -1,67 +1,105 @@
 // API 基础配置
-// 使用相对路径，通过 Next.js 的 rewrites 代理访问后端 API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// 请求配置
-const defaultHeaders = {
-  'Content-Type': 'application/json',
-};
-
-// 通用请求函数
+// 通用 API 请求函数
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+  };
+
   const config: RequestInit = {
+    ...options,
     headers: {
       ...defaultHeaders,
       ...options.headers,
     },
-    ...options,
   };
 
   try {
     const response = await fetch(url, config);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new APIError(
+        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+        response.status,
+        errorData
+      );
     }
-    
-    const data = await response.json();
-    return data;
+
+    return await response.json();
   } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
+    if (error instanceof APIError) {
+      throw error;
+    }
+    throw new APIError(
+      error instanceof Error ? error.message : 'Network error',
+      0,
+      error
+    );
   }
 }
 
-// ==================== 小说服务相关类型定义 ====================
+// API 错误类
+export class APIError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public data?: any
+  ) {
+    super(message);
+    this.name = 'APIError';
+  }
+}
+
+// 数据类型定义 - 基于 OpenAPI 规范
+
+// 基础类型
+export interface LLMOptions {
+  temperature?: number;
+  top_p?: number;
+  max_tokens?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  model?: string;
+}
+
+export interface ModelInfo {
+  name: string;
+  provider: string;
+  model: string;
+  description: string;
+  available: boolean;
+}
 
 // 项目相关类型
 export interface Project {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   genre: string;
-  targetAudience: string;
+  target_audience: string;
   tone: string;
   themes: string[];
-  status: string;
-  worldView?: WorldView;
-  characters?: Character[];
+  status: 'draft' | 'generating' | 'completed' | 'error';
+  world_view?: WorldView;
+  characters: Character[];
   outline?: Outline;
-  chapters?: Chapter[];
-  createdAt?: string;
-  updatedAt?: string;
+  chapters: Chapter[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateProjectRequest {
   title: string;
-  description: string;
+  description?: string;
   genre: string;
-  targetAudience: string;
+  target_audience: string;
   tone: string;
   themes: string[];
 }
@@ -70,17 +108,8 @@ export interface CreateProjectResponse {
   project: Project;
 }
 
-export interface GetProjectRequest {
-  projectId: string;
-}
-
 export interface GetProjectResponse {
   project: Project;
-}
-
-export interface ListProjectsRequest {
-  page?: number;
-  pageSize?: number;
 }
 
 export interface ListProjectsResponse {
@@ -90,55 +119,49 @@ export interface ListProjectsResponse {
 
 // 世界观相关类型
 export interface WorldView {
-  id: string;
-  projectId: string;
-  genre: string;
+  title: string;
+  synopsis: string;
   setting: string;
-  keyRules: string[];
-  tone: string;
-  targetAudience: string;
+  key_rules: string[];
+  tone_examples: string[];
   themes: string[];
-  description: string;
-  createdAt?: string;
 }
 
 export interface GenerateWorldViewRequest {
-  projectId: string;
+  project_id: string;
   genre: string;
   setting: string;
-  keyRules: string[];
+  key_rules: string[];
   tone: string;
-  targetAudience: string;
+  target_audience: string;
   themes: string[];
-  llmOptions?: LLMOptions;
+  llm_options?: LLMOptions;
 }
 
 export interface GenerateWorldViewResponse {
-  worldView: WorldView;
+  world_view: WorldView;
 }
 
 // 角色相关类型
 export interface Character {
-  id: string;
-  projectId: string;
   name: string;
-  role: string;
   age: number;
   gender: string;
   occupation: string;
-  personality: string[];
+  personality: string;
   background: string;
-  abilities: string[];
+  appearance: string;
+  relationships: string[];
   goals: string[];
   conflicts: string[];
-  relationshipMap: { [key: string]: string };
+  arc: string;
 }
 
 export interface GenerateCharactersRequest {
-  projectId: string;
-  characterNames: string[];
-  worldView: WorldView;
-  llmOptions?: LLMOptions;
+  project_id: string;
+  character_count: number;
+  world_view: WorldView;
+  llm_options?: LLMOptions;
 }
 
 export interface GenerateCharactersResponse {
@@ -147,26 +170,26 @@ export interface GenerateCharactersResponse {
 
 // 大纲相关类型
 export interface ChapterOutline {
-  index: number;
+  chapter_number: number;
   title: string;
   summary: string;
-  goal: string;
-  twistHint: string;
-  importantItems: string[];
+  key_events: string[];
+  characters_involved: string[];
+  word_count_target: number;
 }
 
 export interface Outline {
   id: string;
-  projectId: string;
+  project_id: string;
   chapters: ChapterOutline[];
 }
 
 export interface GenerateOutlineRequest {
-  projectId: string;
-  chapterCount: number;
-  worldView: WorldView;
+  project_id: string;
+  chapter_count: number;
+  world_view: WorldView;
   characters: Character[];
-  llmOptions?: LLMOptions;
+  llm_options?: LLMOptions;
 }
 
 export interface GenerateOutlineResponse {
@@ -176,23 +199,22 @@ export interface GenerateOutlineResponse {
 // 章节相关类型
 export interface Chapter {
   id: string;
-  projectId: string;
-  index: number;
+  project_id: string;
+  chapter_number: number;
   title: string;
-  summary: string;
-  rawContent: string;
-  wordCount: number;
-  status: string;
-  createdAt?: string;
-  updatedAt?: string;
+  content: string;
+  word_count: number;
+  status: 'draft' | 'generating' | 'completed' | 'polished';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface GenerateChapterRequest {
-  projectId: string;
-  chapterIndex: number;
-  chapterOutline: ChapterOutline;
-  generationContext: GenerationContext;
-  llmOptions?: LLMOptions;
+  project_id: string;
+  chapter_number: number;
+  outline: ChapterOutline;
+  context?: GenerationContext;
+  llm_options?: LLMOptions;
 }
 
 export interface GenerateChapterResponse {
@@ -200,361 +222,295 @@ export interface GenerateChapterResponse {
 }
 
 export interface PolishChapterRequest {
-  projectId: string;
-  chapterId: string;
-  requirements: string;
-  llmOptions?: LLMOptions;
+  project_id: string;
+  chapter_id: string;
+  style: string;
+  focus: string[];
+  llm_options?: LLMOptions;
 }
 
 export interface PolishChapterResponse {
-  chapter: Chapter;
+  polished_chapter: Chapter;
 }
 
-// 质量检查相关类型
-export interface QualityIssue {
-  type: string;
-  severity: string;
-  description: string;
-  suggestions: string[];
-  location: string;
+// 生成上下文
+export interface GenerationContext {
+  previous_summary: string;
+  characters: Character[];
+  timeline: TimelineEvent[];
+  props: PropItem[];
+  style_examples: string[];
 }
 
-export interface QualityReport {
-  chapterId: string;
-  overallScore: number;
-  issues: QualityIssue[];
-  suggestions: string[];
-}
-
-export interface CheckQualityRequest {
-  projectId: string;
-  chapterId: string;
-}
-
-export interface CheckQualityResponse {
-  report: QualityReport;
-}
-
-export interface BatchCheckQualityRequest {
-  projectId: string;
-  chapterIds: string[];
-}
-
-export interface BatchCheckQualityResponse {
-  reports: QualityReport[];
-}
-
-// 一致性检查相关类型
-export interface ConsistencyIssue {
-  type: string;
-  description: string;
-  affectedChapters: string[];
-  suggestions: string[];
-}
-
-export interface ConsistencyReport {
-  projectId: string;
-  issues: ConsistencyIssue[];
-  overallScore: number;
-}
-
-export interface CheckConsistencyRequest {
-  projectId: string;
-}
-
-export interface CheckConsistencyResponse {
-  report: ConsistencyReport;
-}
-
-// 生成上下文类型
 export interface TimelineEvent {
   timestamp: string;
   event: string;
-  characters: string[];
-  location: string;
+  description: string;
 }
 
 export interface PropItem {
   name: string;
   description: string;
-  owner: string;
-  importance: string;
+  location: string;
 }
 
-export interface GenerationContext {
-  previousSummary: string;
-  characters: Character[];
-  timeline: TimelineEvent[];
-  props: PropItem[];
-  styleExamples: string[];
+// 质量检查相关类型
+export interface QualityIssue {
+  type: 'grammar' | 'punctuation' | 'spelling' | 'style';
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+  position: string;
+  original: string;
+  corrected: string;
 }
 
-// LLM选项类型
-export interface LLMOptions {
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  topP: number;
+export interface CheckQualityRequest {
+  project_id: string;
+  chapter_id: string;
+  check_types: string[];
+  llm_options?: LLMOptions;
 }
 
-// 统计信息相关类型
-export interface ProjectStats {
-  totalProjects: number;
-  completedProjects: number;
-  totalWords: number;
-  monthlyWords: number;
+export interface CheckQualityResponse {
+  issues: QualityIssue[];
+  summary: QualitySummary;
 }
 
-export interface GetStatsResponse {
-  stats: ProjectStats;
+export interface BatchCheckQualityRequest {
+  project_id: string;
+  chapter_ids: string[];
+  check_types: string[];
+  llm_options?: LLMOptions;
 }
 
-// ==================== 小说服务API类 ====================
-
-export class NovelAPI {
-  // 项目管理
-  static async createProject(request: CreateProjectRequest): Promise<CreateProjectResponse> {
-    return apiRequest<CreateProjectResponse>('/api/v1/novel/projects', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  static async getProject(projectId: string): Promise<GetProjectResponse> {
-    return apiRequest<GetProjectResponse>(`/api/v1/novel/projects/${projectId}`);
-  }
-
-  static async listProjects(request: ListProjectsRequest = {}): Promise<ListProjectsResponse> {
-    const params = new URLSearchParams();
-    if (request.page) params.append('page', request.page.toString());
-    if (request.pageSize) params.append('page_size', request.pageSize.toString());
-    
-    const queryString = params.toString();
-    const url = queryString ? `/api/v1/novel/projects?${queryString}` : '/api/v1/novel/projects';
-    
-    return apiRequest<ListProjectsResponse>(url);
-  }
-
-  // 世界观生成
-  static async generateWorldView(request: GenerateWorldViewRequest): Promise<GenerateWorldViewResponse> {
-    return apiRequest<GenerateWorldViewResponse>(`/api/v1/novel/projects/${request.projectId}/worldview`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 角色生成
-  static async generateCharacters(request: GenerateCharactersRequest): Promise<GenerateCharactersResponse> {
-    return apiRequest<GenerateCharactersResponse>(`/api/v1/novel/projects/${request.projectId}/characters`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 大纲生成
-  static async generateOutline(request: GenerateOutlineRequest): Promise<GenerateOutlineResponse> {
-    return apiRequest<GenerateOutlineResponse>(`/api/v1/novel/projects/${request.projectId}/outline`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 章节生成
-  static async generateChapter(request: GenerateChapterRequest): Promise<GenerateChapterResponse> {
-    return apiRequest<GenerateChapterResponse>(`/api/v1/novel/projects/${request.projectId}/chapters`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 章节润色
-  static async polishChapter(request: PolishChapterRequest): Promise<PolishChapterResponse> {
-    return apiRequest<PolishChapterResponse>(`/api/v1/novel/projects/${request.projectId}/chapters/${request.chapterId}/polish`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 质量检查
-  static async checkQuality(request: CheckQualityRequest): Promise<CheckQualityResponse> {
-    return apiRequest<CheckQualityResponse>(`/api/v1/novel/projects/${request.projectId}/chapters/${request.chapterId}/quality`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 批量质量检查
-  static async batchCheckQuality(request: BatchCheckQualityRequest): Promise<BatchCheckQualityResponse> {
-    return apiRequest<BatchCheckQualityResponse>(`/api/v1/novel/projects/${request.projectId}/quality/batch`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 一致性检查
-  static async checkConsistency(request: CheckConsistencyRequest): Promise<CheckConsistencyResponse> {
-    return apiRequest<CheckConsistencyResponse>(`/api/v1/novel/projects/${request.projectId}/consistency`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  // 获取统计信息
-  static async getStats(): Promise<GetStatsResponse> {
-    return apiRequest<GetStatsResponse>('/api/v1/novel/stats');
-  }
+export interface BatchCheckQualityResponse {
+  results: { [key: string]: CheckQualityResponse };
+  overall_summary: QualitySummary;
 }
 
-// ==================== 视频脚本服务相关类型定义 ====================
+export interface QualitySummary {
+  total_issues: number;
+  issues_by_type: { [key: string]: number };
+  issues_by_severity: { [key: string]: number };
+  recommendations: string[];
+  quality_trends: number[];
+}
+
+// 一致性检查相关类型
+export interface ConsistencyIssue {
+  type: 'character' | 'plot' | 'setting' | 'timeline';
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+  chapters_involved: string[];
+  suggestions: string[];
+}
+
+export interface CheckConsistencyRequest {
+  project_id: string;
+  chapter_ids: string[];
+  check_types: string[];
+  llm_options?: LLMOptions;
+}
+
+export interface CheckConsistencyResponse {
+  issues: ConsistencyIssue[];
+  summary: string;
+}
+
+// 视频脚本相关类型
 export interface VideoScene {
-  index: number;
-  duration: number;
-  shotType: string;
-  visualDescription: string;
-  narration: string;
-  subtitle: string;
-  soundEffects?: string[];
-  transition?: string;
-  keyElements?: string[];
+  screen_index: number;
+  text: string;
+  suggested_bgm_tag: string;
+  suggested_image_tag: string;
+  tts_voice: 'male' | 'female';
+  notes: string;
 }
 
-export interface VideoHooks {
-  opening: string;
-  climax: string;
-  ending: string;
+export interface VideoScriptOptions {
+  scenes_per_chapter?: number;
+  platform: 'tiktok' | 'youtube' | 'bilibili';
+  voice_type: 'male' | 'female' | 'auto';
+}
+
+export interface GenerateVideoScriptRequest {
+  project_id: string;
+  chapter_ids: string[];
+  options: VideoScriptOptions;
+}
+
+export interface GenerateVideoScriptResponse {
+  scenes: VideoScene[];
 }
 
 export interface VideoScript {
   id: string;
-  projectId: string;
-  chapterId: string;
+  project_id: string;
   title: string;
-  duration: number;
-  platform: string;
-  style: string;
   scenes: VideoScene[];
-  hooks?: VideoHooks;
-  hashtags?: string[];
-  description: string;
-  status: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// 生成视频脚本请求参数
-export interface GenerateVideoScriptRequest {
-  projectId: string;
-  chapterId: string;
-  chapterTitle: string;
-  chapterContent: string;
   platform: string;
-  duration: number;
-  style: string;
-  requirements?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// 生成视频脚本响应
-export interface GenerateVideoScriptResponse {
-  videoScript: VideoScript;
-}
-
-// 优化视频脚本请求参数
-export interface OptimizeVideoScriptRequest {
-  scriptId: string;
-  requirements: string;
-  optimizeType?: string;
-}
-
-// 优化视频脚本响应
-export interface OptimizeVideoScriptResponse {
-  videoScript: VideoScript;
-}
-
-// 生成平台变体请求参数
-export interface GeneratePlatformVariantsRequest {
-  baseScriptId: string;
-  targetPlatforms: string[];
-}
-
-// 生成平台变体响应
-export interface GeneratePlatformVariantsResponse {
-  variants: VideoScript[];
-}
-
-// 获取视频脚本列表请求参数
-export interface ListVideoScriptsRequest {
-  projectId: string;
-  page?: number;
-  pageSize?: number;
-}
-
-// 获取视频脚本列表响应
 export interface ListVideoScriptsResponse {
   scripts: VideoScript[];
   total: number;
 }
 
-// 获取视频脚本详情响应
 export interface GetVideoScriptResponse {
-  videoScript: VideoScript;
+  script: VideoScript;
 }
 
-// 删除视频脚本响应
-export interface DeleteVideoScriptResponse {
+// 模型管理相关类型
+export interface ListModelsResponse {
+  models: ModelInfo[];
+  current_model: string;
+}
+
+export interface SwitchModelRequest {
+  model_name: string;
+}
+
+export interface SwitchModelResponse {
   success: boolean;
+  message: string;
+  current_model: string;
 }
 
-// 短视频脚本 API 类
+// 小说 API 类
+export class NovelAPI {
+  // 项目管理
+  static async listProjects(params?: { page?: number; pageSize?: number }): Promise<ListProjectsResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.pageSize) searchParams.append('page_size', params.pageSize.toString());
+    
+    const url = `/api/v1/novel/projects${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    return apiRequest<ListProjectsResponse>(url);
+  }
+
+  static async createProject(data: CreateProjectRequest): Promise<CreateProjectResponse> {
+    return apiRequest<CreateProjectResponse>('/api/v1/novel/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async getProject(id: string): Promise<GetProjectResponse> {
+    return apiRequest<GetProjectResponse>(`/api/v1/novel/projects/${id}`);
+  }
+
+  static async deleteProject(id: string): Promise<void> {
+    return apiRequest<void>(`/api/v1/novel/projects/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // 世界观生成
+  static async generateWorldView(data: GenerateWorldViewRequest): Promise<GenerateWorldViewResponse> {
+    return apiRequest<GenerateWorldViewResponse>(`/api/v1/novel/projects/${data.project_id}/worldview`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 角色生成
+  static async generateCharacters(data: GenerateCharactersRequest): Promise<GenerateCharactersResponse> {
+    return apiRequest<GenerateCharactersResponse>(`/api/v1/novel/projects/${data.project_id}/characters`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 大纲生成
+  static async generateOutline(data: GenerateOutlineRequest): Promise<GenerateOutlineResponse> {
+    return apiRequest<GenerateOutlineResponse>(`/api/v1/novel/projects/${data.project_id}/outline`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 章节生成
+  static async generateChapter(data: GenerateChapterRequest): Promise<GenerateChapterResponse> {
+    return apiRequest<GenerateChapterResponse>(`/api/v1/novel/projects/${data.project_id}/chapters`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 章节润色
+  static async polishChapter(data: PolishChapterRequest): Promise<PolishChapterResponse> {
+    return apiRequest<PolishChapterResponse>(`/api/v1/novel/projects/${data.project_id}/chapters/${data.chapter_id}/polish`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 质量检查
+  static async checkQuality(data: CheckQualityRequest): Promise<CheckQualityResponse> {
+    return apiRequest<CheckQualityResponse>(`/api/v1/novel/projects/${data.project_id}/chapters/${data.chapter_id}/quality`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async batchCheckQuality(data: BatchCheckQualityRequest): Promise<BatchCheckQualityResponse> {
+    return apiRequest<BatchCheckQualityResponse>(`/api/v1/novel/projects/${data.project_id}/quality/batch`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 一致性检查
+  static async checkConsistency(data: CheckConsistencyRequest): Promise<CheckConsistencyResponse> {
+    return apiRequest<CheckConsistencyResponse>(`/api/v1/novel/projects/${data.project_id}/consistency`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 模型管理
+  static async listModels(): Promise<ListModelsResponse> {
+    return apiRequest<ListModelsResponse>('/api/v1/novel/models');
+  }
+
+  static async switchModel(data: SwitchModelRequest): Promise<SwitchModelResponse> {
+    return apiRequest<SwitchModelResponse>('/api/v1/novel/models/switch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+}
+
+// 视频脚本 API 类
 export class VideoScriptAPI {
-  // 生成视频脚本
-  static async generateVideoScript(
-    request: GenerateVideoScriptRequest
-  ): Promise<GenerateVideoScriptResponse> {
-    return apiRequest<GenerateVideoScriptResponse>('/v1/video-scripts/generate', {
+  static async generateVideoScript(data: GenerateVideoScriptRequest): Promise<GenerateVideoScriptResponse> {
+    return apiRequest<GenerateVideoScriptResponse>('/api/v1/novel/video-scripts/generate', {
       method: 'POST',
-      body: JSON.stringify(request),
+      body: JSON.stringify(data),
     });
   }
 
-  // 优化视频脚本
-  static async optimizeVideoScript(
-    request: OptimizeVideoScriptRequest
-  ): Promise<OptimizeVideoScriptResponse> {
-    return apiRequest<OptimizeVideoScriptResponse>(`/v1/video-scripts/${request.scriptId}/optimize`, {
-      method: 'PUT',
-      body: JSON.stringify(request),
-    });
+  static async listVideoScripts(params?: { projectId?: string }): Promise<ListVideoScriptsResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.projectId) searchParams.append('project_id', params.projectId);
+    
+    const url = `/api/v1/novel/video-scripts${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    return apiRequest<ListVideoScriptsResponse>(url);
   }
 
-  // 生成平台变体
-  static async generatePlatformVariants(
-    request: GeneratePlatformVariantsRequest
-  ): Promise<GeneratePlatformVariantsResponse> {
-    return apiRequest<GeneratePlatformVariantsResponse>(`/v1/video-scripts/${request.baseScriptId}/variants`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+  static async getVideoScript(id: string): Promise<GetVideoScriptResponse> {
+    return apiRequest<GetVideoScriptResponse>(`/api/v1/novel/video-scripts/${id}`);
   }
 
-  // 获取视频脚本列表
-  static async listVideoScripts(
-    request: ListVideoScriptsRequest
-  ): Promise<ListVideoScriptsResponse> {
-    return apiRequest<ListVideoScriptsResponse>(`/v1/projects/${request.projectId}/video-scripts`);
-  }
-
-  // 获取视频脚本详情
-  static async getVideoScript(scriptId: string): Promise<GetVideoScriptResponse> {
-    return apiRequest<GetVideoScriptResponse>(`/v1/video-scripts/${scriptId}`);
-  }
-
-  // 删除视频脚本
-  static async deleteVideoScript(scriptId: string): Promise<DeleteVideoScriptResponse> {
-    return apiRequest<DeleteVideoScriptResponse>(`/v1/video-scripts/${scriptId}`, {
+  static async deleteVideoScript(id: string): Promise<void> {
+    return apiRequest<void>(`/api/v1/novel/video-scripts/${id}`, {
       method: 'DELETE',
     });
   }
 }
 
-// 导出默认实例
-export default VideoScriptAPI;
+// 导出主要类和函数
+export { apiRequest };
+export default { NovelAPI, VideoScriptAPI };
