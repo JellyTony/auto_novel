@@ -5,64 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
+  PlusIcon, 
+  MagnifyingGlassIcon,
   DocumentTextIcon,
   SparklesIcon,
-  PlusIcon,
+  EyeIcon,
   PencilIcon,
   TrashIcon,
   ArrowUpIcon,
-  ArrowDownIcon,
-  EyeIcon,
-  Bars3Icon,
-  ListBulletIcon
+  ArrowDownIcon
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
-import { NovelAPI, Outline, GenerateOutlineRequest, GenerationContext } from "@/lib/api";
-
-// 模拟大纲数据
-const mockOutline = {
-  id: "1",
-  projectId: "1",
-  title: "都市修仙传大纲",
-  description: "现代都市背景下的修仙故事完整大纲",
-  totalChapters: 30,
-  chapterOutlines: [
-    {
-      id: "1",
-      chapterNumber: 1,
-      title: "意外的传承",
-      summary: "程序员林逸在加班时意外触发古老的修仙传承，获得修仙功法。",
-      keyEvents: ["获得传承", "初次修炼", "感知灵气"],
-      characters: ["林逸"],
-      plotPoints: ["传承觉醒", "能力初现"]
-    },
-    {
-      id: "2",
-      chapterNumber: 2,
-      title: "初试身手",
-      summary: "林逸尝试修炼，发现自己的修仙天赋，同时遇到第一个挑战。",
-      keyEvents: ["初次修炼", "遇到危险", "展现实力"],
-      characters: ["林逸", "小混混"],
-      plotPoints: ["实力展现", "声名初起"]
-    },
-    {
-      id: "3",
-      chapterNumber: 3,
-      title: "神秘师父",
-      summary: "张师父出现，指导林逸正确的修炼方法，揭示修仙世界的秘密。",
-      keyEvents: ["遇见师父", "学习正法", "了解修仙界"],
-      characters: ["林逸", "张师父"],
-      plotPoints: ["师父指导", "修仙界揭秘"]
-    }
-  ]
-};
-
-const statusColors = {
-  "已完成": "bg-green-100 text-green-800",
-  "进行中": "bg-blue-100 text-blue-800",
-  "未开始": "bg-gray-100 text-gray-800",
-  "需修改": "bg-yellow-100 text-yellow-800"
-};
+import { NovelAPI, Outline, GenerateOutlineRequest, WorldView, Character, GenerationContext } from "@/lib/api";
 
 export default function OutlinePage() {
   const [outline, setOutline] = useState<Outline | null>(null);
@@ -72,8 +26,41 @@ export default function OutlinePage() {
   const [generateRequest, setGenerateRequest] = useState<GenerateOutlineRequest>({
     projectId: "1",
     chapterCount: 10,
-    generationContext: {} as GenerationContext
+    worldView: {} as WorldView,
+    characters: [] as Character[]
   });
+
+  // 模拟大纲数据
+  const mockOutline: Outline = {
+    id: "1",
+    projectId: "1",
+    chapters: [
+      {
+        index: 1,
+        title: "意外的传承",
+        summary: "程序员林逸在加班时意外触发古老的修仙传承，获得修仙功法。",
+        goal: "建立主角的修仙起点",
+        twistHint: "玉佩的真正来历",
+        importantItems: ["神秘玉佩", "修仙功法"]
+      },
+      {
+        index: 2,
+        title: "初试身手",
+        summary: "林逸尝试修炼，发现自己的修仙天赋，同时遇到第一个挑战。",
+        goal: "展现主角的天赋和初步实力",
+        twistHint: "修仙界的关注",
+        importantItems: ["修炼心得", "第一次战斗"]
+      },
+      {
+        index: 3,
+        title: "神秘师父",
+        summary: "张师父出现，指导林逸正确的修炼方法，揭示修仙世界的秘密。",
+        goal: "引入师父角色，扩展世界观",
+        twistHint: "师父的真实身份",
+        importantItems: ["师父传授", "修仙界秘密"]
+      }
+    ]
+  };
 
   // 加载大纲
   const loadOutline = async (projectId: string) => {
@@ -102,7 +89,7 @@ export default function OutlinePage() {
       }
 
       const response = await NovelAPI.generateOutline(generateRequest);
-      setOutline(response);
+      setOutline(response.outline);
       setShowGenerateForm(false);
     } catch (error) {
       console.error('生成大纲失败:', error);
@@ -161,216 +148,171 @@ export default function OutlinePage() {
         description="规划和编辑您的小说大纲结构"
       />
       
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 overflow-auto p-6">
         {/* 大纲概览 */}
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center">
-                  <DocumentTextIcon className="h-5 w-5 mr-2 text-blue-600" />
-                  {outline.title} - 大纲概览
+                <CardTitle className="text-xl font-bold text-gray-900">
+                  都市修仙传大纲
                 </CardTitle>
                 <CardDescription className="mt-1">
-                  总计划 {outline.totalChapters} 章，已规划 {outline.chapterOutlines.length} 章
+                  总计划 30 章，已规划 {outline.chapters.length} 章
                 </CardDescription>
               </div>
               <div className="flex space-x-2">
-                <Button variant="outline">
+                <Button variant="outline" size="sm">
                   <EyeIcon className="h-4 w-4 mr-2" />
                   预览
                 </Button>
-                <Button>
-                  <SparklesIcon className="h-4 w-4 mr-2" />
-                  AI优化大纲
+                <Button variant="outline" size="sm">
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  编辑
                 </Button>
               </div>
             </div>
           </CardHeader>
+          
           <CardContent>
+            {/* 统计信息 */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{outline.chapterOutlines.length}</div>
+                <div className="text-2xl font-bold text-blue-600">{outline.chapters.length}</div>
                 <div className="text-sm text-gray-500">已规划章节</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{outline.totalChapters - outline.chapterOutlines.length}</div>
+                <div className="text-2xl font-bold text-green-600">{30 - outline.chapters.length}</div>
                 <div className="text-sm text-gray-500">待规划章节</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{outline.chapterOutlines.filter(c => c.keyEvents.length > 0).length}</div>
+                <div className="text-2xl font-bold text-purple-600">{outline.chapters.filter(c => c.importantItems.length > 0).length}</div>
                 <div className="text-sm text-gray-500">详细章节</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{Math.round((outline.chapterOutlines.length / outline.totalChapters) * 100)}%</div>
+                <div className="text-2xl font-bold text-orange-600">{Math.round((outline.chapters.length / 30) * 100)}%</div>
                 <div className="text-sm text-gray-500">规划进度</div>
               </div>
             </div>
+            
+            {/* 进度条 */}
             <div className="mt-4">
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-blue-600 h-2 rounded-full transition-all" 
-                  style={{ width: `${(outline.chapterOutlines.length / outline.totalChapters) * 100}%` }}
+                  style={{ width: `${(outline.chapters.length / 30) * 100}%` }}
                 ></div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* AI生成工具 */}
+        {/* 工具栏 */}
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <SparklesIcon className="h-5 w-5 mr-2 text-blue-600" />
-              AI大纲生成工具
-            </CardTitle>
-            <CardDescription>
-              基于世界观和角色设定，智能生成完整的故事大纲
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  故事长度
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
-                  <option value="short">短篇 (10-20章)</option>
-                  <option value="medium">中篇 (20-50章)</option>
-                  <option value="long">长篇 (50-100章)</option>
-                  <option value="series">系列 (100+章)</option>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="搜索章节..."
+                    className="pl-10 w-64"
+                  />
+                </div>
+                <select className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">全部状态</option>
+                  <option value="completed">已完成</option>
+                  <option value="in-progress">进行中</option>
+                  <option value="planned">已规划</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  故事节奏
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
-                  <option value="fast">快节奏</option>
-                  <option value="medium">中等节奏</option>
-                  <option value="slow">慢节奏</option>
-                </select>
+              <div className="flex space-x-3">
+                <Button onClick={() => setShowGenerateForm(true)}>
+                  <SparklesIcon className="h-4 w-4 mr-2" />
+                  生成完整大纲
+                </Button>
+                <Button variant="outline">
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  手动添加章节
+                </Button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  冲突强度
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
-                  <option value="high">高强度</option>
-                  <option value="medium">中等强度</option>
-                  <option value="low">低强度</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                故事主线
-              </label>
-              <Input 
-                placeholder="描述您希望的主要故事线和发展方向..."
-                className="w-full"
-              />
-            </div>
-            <div className="flex space-x-3">
-              <Button onClick={() => setShowGenerateForm(true)}>
-                <SparklesIcon className="h-4 w-4 mr-2" />
-                生成完整大纲
-              </Button>
-              <Button variant="outline">
-                <PlusIcon className="h-4 w-4 mr-2" />
-                生成下一章
-              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* 大纲结构 */}
+        {/* 章节视图切换 */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">大纲结构</h2>
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm">
-              <Bars3Icon className="h-4 w-4 mr-2" />
-              树状视图
-            </Button>
-            <Button variant="outline" size="sm">
-              <ListBulletIcon className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="bg-blue-50 text-blue-600 border-blue-200">
               列表视图
             </Button>
-            <Button size="sm">
-              <PlusIcon className="h-4 w-4 mr-2" />
-              添加卷
+            <Button variant="outline" size="sm">
+              卡片视图
             </Button>
+            <Button variant="outline" size="sm">
+              时间线视图
+            </Button>
+          </div>
+          
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <span>共 {outline.chapters.length} 个章节</span>
           </div>
         </div>
 
         {/* 大纲内容 */}
         <div className="space-y-4">
-          {outline.chapterOutlines.map((chapter, index) => (
-            <Card key={chapter.id} className="border border-gray-200">
+          {outline.chapters.map((chapter, index) => (
+            <Card key={chapter.index} className="border border-gray-200">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h4 className="font-medium text-gray-900">第{chapter.chapterNumber}章：{chapter.title}</h4>
+                      <h4 className="font-medium text-gray-900">第{chapter.index}章：{chapter.title}</h4>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">{chapter.summary}</p>
                     
-                    {/* 关键事件 */}
-                    {chapter.keyEvents.length > 0 && (
+                    {/* 章节目标 */}
+                    <div className="mb-3">
+                      <span className="text-xs font-medium text-gray-700">章节目标：</span>
+                      <p className="text-xs text-gray-600 mt-1">{chapter.goal}</p>
+                    </div>
+
+                    {/* 重要道具 */}
+                    {chapter.importantItems.length > 0 && (
                       <div className="mb-3">
-                        <span className="text-xs font-medium text-gray-700">关键事件：</span>
+                        <span className="text-xs font-medium text-gray-700">重要道具：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {chapter.keyEvents.map((event, eventIndex) => (
-                            <span key={eventIndex} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-blue-50 text-blue-700">
-                              {event}
+                          {chapter.importantItems.map((item, itemIndex) => (
+                            <span key={itemIndex} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-green-50 text-green-700">
+                              {item}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* 涉及角色 */}
-                    {chapter.characters.length > 0 && (
-                      <div className="mb-3">
-                        <span className="text-xs font-medium text-gray-700">涉及角色：</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {chapter.characters.map((character, characterIndex) => (
-                            <span key={characterIndex} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-green-50 text-green-700">
-                              {character}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 剧情节点 */}
-                    {chapter.plotPoints.length > 0 && (
+                    {/* 转折提示 */}
+                    {chapter.twistHint && (
                       <div>
-                        <span className="text-xs font-medium text-gray-700">剧情节点：</span>
-                        <ul className="mt-1 space-y-1">
-                          {chapter.plotPoints.map((point, pointIndex) => (
-                            <li key={pointIndex} className="flex items-start text-xs text-gray-600">
-                              <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                              {point}
-                            </li>
-                          ))}
-                        </ul>
+                        <span className="text-xs font-medium text-gray-700">转折提示：</span>
+                        <p className="text-xs text-gray-600 mt-1">{chapter.twistHint}</p>
                       </div>
                     )}
                   </div>
                   
                   <div className="flex flex-col space-y-1 ml-4">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="sm">
                       <ArrowUpIcon className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="sm">
                       <ArrowDownIcon className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="sm">
                       <PencilIcon className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
-                      <TrashIcon className="h-4 w-4 text-red-500" />
+                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                      <TrashIcon className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

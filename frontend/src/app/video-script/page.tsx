@@ -19,582 +19,403 @@ import {
   TagIcon,
   SpeakerWaveIcon,
   PhotoIcon,
-  FilmIcon
+  FilmIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { 
   VideoScriptAPI, 
-  VideoScript as APIVideoScript, 
-  VideoScene as APIVideoScene, 
+  VideoScript, 
+  VideoScene, 
   GenerateVideoScriptRequest,
-  OptimizeVideoScriptRequest 
+  OptimizeVideoScriptRequest,
+  Project
 } from '@/lib/api';
 
-interface VideoScene {
-  index: number;
-  duration: number;
-  shotType: string;
-  visualDescription: string;
-  narration: string;
-  subtitle: string;
-  soundEffects: string[];
-  transition: string;
-  keyElements: string[];
-}
-
-interface VideoScript {
-  id: string;
-  title: string;
-  platform: string;
-  duration: number;
-  style: string;
-  scenes: VideoScene[];
-  hashtags: string[];
-  description: string;
-  status: string;
-  createdAt: string;
-}
-
 export default function VideoScriptPage() {
-  const [selectedChapter, setSelectedChapter] = useState('chapter-3');
-  const [selectedPlatform, setSelectedPlatform] = useState('douyin');
-  const [videoDuration, setVideoDuration] = useState(60);
-  const [videoStyle, setVideoStyle] = useState('dramatic');
-  const [requirements, setRequirements] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedScript, setSelectedScript] = useState<VideoScript | null>(null);
   const [videoScripts, setVideoScripts] = useState<VideoScript[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<string>("1");
+  const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [generateRequest, setGenerateRequest] = useState<GenerateVideoScriptRequest>({
+    projectId: "1",
+    chapterId: "1",
+    chapterTitle: "第一章",
+    chapterContent: "章节内容",
+    platform: "抖音",
+    duration: 60,
+    style: "剧情类"
+  });
 
-  // 模拟数据
-  const chapters = [
-    { id: 'chapter-1', title: '第1章：觉醒', wordCount: 3200 },
-    { id: 'chapter-2', title: '第2章：初试身手', wordCount: 3800 },
-    { id: 'chapter-3', title: '第3章：神秘师父', wordCount: 4200 },
-    { id: 'chapter-4', title: '第4章：修炼之路', wordCount: 3600 },
-  ];
-
-  const platforms = [
-    { id: 'douyin', name: '抖音', aspectRatio: '9:16', maxDuration: 180 },
-    { id: 'kuaishou', name: '快手', aspectRatio: '9:16', maxDuration: 300 },
-    { id: 'xiaohongshu', name: '小红书', aspectRatio: '4:5', maxDuration: 90 },
-    { id: 'bilibili', name: 'B站', aspectRatio: '16:9', maxDuration: 600 },
-  ];
-
-  const styles = [
-    { id: 'dramatic', name: '戏剧化', description: '强调冲突和转折' },
-    { id: 'suspense', name: '悬疑', description: '营造紧张氛围' },
-    { id: 'emotional', name: '情感', description: '突出情感共鸣' },
-    { id: 'action', name: '动作', description: '快节奏剪辑' },
+  // 模拟视频脚本数据作为后备
+  const mockVideoScripts: VideoScript[] = [
+    {
+      id: "1",
+      projectId: "1",
+      chapterId: "1",
+      title: "都市修仙第一集：觉醒",
+      platform: "抖音",
+      duration: 60,
+      style: "剧情类",
+      description: "主角遇到神秘师父，命运发生转折",
+      status: "completed",
+      scenes: [
+        {
+          index: 1,
+          duration: 15,
+          shotType: "特写",
+          visualDescription: "主角李明在办公室加班，疲惫不堪",
+          narration: "又是一个加班到深夜的日子",
+          subtitle: "现代社畜的日常",
+          soundEffects: ["键盘敲击声", "空调嗡嗡声"],
+          transition: "淡入",
+          keyElements: ["办公室", "电脑", "疲惫表情"]
+        },
+        {
+          index: 2,
+          duration: 20,
+          shotType: "中景",
+          visualDescription: "李明走在回家路上，突然感到一阵眩晕",
+          narration: "就在这时，一股神秘力量涌入体内",
+          subtitle: "命运的转折点",
+          soundEffects: ["脚步声", "风声", "神秘音效"],
+          transition: "快切",
+          keyElements: ["街道", "路灯", "神秘光芒"]
+        },
+        {
+          index: 3,
+          duration: 25,
+          shotType: "全景",
+          visualDescription: "李明发现自己能够感知到周围的灵气",
+          narration: "这就是传说中的修仙之路吗？",
+          subtitle: "新世界的大门打开",
+          soundEffects: ["心跳声", "能量流动声"],
+          transition: "溶解",
+          keyElements: ["灵气可视化", "震惊表情", "城市夜景"]
+        }
+      ],
+      hooks: {
+        opening: "现代社畜的平凡生活",
+        climax: "神秘力量的觉醒",
+        ending: "修仙之路的开始"
+      },
+      hashtags: ["#修仙", "#逆袭", "#热血"],
+      createdAt: "2024-09-15T10:30:00Z"
+    }
   ];
 
   // 加载视频脚本列表
   const loadVideoScripts = async () => {
     try {
-      const response = await VideoScriptAPI.listVideoScripts({ projectId: 'project-1' });
-      // 转换API响应到本地类型
-      const convertedScripts: VideoScript[] = (response.scripts || []).map(apiScript => ({
-        id: apiScript.id || '',
-        title: apiScript.title || '',
-        platform: apiScript.platform || '',
-        duration: apiScript.duration || 0,
-        style: apiScript.style || '',
-        scenes: (apiScript.scenes || []).map(apiScene => ({
-          index: apiScene.index || 0,
-          duration: apiScene.duration || 0,
-          shotType: apiScene.shotType || '',
-          visualDescription: apiScene.visualDescription || '',
-          narration: apiScene.narration || '',
-          subtitle: apiScene.subtitle || '',
-          soundEffects: apiScene.soundEffects || [],
-          transition: apiScene.transition || '',
-          keyElements: apiScene.keyElements || []
-        })),
-        hashtags: apiScript.hashtags || [],
-        description: apiScript.description || '',
-        status: apiScript.status || 'completed',
-        createdAt: apiScript.createdAt || new Date().toLocaleString()
-      }));
-      setVideoScripts(convertedScripts);
+      setLoading(true);
+      const response = await VideoScriptAPI.listVideoScripts({ projectId: selectedProject });
+      setVideoScripts(response.scripts);
     } catch (error) {
-      console.error('加载脚本列表失败:', error);
-      // 使用模拟数据作为后备
-      setVideoScripts([
-        {
-          id: 'script-1',
-          title: '第3章：神秘师父 - 抖音版',
-          platform: 'douyin',
-          duration: 60,
-          style: 'dramatic',
-          scenes: [
-            {
-              index: 1,
-              duration: 8,
-              shotType: '特写',
-              visualDescription: '主角林枫紧皱眉头，眼中闪烁着困惑的光芒',
-              narration: '就在林枫以为自己要死的时候...',
-              subtitle: '危机时刻',
-              soundEffects: ['紧张音效', '心跳声'],
-              transition: '快切',
-              keyElements: ['主角表情', '眼神特写']
-            }
-          ],
-          hashtags: ['#修仙', '#逆袭', '#热血'],
-          description: '主角遇到神秘师父，命运发生转折',
-          status: 'completed',
-          createdAt: '2024-01-15 14:30'
-        }
-      ]);
+      console.error('加载视频脚本失败:', error);
+      setVideoScripts(mockVideoScripts); // 使用模拟数据作为后备
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 生成视频脚本
+  const handleGenerateVideoScript = async () => {
+    try {
+      setGenerating(true);
+      const response = await VideoScriptAPI.generateVideoScript(generateRequest);
+      setVideoScripts([...videoScripts, response.videoScript]);
+      setShowGenerateForm(false);
+    } catch (error) {
+      console.error('生成视频脚本失败:', error);
+      alert('生成视频脚本失败，请重试');
+    } finally {
+      setGenerating(false);
     }
   };
 
   useEffect(() => {
     loadVideoScripts();
-  }, []);
+  }, [selectedProject]);
 
-  // 生成视频脚本
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setError(null);
-    
-    try {
-      const selectedChapterData = chapters.find(c => c.id === selectedChapter);
-      if (!selectedChapterData) {
-        throw new Error('未找到选中的章节');
-      }
+  const platformOptions = [
+    { value: "抖音", label: "抖音" },
+    { value: "快手", label: "快手" },
+    { value: "小红书", label: "小红书" },
+    { value: "B站", label: "B站" },
+    { value: "微信视频号", label: "微信视频号" }
+  ];
 
-      const request: GenerateVideoScriptRequest = {
-        projectId: 'project-1',
-        chapterId: selectedChapter,
-        chapterTitle: selectedChapterData.title,
-        chapterContent: `这是${selectedChapterData.title}的内容，共${selectedChapterData.wordCount}字...`,
-        platform: selectedPlatform,
-        duration: videoDuration,
-        style: videoStyle,
-        requirements: requirements || undefined
-      };
-
-      const response = await VideoScriptAPI.generateVideoScript(request);
-      
-      if (response.videoScript) {
-        // 转换API响应到本地类型
-        const newScript: VideoScript = {
-          id: response.videoScript.id || `script-${Date.now()}`,
-          title: response.videoScript.title || '新生成的脚本',
-          platform: selectedPlatform,
-          duration: videoDuration,
-          style: videoStyle,
-          scenes: (response.videoScript.scenes || []).map(scene => ({
-            index: scene.index || 0,
-            duration: scene.duration || 0,
-            shotType: scene.shotType || '',
-            visualDescription: scene.visualDescription || '',
-            narration: scene.narration || '',
-            subtitle: scene.subtitle || '',
-            soundEffects: scene.soundEffects || [],
-            transition: scene.transition || '',
-            keyElements: scene.keyElements || []
-          })),
-          hashtags: response.videoScript.hashtags || [],
-          description: response.videoScript.description || '',
-          status: response.videoScript.status || 'completed',
-          createdAt: new Date().toLocaleString()
-        };
-
-        setVideoScripts(prev => [newScript, ...prev]);
-        setSelectedScript(newScript);
-      }
-    } catch (error) {
-      console.error('生成脚本失败:', error);
-      setError('生成脚本失败，请稍后重试');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // 优化脚本
-  const handleOptimize = async (scriptId: string) => {
-    try {
-      const request: OptimizeVideoScriptRequest = {
-        scriptId,
-        requirements: '请优化脚本的节奏和视觉效果'
-      };
-
-      const response = await VideoScriptAPI.optimizeVideoScript(request);
-      
-      if (response.videoScript) {
-        // 更新脚本列表
-        setVideoScripts(prev => prev.map(script => 
-          script.id === scriptId 
-            ? { ...script, ...response.videoScript }
-            : script
-        ));
-      }
-    } catch (error) {
-      console.error('优化脚本失败:', error);
-      setError('优化脚本失败，请稍后重试');
-    }
-  };
-
-  // 删除脚本
-  const handleDelete = async (scriptId: string) => {
-    try {
-      await VideoScriptAPI.deleteVideoScript(scriptId);
-      setVideoScripts(prev => prev.filter(script => script.id !== scriptId));
-      if (selectedScript?.id === scriptId) {
-        setSelectedScript(null);
-      }
-    } catch (error) {
-      console.error('删除脚本失败:', error);
-      setError('删除脚本失败，请稍后重试');
-    }
-  };
-
-  // 导出脚本
-  const handleExport = (script: VideoScript) => {
-    const content = JSON.stringify(script, null, 2);
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${script.title}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  const styleOptions = [
+    { value: "剧情类", label: "剧情类" },
+    { value: "解说类", label: "解说类" },
+    { value: "访谈类", label: "访谈类" },
+    { value: "教程类", label: "教程类" }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title="短视频脚本生成" description="将小说章节转换为适合短视频平台的分镜脚本" />
+    <div className="container mx-auto p-6">
+      <Header 
+        title="视频脚本" 
+        description="将小说章节转换为短视频脚本，支持多平台优化"
+      />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600">{error}</p>
-            <button 
-              onClick={() => setError(null)}
-              className="mt-2 text-sm text-red-500 hover:text-red-700"
+      <div className="space-y-6">
+        {/* 操作栏 */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <select 
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              关闭
-            </button>
+              <option value="1">项目1 - 都市修仙</option>
+              <option value="2">项目2 - 星际冒险</option>
+            </select>
           </div>
+          
+          <Button 
+            onClick={() => setShowGenerateForm(true)}
+            className="flex items-center space-x-2"
+          >
+            <PlusIcon className="h-4 w-4" />
+            <span>生成视频脚本</span>
+          </Button>
+        </div>
+
+        {/* 生成表单 */}
+        {showGenerateForm && (
+          <Card>
+            <CardHeader>
+              <CardTitle>生成视频脚本</CardTitle>
+              <CardDescription>选择章节并设置视频参数</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">章节标题</label>
+                  <Input
+                    value={generateRequest.chapterTitle}
+                    onChange={(e) => setGenerateRequest({...generateRequest, chapterTitle: e.target.value})}
+                    placeholder="第一章：觉醒"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">平台</label>
+                  <select
+                    value={generateRequest.platform}
+                    onChange={(e) => setGenerateRequest({...generateRequest, platform: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {platformOptions.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">时长（秒）</label>
+                  <Input
+                    type="number"
+                    value={generateRequest.duration}
+                    onChange={(e) => setGenerateRequest({...generateRequest, duration: parseInt(e.target.value)})}
+                    placeholder="60"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">风格</label>
+                  <select
+                    value={generateRequest.style}
+                    onChange={(e) => setGenerateRequest({...generateRequest, style: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {styleOptions.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">特殊要求</label>
+                <textarea
+                  value={generateRequest.requirements || ''}
+                  onChange={(e) => setGenerateRequest({...generateRequest, requirements: e.target.value})}
+                  placeholder="请输入对脚本的特殊要求..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowGenerateForm(false)}
+                >
+                  取消
+                </Button>
+                <Button 
+                  onClick={handleGenerateVideoScript}
+                  disabled={generating}
+                >
+                  {generating ? '生成中...' : '生成脚本'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 左侧：生成设置 */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* 章节选择 */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <DocumentTextIcon className="h-5 w-5 mr-2" />
-                选择章节
-              </h3>
-              <div className="space-y-3">
-                {chapters.map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedChapter === chapter.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setSelectedChapter(chapter.id)}
-                  >
-                    <div className="font-medium text-gray-900">{chapter.title}</div>
-                    <div className="text-sm text-gray-500">{chapter.wordCount} 字</div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* 平台设置 */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <VideoCameraIcon className="h-5 w-5 mr-2" />
-                平台设置
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">目标平台</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {platforms.map((platform) => (
-                      <button
-                        key={platform.id}
-                        className={`p-3 text-left rounded-lg border transition-colors ${
-                          selectedPlatform === platform.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => setSelectedPlatform(platform.id)}
-                      >
-                        <div className="font-medium text-sm">{platform.name}</div>
-                        <div className="text-xs text-gray-500">{platform.aspectRatio}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">视频时长</label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="number"
-                      value={videoDuration}
-                      onChange={(e) => setVideoDuration(Number(e.target.value))}
-                      min="15"
-                      max="300"
-                      className="flex-1"
-                    />
-                    <span className="text-sm text-gray-500">秒</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* 视频风格 */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <FilmIcon className="h-5 w-5 mr-2" />
-                视频风格
-              </h3>
-              <div className="space-y-2">
-                {styles.map((style) => (
-                  <button
-                    key={style.id}
-                    className={`w-full p-3 text-left rounded-lg border transition-colors ${
-                      videoStyle === style.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setVideoStyle(style.id)}
-                  >
-                    <div className="font-medium text-sm">{style.name}</div>
-                    <div className="text-xs text-gray-500">{style.description}</div>
-                  </button>
-                ))}
-              </div>
-            </Card>
-
-            {/* 特殊要求 */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">特殊要求</h3>
-              <textarea
-                value={requirements}
-                onChange={(e) => setRequirements(e.target.value)}
-                placeholder="请输入对脚本的特殊要求..."
-                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={4}
-              />
-            </Card>
-
-            {/* 生成按钮 */}
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
-            >
-              {isGenerating ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  生成中...
-                </div>
-              ) : (
-                '生成视频脚本'
-              )}
-            </Button>
+        {/* 视频脚本列表 */}
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-600">加载中...</p>
           </div>
-
-          {/* 中间：历史脚本 */}
-          <div className="lg:col-span-1">
-            <Card className="p-6 h-full">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">历史脚本</h3>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {videoScripts.map((script) => (
-                  <div
-                    key={script.id}
-                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                      selectedScript?.id === script.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setSelectedScript(script)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-gray-900 text-sm">{script.title}</h4>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedScript(script);
-                          }}
-                          className="p-1 text-gray-400 hover:text-blue-600"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOptimize(script.id);
-                          }}
-                          className="p-1 text-gray-400 hover:text-green-600"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleExport(script);
-                          }}
-                          className="p-1 text-gray-400 hover:text-purple-600"
-                        >
-                          <ArrowDownTrayIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(script.id);
-                          }}
-                          className="p-1 text-gray-400 hover:text-red-600"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span className="flex items-center">
-                        <ClockIcon className="h-3 w-3 mr-1" />
-                        {script.duration}s
-                      </span>
-                      <span>{script.platform}</span>
-                      <span>{script.scenes.length} 镜头</span>
-                    </div>
-                    <div className="mt-2 text-xs text-gray-400">{script.createdAt}</div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-
-          {/* 右侧：脚本预览 */}
-          <div className="lg:col-span-1">
-            <Card className="p-6 h-full">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">脚本预览</h3>
-              {selectedScript ? (
-                <div className="space-y-6">
-                  {/* 脚本基本信息 */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">{selectedScript.title}</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">时长：</span>
-                        <span className="text-gray-900">{selectedScript.duration}秒</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">镜头数：</span>
-                        <span className="text-gray-900">{selectedScript.scenes.length}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">平台：</span>
-                        <span className="text-gray-900">{selectedScript.platform}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">风格：</span>
-                        <span className="text-gray-900">{selectedScript.style}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 脚本描述 */}
-                  <div>
-                    <h5 className="font-medium text-gray-900 mb-2">脚本描述</h5>
-                    <p className="text-sm text-gray-600">{selectedScript.description}</p>
-                  </div>
-
-                  {/* 推荐标签 */}
-                  <div>
-                    <h5 className="font-medium text-gray-900 mb-2 flex items-center">
-                      <TagIcon className="h-4 w-4 mr-1" />
-                      推荐标签
-                    </h5>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedScript.hashtags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                        >
-                          {tag}
+        ) : (
+          <div className="grid gap-6">
+            {videoScripts.map((script) => (
+              <Card key={script.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="flex items-center space-x-2">
+                        <VideoCameraIcon className="h-5 w-5 text-purple-600" />
+                        <span>{script.title}</span>
+                      </CardTitle>
+                      <CardDescription className="mt-2 flex items-center space-x-4">
+                        <span className="flex items-center">
+                          <TagIcon className="h-4 w-4 mr-1" />
+                          {script.platform}
                         </span>
-                      ))}
+                        <span className="flex items-center">
+                          <ClockIcon className="h-4 w-4 mr-1" />
+                          {script.duration}秒
+                        </span>
+                        <span className="flex items-center">
+                          <FilmIcon className="h-4 w-4 mr-1" />
+                          {script.style}
+                        </span>
+                      </CardDescription>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm">
+                        <PencilIcon className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <ShareIcon className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-
-                  {/* 分镜详情 */}
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  {/* 脚本钩子 */}
+                  {script.hooks && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">脚本钩子</h4>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">开头：</span>
+                          <p className="text-gray-600">{script.hooks.opening}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">高潮：</span>
+                          <p className="text-gray-600">{script.hooks.climax}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">结尾：</span>
+                          <p className="text-gray-600">{script.hooks.ending}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 场景列表 */}
                   <div>
-                    <h5 className="font-medium text-gray-900 mb-3">分镜详情</h5>
-                    <div className="space-y-4 max-h-64 overflow-y-auto">
-                      {selectedScript.scenes.map((scene, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-3">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium text-sm">镜头 {scene.index}</span>
-                            <span className="text-xs text-gray-500">{scene.duration}s</span>
+                    <h4 className="font-medium text-gray-900 mb-2">场景分镜</h4>
+                    <div className="space-y-3">
+                      {script.scenes.slice(0, 3).map((scene) => (
+                        <div key={scene.index} className="border border-gray-200 rounded-lg p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-medium text-sm">场景 {scene.index}</span>
+                            <span className="text-xs text-gray-500">{scene.duration}秒 · {scene.shotType}</span>
                           </div>
-                          
-                          <div className="space-y-2 text-xs">
-                            <div>
-                              <span className="text-gray-500 flex items-center">
-                                <PhotoIcon className="h-3 w-3 mr-1" />
-                                画面：
-                              </span>
-                              <p className="text-gray-900 mt-1">{scene.visualDescription}</p>
-                            </div>
-                            
-                            <div>
-                              <span className="text-gray-500 flex items-center">
-                                <SpeakerWaveIcon className="h-3 w-3 mr-1" />
-                                旁白：
-                              </span>
-                              <p className="text-gray-900 mt-1">{scene.narration}</p>
-                            </div>
-                            
-                            <div>
-                              <span className="text-gray-500">字幕：</span>
-                              <span className="text-gray-900 ml-1">{scene.subtitle}</span>
-                            </div>
-                            
-                            {scene.soundEffects.length > 0 && (
-                              <div>
-                                <span className="text-gray-500">音效：</span>
-                                <span className="text-gray-900 ml-1">{scene.soundEffects.join(', ')}</span>
-                              </div>
-                            )}
-                            
-                            <div className="flex justify-between">
-                              <div>
-                                <span className="text-gray-500">镜头：</span>
-                                <span className="text-gray-900 ml-1">{scene.shotType}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-500">转场：</span>
-                                <span className="text-gray-900 ml-1">{scene.transition}</span>
-                              </div>
-                            </div>
+                          <p className="text-sm text-gray-700 mb-2">{scene.visualDescription}</p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-600">
+                            <span className="flex items-center">
+                              <SpeakerWaveIcon className="h-3 w-3 mr-1" />
+                              {scene.narration}
+                            </span>
                           </div>
+                          {scene.keyElements && scene.keyElements.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {scene.keyElements.map((element, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                  {element}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
+                      {script.scenes.length > 3 && (
+                        <div className="text-center">
+                          <Button variant="outline" size="sm">
+                            查看全部 {script.scenes.length} 个场景
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-64 text-gray-500">
-                  <div className="text-center">
-                    <DocumentTextIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>选择一个脚本查看详情</p>
+                  
+                  {/* 推荐标签 */}
+                  {script.hashtags && script.hashtags.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">推荐标签</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {script.hashtags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 操作按钮 */}
+                  <div className="flex space-x-2 pt-4 border-t">
+                    <Button variant="outline" size="sm">
+                      <EyeIcon className="h-4 w-4 mr-1" />
+                      预览
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                      导出
+                    </Button>
+                    <Button size="sm">
+                      <PlayIcon className="h-4 w-4 mr-1" />
+                      生成视频
+                    </Button>
                   </div>
-                </div>
-              )}
-            </Card>
+                  
+                  {/* 创建时间 */}
+                  <div className="text-xs text-gray-500 border-t pt-2">
+                    创建时间: {script.createdAt ? new Date(script.createdAt).toLocaleString('zh-CN') : '未知'}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
