@@ -32,7 +32,13 @@ async function apiRequest<T>(
       );
     }
 
-    return await response.json();
+    // 检查响应是否为空
+    const text = await response.text();
+    if (!text) {
+      return {} as T;
+    }
+
+    return JSON.parse(text);
   } catch (error) {
     if (error instanceof APIError) {
       throw error;
@@ -57,7 +63,7 @@ export class APIError extends Error {
   }
 }
 
-// 数据类型定义 - 基于 OpenAPI 规范
+// 数据类型定义 - 基于后端实际返回格式
 
 // 基础类型
 export interface LLMOptions {
@@ -77,7 +83,7 @@ export interface ModelInfo {
   available: boolean;
 }
 
-// 项目相关类型
+// 项目相关类型 - 根据后端实际返回格式调整
 export interface Project {
   id: string;
   title: string;
@@ -88,9 +94,9 @@ export interface Project {
   themes: string[];
   status: 'draft' | 'generating' | 'completed' | 'error';
   world_view?: WorldView;
-  characters: Character[];
+  characters?: Character[];
   outline?: Outline;
-  chapters: Chapter[];
+  chapters?: Chapter[];
   created_at: string;
   updated_at: string;
 }
@@ -104,8 +110,12 @@ export interface CreateProjectRequest {
   themes: string[];
 }
 
+// 根据后端实际返回格式调整
 export interface CreateProjectResponse {
-  project: Project;
+  project_id: string;
+  title: string;
+  status: string;
+  created_at: string;
 }
 
 export interface GetProjectResponse {
@@ -499,7 +509,6 @@ export class NovelAPI {
     });
   }
 
-  // 一致性检查
   static async checkConsistency(data: CheckConsistencyRequest): Promise<CheckConsistencyResponse> {
     return apiRequest<CheckConsistencyResponse>(`/api/v1/novel/projects/${data.project_id}/consistency`, {
       method: 'POST',
@@ -510,22 +519,6 @@ export class NovelAPI {
   // 导出功能
   static async exportNovel(data: ExportNovelRequest): Promise<ExportNovelResponse> {
     return apiRequest<ExportNovelResponse>(`/api/v1/novel/projects/${data.project_id}/export`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // 生成完整小说（工作流）
-  static async generateNovel(projectId: string, data: any): Promise<any> {
-    return apiRequest<any>(`/api/v1/novel/projects/${projectId}/generate`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // 生成短视频分镜脚本
-  static async generateVideoScript(data: GenerateVideoScriptRequest): Promise<GenerateVideoScriptResponse> {
-    return apiRequest<GenerateVideoScriptResponse>(`/api/v1/novel/projects/${data.project_id}/video-script`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -542,50 +535,52 @@ export class NovelAPI {
       body: JSON.stringify(data),
     });
   }
+
+  // 视频脚本生成 - 根据 openapi.yaml 修正路径
+  static async generateVideoScript(data: GenerateVideoScriptRequest): Promise<GenerateVideoScriptResponse> {
+    return apiRequest<GenerateVideoScriptResponse>(`/api/v1/novel/projects/${data.project_id}/video-script`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
-// 视频脚本 API 类 - 根据OpenAPI规范更新
+// 视频脚本 API 类 - 独立的视频脚本服务
 export class VideoScriptAPI {
-  // 生成视频脚本 - 使用独立的VideoScript服务
   static async generateVideoScript(data: GenerateVideoScriptRequest): Promise<GenerateVideoScriptResponse> {
-    return apiRequest<GenerateVideoScriptResponse>('/api/v1/video-scripts/generate', {
+    return apiRequest<GenerateVideoScriptResponse>('/api/v1/video-scripts', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  // 获取视频脚本列表
-  static async listVideoScripts(projectId: string, params?: { page?: number; pageSize?: number }): Promise<ListVideoScriptsResponse> {
+  static async listVideoScripts(params?: { page?: number; pageSize?: number }): Promise<ListVideoScriptsResponse> {
     const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.pageSize) searchParams.append('page_size', params.pageSize.toString());
     
-    const url = `/api/v1/projects/${projectId}/video-scripts${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    const url = `/api/v1/video-scripts${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     return apiRequest<ListVideoScriptsResponse>(url);
   }
 
-  // 获取视频脚本详情
   static async getVideoScript(id: string): Promise<GetVideoScriptResponse> {
     return apiRequest<GetVideoScriptResponse>(`/api/v1/video-scripts/${id}`);
   }
 
-  // 优化视频脚本
-  static async optimizeVideoScript(scriptId: string, data: OptimizeVideoScriptRequest): Promise<OptimizeVideoScriptResponse> {
-    return apiRequest<OptimizeVideoScriptResponse>(`/api/v1/video-scripts/${scriptId}/optimize`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // 生成平台变体
-  static async generatePlatformVariants(baseScriptId: string, data: { platforms: string[]; requirements?: string }): Promise<GeneratePlatformVariantsResponse> {
-    return apiRequest<GeneratePlatformVariantsResponse>(`/api/v1/video-scripts/${baseScriptId}/variants`, {
+  static async optimizeVideoScript(data: OptimizeVideoScriptRequest): Promise<OptimizeVideoScriptResponse> {
+    return apiRequest<OptimizeVideoScriptResponse>(`/api/v1/video-scripts/${data.script_id}/optimize`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  // 删除视频脚本
+  static async generatePlatformVariants(data: GeneratePlatformVariantsRequest): Promise<GeneratePlatformVariantsResponse> {
+    return apiRequest<GeneratePlatformVariantsResponse>(`/api/v1/video-scripts/${data.base_script_id}/variants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   static async deleteVideoScript(id: string): Promise<DeleteVideoScriptResponse> {
     return apiRequest<DeleteVideoScriptResponse>(`/api/v1/video-scripts/${id}`, {
       method: 'DELETE',

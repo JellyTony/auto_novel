@@ -1,7 +1,9 @@
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   ShieldCheckIcon,
   SparklesIcon,
@@ -13,357 +15,448 @@ import {
   EyeIcon,
   ArrowPathIcon,
   AdjustmentsHorizontalIcon
-} from "@heroicons/react/24/outline";
+} from '@heroicons/react/24/outline';
+import { 
+  NovelAPI, 
+  Project, 
+  CheckQualityRequest, 
+  CheckQualityResponse,
+  CheckConsistencyRequest,
+  CheckConsistencyResponse,
+  BatchCheckQualityRequest,
+  BatchCheckQualityResponse,
+  QualityIssue
+} from '@/lib/api';
+import { useApiList, useApiMutation } from '@/lib/hooks/useApi';
 
-// 模拟质量检查数据
-const qualityReport = {
-  overall: {
-    score: 85,
-    status: "良好",
-    lastCheck: "2024-09-29 16:30",
-    totalIssues: 12,
-    resolvedIssues: 8,
-    pendingIssues: 4
-  },
-  categories: [
-    {
-      name: "语言质量",
-      score: 88,
-      status: "优秀",
-      issues: [
-        { type: "语法错误", count: 2, severity: "中等", description: "发现2处语法不当" },
-        { type: "用词重复", count: 3, severity: "轻微", description: "部分词汇使用频率过高" }
-      ]
-    },
-    {
-      name: "情节连贯性",
-      score: 82,
-      status: "良好",
-      issues: [
-        { type: "时间线矛盾", count: 1, severity: "严重", description: "第3章与第1章时间设定冲突" },
-        { type: "情节跳跃", count: 2, severity: "中等", description: "部分情节转换过于突兀" }
-      ]
-    },
-    {
-      name: "角色一致性",
-      score: 90,
-      status: "优秀",
-      issues: [
-        { type: "性格矛盾", count: 1, severity: "中等", description: "林逸在第2章的行为与设定不符" }
-      ]
-    },
-    {
-      name: "世界观一致性",
-      score: 78,
-      status: "一般",
-      issues: [
-        { type: "设定冲突", count: 2, severity: "严重", description: "修仙等级描述前后不一致" },
-        { type: "背景矛盾", count: 1, severity: "中等", description: "都市环境描述存在矛盾" }
-      ]
-    }
-  ]
-};
-
-const polishSuggestions = [
-  {
-    id: 1,
-    chapter: "第1章：意外的传承",
-    type: "语言润色",
-    priority: "高",
-    suggestion: "建议优化开头段落的描述，增加更多细节来吸引读者",
-    original: "林逸是一个普通的程序员，每天都在公司加班。",
-    improved: "深夜的办公楼里，只有林逸的工位还亮着微弱的屏幕光。作为一名资深程序员，加班对他来说已经是家常便饭，但今晚似乎有些不同寻常。",
-    status: "待处理"
-  },
-  {
-    id: 2,
-    chapter: "第2章：初试身手",
-    type: "对话优化",
-    priority: "中",
-    suggestion: "对话过于直白，建议增加更多潜台词和情感层次",
-    original: "\"你是谁？\"林逸问道。",
-    improved: "\"你...你到底是什么人？\"林逸的声音有些颤抖，下意识地后退了一步。",
-    status: "已处理"
-  },
-  {
-    id: 3,
-    chapter: "第3章：神秘师父",
-    type: "情节优化",
-    priority: "高",
-    suggestion: "师父出现过于突兀，建议增加铺垫",
-    original: "突然，一个老者出现在房间里。",
-    improved: "房间里的温度似乎突然下降了几度，林逸感到一股莫名的压迫感。就在这时，空气中泛起了微弱的涟漪，一个白发苍苍的身影缓缓显现。",
-    status: "待处理"
-  }
-];
-
+// 严重程度颜色映射
 const severityColors = {
-  "严重": "bg-red-100 text-red-800",
-  "中等": "bg-yellow-100 text-yellow-800",
-  "轻微": "bg-blue-100 text-blue-800"
+  "high": "bg-red-100 text-red-800",
+  "medium": "bg-yellow-100 text-yellow-800",
+  "low": "bg-blue-100 text-blue-800"
 };
 
+// 状态颜色映射
 const statusColors = {
-  "优秀": "bg-green-100 text-green-800",
-  "良好": "bg-blue-100 text-blue-800",
-  "一般": "bg-yellow-100 text-yellow-800",
-  "较差": "bg-red-100 text-red-800"
+  "excellent": "bg-green-100 text-green-800",
+  "good": "bg-blue-100 text-blue-800",
+  "average": "bg-yellow-100 text-yellow-800",
+  "poor": "bg-red-100 text-red-800"
 };
 
+// 优先级颜色映射
 const priorityColors = {
-  "高": "bg-red-100 text-red-800",
-  "中": "bg-yellow-100 text-yellow-800",
-  "低": "bg-green-100 text-green-800"
+  "high": "bg-red-100 text-red-800",
+  "medium": "bg-yellow-100 text-yellow-800",
+  "low": "bg-green-100 text-green-800"
 };
 
 export default function QualityPage() {
+  // 项目列表
+  const { 
+    data: projects = [], 
+    loading: projectsLoading, 
+    error: projectsError,
+    refetch: refetchProjects 
+  } = useApiList<Project>(() => NovelAPI.listProjects({ page: 1, pageSize: 100 }), {
+    transform: (response) => response.projects || []
+  });
+
+  // 状态管理
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedChapterId, setSelectedChapterId] = useState<string>('');
+  const [qualityReport, setQualityReport] = useState<CheckQualityResponse | null>(null);
+  const [consistencyReport, setConsistencyReport] = useState<CheckConsistencyResponse | null>(null);
+  const [batchReport, setBatchReport] = useState<BatchCheckQualityResponse | null>(null);
+
+  // 质量检查
+  const { mutate: checkQuality, loading: qualityLoading } = useApiMutation(
+    NovelAPI.checkQuality,
+    {
+      onSuccess: (data: CheckQualityResponse) => {
+        setQualityReport(data);
+      }
+    }
+  );
+
+  // 一致性检查
+  const { mutate: checkConsistency, loading: consistencyLoading } = useApiMutation(
+    NovelAPI.checkConsistency,
+    {
+      onSuccess: (data: CheckConsistencyResponse) => {
+        setConsistencyReport(data);
+      }
+    }
+  );
+
+  // 批量质量检查
+  const { mutate: batchCheckQuality, loading: batchLoading } = useApiMutation(
+    NovelAPI.batchCheckQuality,
+    {
+      onSuccess: (data: BatchCheckQualityResponse) => {
+        setBatchReport(data);
+      }
+    }
+  );
+
+  // 处理质量检查
+  const handleQualityCheck = () => {
+    if (!selectedProjectId || !selectedChapterId) {
+      alert('请先选择项目和章节');
+      return;
+    }
+    
+    const request: CheckQualityRequest = {
+      project_id: selectedProjectId,
+      chapter_id: selectedChapterId
+    };
+    
+    checkQuality(request);
+  };
+
+  // 处理一致性检查
+  const handleConsistencyCheck = () => {
+    if (!selectedProjectId) {
+      alert('请先选择项目');
+      return;
+    }
+    
+    const request: CheckConsistencyRequest = {
+      project_id: selectedProjectId
+    };
+    
+    checkConsistency(request);
+  };
+
+  // 处理批量检查
+  const handleBatchCheck = () => {
+    if (!selectedProjectId) {
+      alert('请先选择项目');
+      return;
+    }
+    
+    const request: BatchCheckQualityRequest = {
+      project_id: selectedProjectId,
+      chapter_ids: [] // 空数组表示检查所有章节
+    };
+    
+    batchCheckQuality(request);
+  };
+
   return (
-    <div className="flex flex-col h-full">
-      <Header 
-        title="质量控制" 
-        description="AI智能检查和优化小说质量"
-      />
-      
-      <div className="flex-1 p-6 overflow-auto">
-        {/* 质量概览 */}
-        <Card className="mb-6">
+    <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
+        {/* 页面标题 */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">质量控制</h1>
+            <p className="text-gray-600 mt-2">AI智能检查和优化小说质量</p>
+          </div>
+        </div>
+
+        {/* 项目选择 */}
+        <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center">
-                  <ShieldCheckIcon className="h-5 w-5 mr-2 text-blue-600" />
-                  质量评估报告
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  最后检查时间：{qualityReport.overall.lastCheck}
-                </CardDescription>
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="outline">
-                  <EyeIcon className="h-4 w-4 mr-2" />
-                  详细报告
-                </Button>
-                <Button>
-                  <ArrowPathIcon className="h-4 w-4 mr-2" />
-                  重新检查
-                </Button>
-              </div>
-            </div>
+            <CardTitle>选择项目</CardTitle>
+            <CardDescription>选择要进行质量检测的小说项目</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{qualityReport.overall.score}</div>
-                <div className="text-sm text-gray-500">综合评分</div>
+            {projectsLoading ? (
+              <div className="text-center py-4">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <p className="mt-2 text-gray-600">加载项目中...</p>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{qualityReport.overall.resolvedIssues}</div>
-                <div className="text-sm text-gray-500">已解决问题</div>
+            ) : projectsError ? (
+              <div className="text-center py-4">
+                <p className="text-red-600">加载项目失败: {projectsError}</p>
+                <Button variant="outline" onClick={refetchProjects} className="mt-2">
+                  重试
+                </Button>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">{qualityReport.overall.pendingIssues}</div>
-                <div className="text-sm text-gray-500">待解决问题</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map((project) => (
+                  <Card 
+                    key={project.id} 
+                    className={`cursor-pointer transition-all ${
+                      selectedProjectId === project.id 
+                        ? 'ring-2 ring-blue-500 bg-blue-50' 
+                        : 'hover:shadow-md'
+                    }`}
+                    onClick={() => setSelectedProjectId(project.id)}
+                  >
+                    <CardContent className="p-4">
+                      <h3 className="font-medium text-gray-900">{project.title}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                      <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                        <span>{project.genre}</span>
+                        <span>{project.status}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{qualityReport.overall.totalIssues}</div>
-                <div className="text-sm text-gray-500">总问题数</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-lg font-bold px-3 py-1 rounded-full ${statusColors[qualityReport.overall.status as keyof typeof statusColors]}`}>
-                  {qualityReport.overall.status}
-                </div>
-                <div className="text-sm text-gray-500">整体状态</div>
-              </div>
-            </div>
-
-            {/* 质量分类详情 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {qualityReport.categories.map((category, index) => (
-                <Card key={index} className="border border-gray-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{category.name}</h4>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColors[category.status as keyof typeof statusColors]}`}>
-                        {category.status}
-                      </span>
-                    </div>
-                    <div className="text-2xl font-bold text-blue-600 mb-2">{category.score}</div>
-                    <div className="space-y-1">
-                      {category.issues.map((issue, issueIndex) => (
-                        <div key={issueIndex} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">{issue.type}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-gray-900">{issue.count}</span>
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${severityColors[issue.severity as keyof typeof severityColors]}`}>
-                              {issue.severity}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            )}
           </CardContent>
         </Card>
 
         {/* 快速操作 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-            <CardContent className="p-6 text-center">
-              <SparklesIcon className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <CardTitle className="text-lg mb-2">AI智能润色</CardTitle>
-              <CardDescription className="mb-4">
-                自动优化语言表达和文字质量
-              </CardDescription>
-              <Button className="w-full">
-                开始润色
-              </Button>
-            </CardContent>
-          </Card>
+        {selectedProjectId && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardContent className="p-6 text-center">
+                <SparklesIcon className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle className="text-lg mb-2">章节质量检查</CardTitle>
+                <CardDescription className="mb-4">
+                  检查单个章节的语言质量和内容问题
+                </CardDescription>
+                <div className="mb-4">
+                  <Input
+                    placeholder="输入章节ID"
+                    value={selectedChapterId}
+                    onChange={(e) => setSelectedChapterId(e.target.value)}
+                    className="mb-2"
+                  />
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={handleQualityCheck}
+                  disabled={qualityLoading || !selectedChapterId}
+                >
+                  {qualityLoading ? '检查中...' : '开始检查'}
+                </Button>
+              </CardContent>
+            </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-            <CardContent className="p-6 text-center">
-              <ExclamationTriangleIcon className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <CardTitle className="text-lg mb-2">矛盾检查</CardTitle>
-              <CardDescription className="mb-4">
-                检查情节、角色、世界观的一致性
-              </CardDescription>
-              <Button className="w-full">
-                开始检查
-              </Button>
-            </CardContent>
-          </Card>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardContent className="p-6 text-center">
+                <ExclamationTriangleIcon className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+                <CardTitle className="text-lg mb-2">一致性检查</CardTitle>
+                <CardDescription className="mb-4">
+                  检查情节、角色、世界观的一致性
+                </CardDescription>
+                <Button 
+                  className="w-full" 
+                  onClick={handleConsistencyCheck}
+                  disabled={consistencyLoading}
+                >
+                  {consistencyLoading ? '检查中...' : '开始检查'}
+                </Button>
+              </CardContent>
+            </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-            <CardContent className="p-6 text-center">
-              <AdjustmentsHorizontalIcon className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <CardTitle className="text-lg mb-2">批量处理</CardTitle>
-              <CardDescription className="mb-4">
-                批量检查和处理多个章节
-              </CardDescription>
-              <Button className="w-full">
-                批量操作
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardContent className="p-6 text-center">
+                <AdjustmentsHorizontalIcon className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <CardTitle className="text-lg mb-2">批量质量检查</CardTitle>
+                <CardDescription className="mb-4">
+                  批量检查项目中所有章节的质量
+                </CardDescription>
+                <Button 
+                  className="w-full" 
+                  onClick={handleBatchCheck}
+                  disabled={batchLoading}
+                >
+                  {batchLoading ? '检查中...' : '批量检查'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        {/* 润色建议 */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        {/* 质量检查报告 */}
+        {qualityReport && (
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center">
-                <SparklesIcon className="h-5 w-5 mr-2 text-blue-600" />
-                AI润色建议
+                <ShieldCheckIcon className="h-5 w-5 mr-2 text-blue-600" />
+                章节质量检查报告
               </CardTitle>
-              <div className="flex space-x-2">
-                <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
-                  <option value="">所有类型</option>
-                  <option value="语言润色">语言润色</option>
-                  <option value="对话优化">对话优化</option>
-                  <option value="情节优化">情节优化</option>
-                  <option value="描述增强">描述增强</option>
-                </select>
-                <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
-                  <option value="">所有优先级</option>
-                  <option value="高">高优先级</option>
-                  <option value="中">中优先级</option>
-                  <option value="低">低优先级</option>
-                </select>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{qualityReport.overall_score}</div>
+                  <div className="text-sm text-gray-500">综合评分</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{qualityReport.issues?.length || 0}</div>
+                  <div className="text-sm text-gray-500">发现问题</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{qualityReport.recommendations?.length || 0}</div>
+                  <div className="text-sm text-gray-500">改进建议</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold px-3 py-1 rounded-full bg-blue-100 text-blue-800">
+                    {qualityReport.overall_score >= 90 ? '优秀' : 
+                     qualityReport.overall_score >= 80 ? '良好' : 
+                     qualityReport.overall_score >= 70 ? '一般' : '较差'}
+                  </div>
+                  <div className="text-sm text-gray-500">质量等级</div>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {polishSuggestions.map((suggestion) => (
-                <Card key={suggestion.id} className="border border-gray-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h4 className="font-medium text-gray-900">{suggestion.chapter}</h4>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                            {suggestion.type}
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${priorityColors[suggestion.priority as keyof typeof priorityColors]}`}>
-                            {suggestion.priority}优先级
-                          </span>
+
+              {/* 问题列表 */}
+              {qualityReport.issues && qualityReport.issues.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-medium text-gray-900 mb-3">发现的问题</h4>
+                  <div className="space-y-2">
+                    {qualityReport.issues.map((issue, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <span className="font-medium text-gray-900">{issue.type}</span>
+                          <p className="text-sm text-gray-600">{issue.description}</p>
                         </div>
-                        <p className="text-sm text-gray-600">{suggestion.suggestion}</p>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        {suggestion.status === "已处理" ? (
-                          <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <ClockIcon className="h-5 w-5 text-yellow-600" />
-                        )}
-                        <span className={`text-sm ${suggestion.status === "已处理" ? "text-green-600" : "text-yellow-600"}`}>
-                          {suggestion.status}
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${severityColors[issue.severity as keyof typeof severityColors]}`}>
+                          {issue.severity === 'high' ? '严重' : issue.severity === 'medium' ? '中等' : '轻微'}
                         </span>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">原文</h5>
-                        <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-gray-700">
-                          {suggestion.original}
-                        </div>
+              {/* 改进建议 */}
+              {qualityReport.recommendations && qualityReport.recommendations.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">改进建议</h4>
+                  <div className="space-y-2">
+                    {qualityReport.recommendations.map((recommendation, index) => (
+                      <div key={index} className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-gray-700">{recommendation}</p>
                       </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">建议修改</h5>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-gray-700">
-                          {suggestion.improved}
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 一致性检查报告 */}
+        {consistencyReport && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <ExclamationTriangleIcon className="h-5 w-5 mr-2 text-yellow-600" />
+                一致性检查报告
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{consistencyReport.overall_score}</div>
+                  <div className="text-sm text-gray-500">一致性评分</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{consistencyReport.consistency_issues?.length || 0}</div>
+                  <div className="text-sm text-gray-500">一致性问题</div>
+                </div>
+              </div>
+
+              {/* 总结 */}
+              {consistencyReport.summary && (
+                <div className="mb-6">
+                  <h4 className="font-medium text-gray-900 mb-3">检查总结</h4>
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-gray-700">{consistencyReport.summary}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* 一致性问题 */}
+              {consistencyReport.consistency_issues && consistencyReport.consistency_issues.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">一致性问题</h4>
+                  <div className="space-y-2">
+                    {consistencyReport.consistency_issues.map((issue, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <span className="font-medium text-gray-900">{issue.type}</span>
+                          <p className="text-sm text-gray-600">{issue.description}</p>
                         </div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${severityColors[issue.severity as keyof typeof severityColors]}`}>
+                          {issue.severity === 'high' ? '严重' : issue.severity === 'medium' ? '中等' : '轻微'}
+                        </span>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-                    <div className="flex space-x-2 mt-4">
-                      <Button size="sm" variant="outline">
-                        <EyeIcon className="h-4 w-4 mr-1" />
-                        查看上下文
-                      </Button>
-                      {suggestion.status === "待处理" ? (
-                        <>
-                          <Button size="sm">
-                            <CheckCircleIcon className="h-4 w-4 mr-1" />
-                            采纳建议
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <XCircleIcon className="h-4 w-4 mr-1" />
-                            忽略
-                          </Button>
-                        </>
-                      ) : (
-                        <Button size="sm" variant="outline">
-                          <ArrowPathIcon className="h-4 w-4 mr-1" />
-                          撤销修改
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+        {/* 批量检查报告 */}
+        {batchReport && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2 text-green-600" />
+                批量质量检查报告
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{batchReport.overall_score}</div>
+                  <div className="text-sm text-gray-500">整体评分</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{batchReport.total_chapters}</div>
+                  <div className="text-sm text-gray-500">检查章节数</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{batchReport.total_issues}</div>
+                  <div className="text-sm text-gray-500">总问题数</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{batchReport.recommendations?.length || 0}</div>
+                  <div className="text-sm text-gray-500">改进建议</div>
+                </div>
+              </div>
 
-            {/* 批量操作 */}
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-              <div className="text-sm text-gray-500">
-                显示 1-{polishSuggestions.length} 项建议，共 {polishSuggestions.length} 项
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm">
-                  全部采纳
-                </Button>
-                <Button variant="outline" size="sm">
-                  批量忽略
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              {/* 问题分类统计 */}
+              {batchReport.issues_by_type && Object.keys(batchReport.issues_by_type).length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-medium text-gray-900 mb-3">问题分类统计</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Object.entries(batchReport.issues_by_type).map(([type, count]) => (
+                      <div key={type} className="text-center p-3 bg-gray-50 rounded-lg">
+                        <div className="text-xl font-bold text-gray-900">{count}</div>
+                        <div className="text-sm text-gray-600">{type}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 改进建议 */}
+              {batchReport.recommendations && batchReport.recommendations.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">整体改进建议</h4>
+                  <div className="space-y-2">
+                    {batchReport.recommendations.map((recommendation, index) => (
+                      <div key={index} className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-gray-700">{recommendation}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 空状态 */}
+        {!selectedProjectId && (
+          <div className="text-center py-12">
+            <ShieldCheckIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">开始质量检测</h3>
+            <p className="text-gray-600">请先选择一个项目，然后选择相应的检测功能</p>
+          </div>
+        )}
       </div>
     </div>
   );
