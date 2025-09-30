@@ -14,6 +14,11 @@ type NovelProject struct {
 	Genre       string    `gorm:"size:100" json:"genre"`
 	Status      string    `gorm:"size:50;default:'draft'" json:"status"`
 	
+	// 项目属性
+	TargetAudience string `gorm:"size:100" json:"target_audience"` // 目标读者
+	Tone           string `gorm:"size:100" json:"tone"`            // 调性
+	Themes         string `gorm:"type:text" json:"themes"`         // 主题（JSON数组）
+	
 	// 项目内容
 	WorldView   string `gorm:"type:text" json:"world_view"`
 	

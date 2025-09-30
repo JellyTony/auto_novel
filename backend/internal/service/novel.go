@@ -151,38 +151,45 @@ func (s *NovelService) ListProjects(ctx context.Context, req *pb.ListProjectsReq
 
 // UpdateProject 更新项目
 func (s *NovelService) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.UpdateProjectResponse, error) {
+	log.Printf("=== UpdateProject called ===")
+	log.Printf("Request: %+v", req)
+	log.Printf("ProjectId: %s", req.ProjectId)
+	log.Printf("Title: %s", req.Title)
+	log.Printf("Description: %s", req.Description)
+	log.Printf("Genre: %s", req.Genre)
+	log.Printf("TargetAudience: %s", req.TargetAudience)
+	log.Printf("Tone: %s", req.Tone)
+	log.Printf("Themes: %v", req.Themes)
+
 	// 获取现有项目
 	project, err := s.uc.GetProject(ctx, req.ProjectId)
 	if err != nil {
+		log.Printf("Error getting project: %v", err)
 		return nil, err
 	}
 
-	// 更新项目字段
-	if req.Title != "" {
-		project.Title = req.Title
-	}
-	if req.Description != "" {
-		project.Description = req.Description
-	}
-	if req.Genre != "" {
-		project.Genre = req.Genre
-	}
-	if req.TargetAudience != "" {
-		project.TargetAudience = req.TargetAudience
-	}
-	if req.Tone != "" {
-		project.Tone = req.Tone
-	}
-	if len(req.Themes) > 0 {
-		project.Themes = req.Themes
-	}
+	log.Printf("Original project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v", 
+		project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
+
+	// 更新项目字段 - 直接更新所有字段，允许设置为空值
+	project.Title = req.Title
+	project.Description = req.Description
+	project.Genre = req.Genre
+	project.TargetAudience = req.TargetAudience
+	project.Tone = req.Tone
+	project.Themes = req.Themes
+
+	log.Printf("Updated project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v", 
+		project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
 
 	// 保存更新
 	updatedProject, err := s.uc.UpdateProject(ctx, project)
 	if err != nil {
+		log.Printf("Error updating project: %v", err)
 		return nil, err
 	}
 
+	log.Printf("Successfully updated project")
 	return &pb.UpdateProjectResponse{
 		Project: convertProjectToProto(updatedProject),
 	}, nil
