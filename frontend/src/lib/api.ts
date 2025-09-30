@@ -1,5 +1,6 @@
 // API 基础配置
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+// 使用相对路径，通过 Next.js 的 rewrites 代理访问后端 API
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 // 请求配置
 const defaultHeaders = {

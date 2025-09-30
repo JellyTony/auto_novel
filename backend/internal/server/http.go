@@ -1,29 +1,44 @@
 package server
 
 import (
+	"context"
+
 	v1 "backend/api/helloworld/v1"
 	novelv1 "backend/api/novel/v1"
 	videoscriptv1 "backend/api/video_script/v1"
 	"backend/internal/conf"
 	"backend/internal/service"
+	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/transport"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/gorilla/handlers"
 )
+
+func CORS() middleware.Middleware {
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			if tr, ok := transport.FromServerContext(ctx); ok {
+				if ht, ok1 := tr.(http.Transporter); ok1 {
+					ht.ReplyHeader().Set("Access-Control-Allow-Origin", "*")
+					ht.ReplyHeader().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+					ht.ReplyHeader().Set("Access-Control-Allow-Credentials", "true")
+					ht.ReplyHeader().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				}
+			}
+			return handler(ctx, req)
+		}
+	}
+}
 
 // NewHTTPServer new an HTTP server.
 func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, videoScript *service.VideoScriptService, novel *service.NovelService, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
+			CORS(),
 		),
-		http.Filter(handlers.CORS(
-			handlers.AllowedOrigins([]string{"*"}),
-			handlers.AllowedHeaders([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
-			handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
-		)),
 	}
 	if c.Http.Network != "" {
 		opts = append(opts, http.Network(c.Http.Network))
