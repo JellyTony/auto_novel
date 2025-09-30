@@ -1,9 +1,39 @@
+"use client";
+
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, BookOpenIcon, UserGroupIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleCreateProject = () => {
+    router.push('/projects');
+  };
+
+  const handleViewProjects = () => {
+    router.push('/projects');
+  };
+
+  const handleManageCharacters = () => {
+    router.push('/characters');
+  };
+
+  const handleBrowseTemplates = () => {
+    // 暂时跳转到项目页面，后续可以添加模板页面
+    router.push('/projects');
+  };
+
+  const handleContinueEdit = (projectId?: string) => {
+    // 暂时跳转到章节页面，后续可以根据项目ID跳转
+    router.push('/chapters');
+  };
+
+  const handleStartCreating = () => {
+    router.push('/projects');
+  };
   return (
     <div className="flex flex-col h-full">
       <Header 
@@ -25,7 +55,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription>开始一个全新的小说创作项目</CardDescription>
-                <Button className="w-full mt-3" size="sm">
+                <Button className="w-full mt-3" size="sm" onClick={handleCreateProject}>
                   立即创建
                 </Button>
               </CardContent>
@@ -40,7 +70,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription>继续您未完成的小说项目</CardDescription>
-                <Button variant="outline" className="w-full mt-3" size="sm">
+                <Button variant="outline" className="w-full mt-3" size="sm" onClick={handleViewProjects}>
                   查看项目
                 </Button>
               </CardContent>
@@ -55,7 +85,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription>创建和管理您的小说角色</CardDescription>
-                <Button variant="outline" className="w-full mt-3" size="sm">
+                <Button variant="outline" className="w-full mt-3" size="sm" onClick={handleManageCharacters}>
                   管理角色
                 </Button>
               </CardContent>
@@ -70,7 +100,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription>使用预设模板快速开始</CardDescription>
-                <Button variant="outline" className="w-full mt-3" size="sm">
+                <Button variant="outline" className="w-full mt-3" size="sm" onClick={handleBrowseTemplates}>
                   浏览模板
                 </Button>
               </CardContent>
@@ -101,7 +131,7 @@ export default function Home() {
                     <span>45,000 字</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full mt-4" size="sm">
+                <Button variant="outline" className="w-full mt-4" size="sm" onClick={() => handleContinueEdit('project1')}>
                   继续编辑
                 </Button>
               </CardContent>
@@ -126,7 +156,7 @@ export default function Home() {
                     <span>28,000 字</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full mt-4" size="sm">
+                <Button variant="outline" className="w-full mt-4" size="sm" onClick={() => handleContinueEdit('project2')}>
                   继续编辑
                 </Button>
               </CardContent>
@@ -136,7 +166,7 @@ export default function Home() {
               <div className="text-center">
                 <PlusIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-500 mb-3">创建新项目</p>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleStartCreating}>
                   开始创作
                 </Button>
               </div>
