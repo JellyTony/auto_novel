@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cloudwego/eino/compose"
+	"github.com/cloudwego/eino-ext/components/model/deepseek"
+	"github.com/cloudwego/eino-ext/components/model/ollama"
+	"github.com/cloudwego/eino-ext/components/model/qwen"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/prompt"
+	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
-	"github.com/cloudwego/eino-ext/components/model/deepseek"
-	"github.com/cloudwego/eino-ext/components/model/qwen"
-	"github.com/cloudwego/eino-ext/components/model/ollama"
 )
 
 // EinoLLMClient 基于 cloudwego/eino 框架的 LLM 客户端
@@ -23,7 +23,7 @@ type EinoLLMClient struct {
 
 // Config eino 客户端配置
 type Config struct {
-	Provider      string        `json:"provider"`       // deepseek, openai, azure, etc.
+	Provider      string        `json:"provider"` // deepseek, openai, azure, etc.
 	ModelName     string        `json:"model_name"`
 	Temperature   float32       `json:"temperature"`
 	MaxTokens     int           `json:"max_tokens"`

@@ -147,9 +147,12 @@ func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWo
 
 	worldReq := &worldbuilding.GenerateWorldViewRequest{
 		ProjectID: req.ProjectId,
-		Genre:     project.Genre,
-		Audience:  project.TargetAudience,
-		Tone:      project.Tone,
+		Genre:     req.Genre,
+		Setting:   req.Setting,
+		KeyRules:  req.KeyRules,
+		Tone:      req.Tone,
+		Audience:  req.TargetAudience,
+		Themes:    req.Themes,
 	}
 
 	worldView, err := s.worldAgent.GenerateWorldView(ctx, worldReq)

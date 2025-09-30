@@ -26,9 +26,12 @@ func NewWorldBuildingAgent(llmClient llm.LLMClient) *WorldBuildingAgent {
 func (a *WorldBuildingAgent) GenerateWorldView(ctx context.Context, req *GenerateWorldViewRequest) (*models.WorldView, error) {
 	// 构建提示词数据
 	data := map[string]interface{}{
-		"genre":    req.Genre,
-		"audience": req.Audience,
-		"tone":     req.Tone,
+		"genre":     req.Genre,
+		"setting":   req.Setting,
+		"key_rules": req.KeyRules,
+		"audience":  req.Audience,
+		"tone":      req.Tone,
+		"themes":    req.Themes,
 	}
 
 	// 使用模板生成提示词
@@ -135,10 +138,13 @@ func (a *WorldBuildingAgent) ValidateWorldView(ctx context.Context, worldView *m
 
 // GenerateWorldViewRequest 生成世界观请求
 type GenerateWorldViewRequest struct {
-	ProjectID string `json:"project_id"`
-	Genre     string `json:"genre"`     // 体裁
-	Audience  string `json:"audience"`  // 目标读者
-	Tone      string `json:"tone"`      // 基调
+	ProjectID string   `json:"project_id"`
+	Genre     string   `json:"genre"`     // 体裁
+	Setting   string   `json:"setting"`   // 时代与地点
+	KeyRules  []string `json:"key_rules"` // 基本规则/设定
+	Tone      string   `json:"tone"`      // 基调
+	Audience  string   `json:"audience"`  // 目标读者
+	Themes    []string `json:"themes"`    // 主题
 }
 
 // ValidationResult 验证结果

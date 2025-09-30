@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"backend/internal/pkg/eino"
 )
 
 // LLMClient LLM客户端接口
@@ -86,9 +88,9 @@ func (c *EinoLLMClient) GenerateText(ctx context.Context, prompt string, opts *G
 		return "", fmt.Errorf("LLM model not initialized")
 	}
 
-	// 将模型转换为实际的AI客户端
-	if einoClient, ok := c.model.(*EinoLLMClient); ok {
-		return einoClient.GenerateText(ctx, prompt, opts)
+	// 将模型转换为真实的Eino客户端
+	if einoClient, ok := c.model.(*eino.EinoLLMClient); ok {
+		return einoClient.GenerateText(ctx, prompt)
 	}
 
 	// 如果模型是字符串类型（临时处理）
