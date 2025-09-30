@@ -66,15 +66,21 @@ func NewEinoLLMClient(ctx context.Context, config *Config) (*EinoLLMClient, erro
 
 // GenerateText 生成文本
 func (c *EinoLLMClient) GenerateText(ctx context.Context, prompt string, options ...interface{}) (string, error) {
+	// 构建消息
 	messages := []*schema.Message{
 		schema.UserMessage(prompt),
 	}
 
-	response, err := c.model.Generate(ctx, messages, c.buildCallOptions(options...)...)
+	// 构建调用选项
+	callOptions := c.buildCallOptions(options...)
+
+	// 调用模型生成
+	response, err := c.model.Generate(ctx, messages, callOptions...)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate text: %w", err)
 	}
 
+	// 提取生成的文本内容
 	return response.Content, nil
 }
 
