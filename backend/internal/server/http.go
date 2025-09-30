@@ -24,7 +24,6 @@ func CORS() middleware.Middleware {
 			if tr, ok := transport.FromServerContext(ctx); ok {
 				if ht, ok1 := tr.(khttp.Transporter); ok1 {
 					ht.ReplyHeader().Set("Access-Control-Allow-Origin", "*")
-					ht.ReplyHeader().Set("Vary", "Origin")
 					ht.ReplyHeader().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 					ht.ReplyHeader().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 				}

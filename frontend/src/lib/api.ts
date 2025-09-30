@@ -1,5 +1,5 @@
 // API 基础配置
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 // 通用 API 请求函数
 async function apiRequest<T>(
