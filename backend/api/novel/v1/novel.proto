@@ -1,0 +1,480 @@
+syntax = "proto3";
+
+package novel.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "backend/api/novel/v1;v1";
+option java_multiple_files = true;
+option java_package = "dev.kratos.api.novel.v1";
+option java_outer_classname = "NovelProtoV1";
+
+// 小说生成服务
+service NovelService {
+  // 创建小说项目
+  rpc CreateProject (CreateProjectRequest) returns (CreateProjectResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects"
+      body: "*"
+    };
+  }
+
+  // 获取项目详情
+  rpc GetProject (GetProjectRequest) returns (GetProjectResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/novel/projects/{project_id}"
+    };
+  }
+
+  // 列出项目
+  rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/novel/projects"
+    };
+  }
+
+  // 生成世界观
+  rpc GenerateWorldView (GenerateWorldViewRequest) returns (GenerateWorldViewResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/worldview"
+      body: "*"
+    };
+  }
+
+  // 生成人物卡
+  rpc GenerateCharacters (GenerateCharactersRequest) returns (GenerateCharactersResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/characters"
+      body: "*"
+    };
+  }
+
+  // 生成章节大纲
+  rpc GenerateOutline (GenerateOutlineRequest) returns (GenerateOutlineResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/outline"
+      body: "*"
+    };
+  }
+
+  // 生成章节内容
+  rpc GenerateChapter (GenerateChapterRequest) returns (GenerateChapterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/chapters"
+      body: "*"
+    };
+  }
+
+  // 润色章节
+  rpc PolishChapter (PolishChapterRequest) returns (PolishChapterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/polish"
+      body: "*"
+    };
+  }
+
+  // 质量检测
+  rpc CheckQuality (CheckQualityRequest) returns (CheckQualityResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/quality"
+      body: "*"
+    };
+  }
+
+  // 批量质量检测
+  rpc BatchCheckQuality (BatchCheckQualityRequest) returns (BatchCheckQualityResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/quality/batch"
+      body: "*"
+    };
+  }
+
+  // 一致性检查
+  rpc CheckConsistency (CheckConsistencyRequest) returns (CheckConsistencyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/consistency"
+      body: "*"
+    };
+  }
+
+  // 生成完整小说（工作流）
+  rpc GenerateNovel (GenerateNovelRequest) returns (stream GenerateNovelResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/generate"
+      body: "*"
+    };
+  }
+
+  // 导出小说
+  rpc ExportNovel (ExportNovelRequest) returns (ExportNovelResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/export"
+      body: "*"
+    };
+  }
+
+  // 生成短视频分镜脚本
+  rpc GenerateVideoScript (GenerateVideoScriptRequest) returns (GenerateVideoScriptResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/video-script"
+      body: "*"
+    };
+  }
+}
+
+// 项目相关消息
+message CreateProjectRequest {
+  string title = 1;
+  string description = 2;
+  string genre = 3;  // 体裁：现代都市/悬疑/玄幻/科幻/古代言情
+  string target_audience = 4;  // 目标读者：青年/女性向/男性向/泛读者
+  string tone = 5;  // 调性：温情/冷峻/快节奏/慢热
+  repeated string themes = 6;  // 主题
+}
+
+message CreateProjectResponse {
+  string project_id = 1;
+  string title = 2;
+  string status = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message GetProjectRequest {
+  string project_id = 1;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}
+
+message ListProjectsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  int32 total = 2;
+}
+
+// 世界观相关消息
+message GenerateWorldViewRequest {
+  string project_id = 1;
+  string genre = 2;
+  string setting = 3;  // 时代与地点
+  repeated string key_rules = 4;  // 基本规则/设定
+  string tone = 5;
+  string target_audience = 6;
+  repeated string themes = 7;
+  LLMOptions llm_options = 8;
+}
+
+message GenerateWorldViewResponse {
+  WorldView world_view = 1;
+}
+
+// 人物卡相关消息
+message GenerateCharactersRequest {
+  string project_id = 1;
+  repeated string character_names = 2;
+  WorldView world_view = 3;
+  LLMOptions llm_options = 4;
+}
+
+message GenerateCharactersResponse {
+  repeated Character characters = 1;
+}
+
+// 章节大纲相关消息
+message GenerateOutlineRequest {
+  string project_id = 1;
+  int32 chapter_count = 2;
+  WorldView world_view = 3;
+  repeated Character characters = 4;
+  LLMOptions llm_options = 5;
+}
+
+message GenerateOutlineResponse {
+  Outline outline = 1;
+}
+
+// 章节生成相关消息
+message GenerateChapterRequest {
+  string project_id = 1;
+  ChapterOutline chapter_outline = 2;
+  GenerationContext context = 3;
+  int32 target_word_count = 4;
+  LLMOptions llm_options = 5;
+}
+
+message GenerateChapterResponse {
+  Chapter chapter = 1;
+}
+
+// 润色相关消息
+message PolishChapterRequest {
+  string project_id = 1;
+  string chapter_id = 2;
+  string style = 3;  // formal/casual/literary
+  repeated string focus = 4;  // grammar/flow/dialogue/description
+  LLMOptions llm_options = 5;
+}
+
+message PolishChapterResponse {
+  Chapter chapter = 1;
+}
+
+// 质量检测相关消息
+message CheckQualityRequest {
+  string project_id = 1;
+  string chapter_id = 2;
+  string check_type = 3;  // polish/proofread/critique/consistency/all
+  LLMOptions llm_options = 4;
+}
+
+message CheckQualityResponse {
+  Chapter polished_chapter = 1;
+  ProofreadResult proofread_result = 2;
+  CritiqueResult critique_result = 3;
+  repeated ConsistencyIssue consistency_issues = 4;
+  double overall_score = 5;
+  repeated string recommendations = 6;
+}
+
+message BatchCheckQualityRequest {
+  string project_id = 1;
+  repeated string chapter_ids = 2;
+  string check_type = 3;
+  LLMOptions llm_options = 4;
+}
+
+message BatchCheckQualityResponse {
+  repeated CheckQualityResponse results = 1;
+  QualitySummary summary = 2;
+  double overall_score = 3;
+}
+
+message ProofreadResult {
+  string corrected_content = 1;
+  repeated QualityIssue issues = 2;
+  repeated string suggestions = 3;
+}
+
+message CritiqueResult {
+  repeated string logical_issues = 1;
+  repeated string character_issues = 2;
+  repeated string pacing_issues = 3;
+  repeated string improvements = 4;
+  string fixed_example = 5;
+  int32 overall_score = 6;
+}
+
+message QualityIssue {
+  string type = 1;        // grammar/punctuation/spelling/style
+  string severity = 2;    // high/medium/low
+  string description = 3;
+  string position = 4;    // 位置描述
+  string original = 5;    // 原文
+  string corrected = 6;   // 修正后
+}
+
+message QualitySummary {
+  int32 total_issues = 1;
+  map<string, int32> issues_by_type = 2;
+  map<string, int32> issues_by_severity = 3;
+  repeated string recommendations = 4;
+  repeated double quality_trends = 5;
+}
+
+// 一致性检查相关消息
+message CheckConsistencyRequest {
+  string project_id = 1;
+  string check_type = 2;  // character/plot/world/timeline/all
+  repeated string chapter_ids = 3;
+  LLMOptions llm_options = 4;
+}
+
+message CheckConsistencyResponse {
+  repeated ConsistencyIssue issues = 1;
+  repeated string suggestions = 2;
+  double overall_score = 3;
+}
+
+// 完整小说生成相关消息
+message GenerateNovelRequest {
+  string project_id = 1;
+  GenerateOptions options = 2;
+}
+
+message GenerateNovelResponse {
+  string status = 1;  // generating/completed/error
+  double progress = 2;  // 0.0-1.0
+  string current_stage = 3;  // worldbuilding/character/outline/chapter/polish/consistency
+  string message = 4;
+  repeated Chapter chapters = 5;
+  repeated string issues = 6;
+}
+
+// 导出相关消息
+message ExportNovelRequest {
+  string project_id = 1;
+  string format = 2;  // txt/epub/pdf
+  ExportOptions options = 3;
+}
+
+message ExportNovelResponse {
+  string download_url = 1;
+  string file_name = 2;
+  int64 file_size = 3;
+}
+
+// 短视频分镜脚本相关消息
+message GenerateVideoScriptRequest {
+  string project_id = 1;
+  repeated string chapter_ids = 2;
+  VideoScriptOptions options = 3;
+}
+
+message GenerateVideoScriptResponse {
+  repeated VideoScene scenes = 1;
+}
+
+// 数据模型
+message Project {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string genre = 4;
+  string target_audience = 5;
+  string tone = 6;
+  repeated string themes = 7;
+  string status = 8;  // draft/generating/completed/error
+  WorldView world_view = 9;
+  repeated Character characters = 10;
+  Outline outline = 11;
+  repeated Chapter chapters = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message WorldView {
+  string title = 1;
+  string synopsis = 2;
+  string setting = 3;
+  repeated string key_rules = 4;
+  repeated string tone_examples = 5;
+  repeated string themes = 6;
+}
+
+message Character {
+  string id = 1;
+  string project_id = 2;
+  string name = 3;
+  string role = 4;
+  int32 age = 5;
+  string appearance = 6;
+  string background = 7;
+  string motivation = 8;
+  repeated string flaws = 9;
+  string speech_tone = 10;
+  repeated string secrets = 11;
+  map<string, string> relationship_map = 12;
+}
+
+message Outline {
+  string id = 1;
+  string project_id = 2;
+  repeated ChapterOutline chapters = 3;
+}
+
+message ChapterOutline {
+  int32 index = 1;
+  string title = 2;
+  string summary = 3;
+  string goal = 4;
+  string twist_hint = 5;
+  repeated string important_items = 6;
+}
+
+message Chapter {
+  string id = 1;
+  string project_id = 2;
+  int32 index = 3;
+  string title = 4;
+  string summary = 5;
+  string raw_content = 6;
+  string polished_content = 7;
+  int32 word_count = 8;
+  string status = 9;  // draft/generated/polished/reviewed
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message GenerationContext {
+  string previous_summary = 1;
+  repeated Character characters = 2;
+  repeated TimelineEvent timeline = 3;
+  repeated PropItem props = 4;
+  repeated string style_examples = 5;
+}
+
+message TimelineEvent {
+  string timestamp = 1;
+  string event = 2;
+  string description = 3;
+}
+
+message PropItem {
+  string name = 1;
+  string description = 2;
+  string location = 3;
+}
+
+message ConsistencyIssue {
+  string type = 1;  // character/plot/world/timeline
+  string severity = 2;  // low/medium/high/critical
+  string description = 3;
+  string location = 4;
+  string suggestion = 5;
+}
+
+message VideoScene {
+  int32 screen_index = 1;
+  string text = 2;
+  string suggested_bgm_tag = 3;
+  string suggested_image_tag = 4;
+  string tts_voice = 5;  // male/female
+  string notes = 6;
+}
+
+// 选项和配置
+message LLMOptions {
+  double temperature = 1;
+  double top_p = 2;
+  int32 max_tokens = 3;
+  double frequency_penalty = 4;
+  double presence_penalty = 5;
+  string model = 6;
+}
+
+message GenerateOptions {
+  int32 max_chapters = 1;
+  int32 words_per_chapter = 2;
+  bool polish_enabled = 3;
+  bool consistency_check = 4;
+  LLMOptions llm_options = 5;
+}
+
+message ExportOptions {
+  bool include_metadata = 1;
+  bool include_outline = 2;
+  string font_family = 3;
+  int32 font_size = 4;
+}
+
+message VideoScriptOptions {
+  int32 scenes_per_chapter = 1;  // 每章分几个场景，默认8-12
+  string platform = 2;  // tiktok/youtube/bilibili
+  string voice_type = 3;  // male/female/auto
+}

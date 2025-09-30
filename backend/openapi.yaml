@@ -1,0 +1,365 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: VideoScriptService API
+    description: 短视频脚本服务
+    version: 0.0.1
+paths:
+    /api/v1/projects/{projectId}/video-scripts:
+        get:
+            tags:
+                - VideoScriptService
+            description: 获取视频脚本列表
+            operationId: VideoScriptService_ListVideoScripts
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListVideoScriptsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/video-scripts/generate:
+        post:
+            tags:
+                - VideoScriptService
+            description: 生成短视频脚本
+            operationId: VideoScriptService_GenerateVideoScript
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GenerateVideoScriptRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenerateVideoScriptResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/video-scripts/{baseScriptId}/variants:
+        post:
+            tags:
+                - VideoScriptService
+            description: 生成平台变体
+            operationId: VideoScriptService_GeneratePlatformVariants
+            parameters:
+                - name: baseScriptId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GeneratePlatformVariantsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GeneratePlatformVariantsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/video-scripts/{scriptId}:
+        get:
+            tags:
+                - VideoScriptService
+            description: 获取视频脚本详情
+            operationId: VideoScriptService_GetVideoScript
+            parameters:
+                - name: scriptId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetVideoScriptResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - VideoScriptService
+            description: 删除视频脚本
+            operationId: VideoScriptService_DeleteVideoScript
+            parameters:
+                - name: scriptId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeleteVideoScriptResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/video-scripts/{scriptId}/optimize:
+        put:
+            tags:
+                - VideoScriptService
+            description: 优化短视频脚本
+            operationId: VideoScriptService_OptimizeVideoScript
+            parameters:
+                - name: scriptId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/OptimizeVideoScriptRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OptimizeVideoScriptResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        DeleteVideoScriptResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+            description: 删除视频脚本响应
+        GeneratePlatformVariantsRequest:
+            type: object
+            properties:
+                baseScriptId:
+                    type: string
+                targetPlatforms:
+                    type: array
+                    items:
+                        type: string
+            description: 生成平台变体请求
+        GeneratePlatformVariantsResponse:
+            type: object
+            properties:
+                variants:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/VideoScript'
+            description: 生成平台变体响应
+        GenerateVideoScriptRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                chapterId:
+                    type: string
+                chapterTitle:
+                    type: string
+                chapterContent:
+                    type: string
+                platform:
+                    type: string
+                duration:
+                    type: integer
+                    format: int32
+                style:
+                    type: string
+                requirements:
+                    type: string
+            description: 生成短视频脚本请求
+        GenerateVideoScriptResponse:
+            type: object
+            properties:
+                videoScript:
+                    $ref: '#/components/schemas/VideoScript'
+            description: 生成短视频脚本响应
+        GetVideoScriptResponse:
+            type: object
+            properties:
+                videoScript:
+                    $ref: '#/components/schemas/VideoScript'
+            description: 获取视频脚本详情响应
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        ListVideoScriptsResponse:
+            type: object
+            properties:
+                scripts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/VideoScript'
+                total:
+                    type: integer
+                    format: int32
+            description: 获取视频脚本列表响应
+        OptimizeVideoScriptRequest:
+            type: object
+            properties:
+                scriptId:
+                    type: string
+                requirements:
+                    type: string
+            description: 优化短视频脚本请求
+        OptimizeVideoScriptResponse:
+            type: object
+            properties:
+                videoScript:
+                    $ref: '#/components/schemas/VideoScript'
+            description: 优化短视频脚本响应
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        VideoHooks:
+            type: object
+            properties:
+                opening:
+                    type: string
+                climax:
+                    type: string
+                ending:
+                    type: string
+            description: 视频钩子点
+        VideoScene:
+            type: object
+            properties:
+                index:
+                    type: integer
+                    format: int32
+                duration:
+                    type: integer
+                    format: int32
+                shotType:
+                    type: string
+                visualDescription:
+                    type: string
+                narration:
+                    type: string
+                subtitle:
+                    type: string
+                soundEffects:
+                    type: array
+                    items:
+                        type: string
+                transition:
+                    type: string
+                keyElements:
+                    type: array
+                    items:
+                        type: string
+            description: 视频分镜场景
+        VideoScript:
+            type: object
+            properties:
+                id:
+                    type: string
+                projectId:
+                    type: string
+                chapterId:
+                    type: string
+                title:
+                    type: string
+                duration:
+                    type: integer
+                    format: int32
+                platform:
+                    type: string
+                style:
+                    type: string
+                scenes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/VideoScene'
+                hooks:
+                    $ref: '#/components/schemas/VideoHooks'
+                hashtags:
+                    type: array
+                    items:
+                        type: string
+                description:
+                    type: string
+                status:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+            description: 短视频脚本
+tags:
+    - name: VideoScriptService

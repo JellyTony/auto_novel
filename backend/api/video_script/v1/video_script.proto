@@ -1,0 +1,165 @@
+syntax = "proto3";
+
+package api.video_script.v1;
+
+option go_package = "backend/api/video_script/v1;v1";
+
+import "google/api/annotations.proto";
+
+// 短视频脚本服务
+service VideoScriptService {
+  // 生成短视频脚本
+  rpc GenerateVideoScript(GenerateVideoScriptRequest) returns (GenerateVideoScriptResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/video-scripts/generate"
+      body: "*"
+    };
+  }
+
+  // 优化短视频脚本
+  rpc OptimizeVideoScript(OptimizeVideoScriptRequest) returns (OptimizeVideoScriptResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/video-scripts/{script_id}/optimize"
+      body: "*"
+    };
+  }
+
+  // 生成平台变体
+  rpc GeneratePlatformVariants(GeneratePlatformVariantsRequest) returns (GeneratePlatformVariantsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/video-scripts/{base_script_id}/variants"
+      body: "*"
+    };
+  }
+
+  // 获取视频脚本列表
+  rpc ListVideoScripts(ListVideoScriptsRequest) returns (ListVideoScriptsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/{project_id}/video-scripts"
+    };
+  }
+
+  // 获取视频脚本详情
+  rpc GetVideoScript(GetVideoScriptRequest) returns (GetVideoScriptResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/video-scripts/{script_id}"
+    };
+  }
+
+  // 删除视频脚本
+  rpc DeleteVideoScript(DeleteVideoScriptRequest) returns (DeleteVideoScriptResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/video-scripts/{script_id}"
+    };
+  }
+}
+
+// 生成短视频脚本请求
+message GenerateVideoScriptRequest {
+  string project_id = 1;
+  string chapter_id = 2;
+  string chapter_title = 3;
+  string chapter_content = 4;
+  string platform = 5;        // 目标平台：douyin/kuaishou/bilibili/xiaohongshu/weibo
+  int32 duration = 6;          // 视频时长（秒）
+  string style = 7;            // 风格：dramatic/humorous/suspenseful/romantic/action
+  string requirements = 8;     // 特殊要求
+}
+
+// 生成短视频脚本响应
+message GenerateVideoScriptResponse {
+  VideoScript video_script = 1;
+}
+
+// 优化短视频脚本请求
+message OptimizeVideoScriptRequest {
+  string script_id = 1;
+  string requirements = 2;     // 优化要求
+}
+
+// 优化短视频脚本响应
+message OptimizeVideoScriptResponse {
+  VideoScript video_script = 1;
+}
+
+// 生成平台变体请求
+message GeneratePlatformVariantsRequest {
+  string base_script_id = 1;
+  repeated string target_platforms = 2;
+}
+
+// 生成平台变体响应
+message GeneratePlatformVariantsResponse {
+  repeated VideoScript variants = 1;
+}
+
+// 获取视频脚本列表请求
+message ListVideoScriptsRequest {
+  string project_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取视频脚本列表响应
+message ListVideoScriptsResponse {
+  repeated VideoScript scripts = 1;
+  int32 total = 2;
+}
+
+// 获取视频脚本详情请求
+message GetVideoScriptRequest {
+  string script_id = 1;
+}
+
+// 获取视频脚本详情响应
+message GetVideoScriptResponse {
+  VideoScript video_script = 1;
+}
+
+// 删除视频脚本请求
+message DeleteVideoScriptRequest {
+  string script_id = 1;
+}
+
+// 删除视频脚本响应
+message DeleteVideoScriptResponse {
+  bool success = 1;
+}
+
+// 短视频脚本
+message VideoScript {
+  string id = 1;
+  string project_id = 2;
+  string chapter_id = 3;
+  string title = 4;
+  int32 duration = 5;          // 视频时长（秒）
+  string platform = 6;         // 目标平台
+  string style = 7;            // 风格
+  repeated VideoScene scenes = 8;  // 分镜场景
+  VideoHooks hooks = 9;        // 钩子点
+  repeated string hashtags = 10;   // 标签
+  string description = 11;     // 视频描述
+  string status = 12;          // 状态：draft/optimized/variant/published
+  int64 created_at = 13;
+  int64 updated_at = 14;
+}
+
+// 视频分镜场景
+message VideoScene {
+  int32 index = 1;             // 场景序号
+  int32 duration = 2;          // 场景时长（秒）
+  string shot_type = 3;        // 镜头类型
+  string visual_description = 4; // 画面描述
+  string narration = 5;        // 旁白内容
+  string subtitle = 6;         // 字幕内容
+  repeated string sound_effects = 7; // 音效
+  string transition = 8;       // 转场效果
+  repeated string key_elements = 9;  // 关键元素
+}
+
+// 视频钩子点
+message VideoHooks {
+  string opening = 1;          // 开头吸引点
+  string climax = 2;           // 高潮点
+  string ending = 3;           // 结尾钩子
+}

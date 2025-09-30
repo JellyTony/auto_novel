@@ -1,0 +1,28 @@
+server:
+  http:
+    addr: 0.0.0.0:8000
+    timeout: 1s
+  grpc:
+    addr: 0.0.0.0:9000
+    timeout: 1s
+data:
+  database:
+    driver: mysql
+    source: root:root@tcp(127.0.0.1:3306)/test?parseTime=True&loc=Local
+  redis:
+    addr: 127.0.0.1:6379
+    read_timeout: 0.2s
+    write_timeout: 0.2s
+  vector:
+    milvus:
+      host: 127.0.0.1
+      port: 19530
+      username: ""
+      password: ""
+      database: "default"
+    embedding:
+      provider: "openai"  # openai, azure, local
+      api_key: ""
+      base_url: "https://api.openai.com/v1"
+      model: "text-embedding-ada-002"
+      timeout: 30
