@@ -32,7 +32,6 @@ func init() {
 	// MarshalOptions is a configurable JSON format marshaller.
 	json.MarshalOptions.Multiline = true
 	json.MarshalOptions.UseProtoNames = true
-	json.MarshalOptions.EmitUnpopulated = false
 
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }

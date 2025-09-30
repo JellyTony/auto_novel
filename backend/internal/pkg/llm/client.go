@@ -22,22 +22,22 @@ type LLMClient interface {
 // GenerateOptions 生成选项
 type GenerateOptions struct {
 	Temperature      float64 `json:"temperature"`       // 创造性 0.2-0.9
-	TopP            float64 `json:"top_p"`             // 0.8-0.95
-	MaxTokens       int     `json:"max_tokens"`        // 最大token数
+	TopP             float64 `json:"top_p"`             // 0.8-0.95
+	MaxTokens        int     `json:"max_tokens"`        // 最大token数
 	FrequencyPenalty float64 `json:"frequency_penalty"` // 频率惩罚 0-0.2
 	PresencePenalty  float64 `json:"presence_penalty"`  // 存在惩罚 0-0.1
-	RetryCount      int     `json:"retry_count"`       // 重试次数
+	RetryCount       int     `json:"retry_count"`       // 重试次数
 }
 
 // DefaultOptions 默认选项
 func DefaultOptions() *GenerateOptions {
 	return &GenerateOptions{
 		Temperature:      0.35,
-		TopP:            0.9,
-		MaxTokens:       2000,
+		TopP:             0.9,
+		MaxTokens:        2000,
 		FrequencyPenalty: 0.1,
 		PresencePenalty:  0.05,
-		RetryCount:      2,
+		RetryCount:       2,
 	}
 }
 
@@ -45,11 +45,11 @@ func DefaultOptions() *GenerateOptions {
 func CreativeOptions() *GenerateOptions {
 	return &GenerateOptions{
 		Temperature:      0.7,
-		TopP:            0.9,
-		MaxTokens:       3000,
+		TopP:             0.9,
+		MaxTokens:        3000,
 		FrequencyPenalty: 0.2,
 		PresencePenalty:  0.1,
-		RetryCount:      2,
+		RetryCount:       2,
 	}
 }
 
@@ -57,11 +57,11 @@ func CreativeOptions() *GenerateOptions {
 func PreciseOptions() *GenerateOptions {
 	return &GenerateOptions{
 		Temperature:      0.2,
-		TopP:            0.8,
-		MaxTokens:       1500,
+		TopP:             0.8,
+		MaxTokens:        1500,
 		FrequencyPenalty: 0.05,
 		PresencePenalty:  0.02,
-		RetryCount:      1,
+		RetryCount:       1,
 	}
 }
 
@@ -102,7 +102,7 @@ func (c *EinoLLMClient) GenerateText(ctx context.Context, prompt string, opts *G
 func (c *EinoLLMClient) GenerateJSON(ctx context.Context, prompt string, opts *GenerateOptions) (map[string]interface{}, error) {
 	// 在prompt中明确要求JSON格式
 	jsonPrompt := prompt + "\n\n请以有效的JSON格式返回结果，不要包含任何其他文本。"
-	
+
 	text, err := c.GenerateText(ctx, jsonPrompt, opts)
 	if err != nil {
 		return nil, err

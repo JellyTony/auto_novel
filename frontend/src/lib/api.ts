@@ -543,6 +543,23 @@ export class NovelAPI {
       body: JSON.stringify(data),
     });
   }
+
+  // 获取统计信息
+  static async getStats(): Promise<GetStatsResponse> {
+    return apiRequest<GetStatsResponse>('/api/v1/novel/stats');
+  }
+}
+
+// 项目统计信息接口
+export interface ProjectStats {
+  totalProjects: number;
+  completedProjects: number;
+  totalWords: number;
+  monthlyWords: number;
+}
+
+export interface GetStatsResponse {
+  stats: ProjectStats;
 }
 
 // 视频脚本 API 类 - 独立的视频脚本服务

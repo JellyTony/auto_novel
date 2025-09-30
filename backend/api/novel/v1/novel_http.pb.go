@@ -30,6 +30,7 @@ const OperationNovelServiceGenerateOutline = "/novel.v1.NovelService/GenerateOut
 const OperationNovelServiceGenerateVideoScript = "/novel.v1.NovelService/GenerateVideoScript"
 const OperationNovelServiceGenerateWorldView = "/novel.v1.NovelService/GenerateWorldView"
 const OperationNovelServiceGetProject = "/novel.v1.NovelService/GetProject"
+const OperationNovelServiceGetStats = "/novel.v1.NovelService/GetStats"
 const OperationNovelServiceListModels = "/novel.v1.NovelService/ListModels"
 const OperationNovelServiceListProjects = "/novel.v1.NovelService/ListProjects"
 const OperationNovelServicePolishChapter = "/novel.v1.NovelService/PolishChapter"
@@ -58,6 +59,8 @@ type NovelServiceHTTPServer interface {
 	GenerateWorldView(context.Context, *GenerateWorldViewRequest) (*GenerateWorldViewResponse, error)
 	// GetProject 获取项目详情
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// GetStats 获取统计信息
+	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
 	// ListModels 获取可用模型列表
 	ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
 	// ListProjects 列出项目
@@ -82,6 +85,7 @@ func RegisterNovelServiceHTTPServer(s *http.Server, srv NovelServiceHTTPServer) 
 	r.POST("/api/v1/novel/projects/{project_id}/quality/batch", _NovelService_BatchCheckQuality0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/consistency", _NovelService_CheckConsistency0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/export", _NovelService_ExportNovel0_HTTP_Handler(srv))
+	r.GET("/api/v1/novel/stats", _NovelService_GetStats0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/video-script", _NovelService_GenerateVideoScript0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/switch-model", _NovelService_SwitchModel0_HTTP_Handler(srv))
 	r.GET("/api/v1/novel/models", _NovelService_ListModels0_HTTP_Handler(srv))
@@ -375,6 +379,25 @@ func _NovelService_ExportNovel0_HTTP_Handler(srv NovelServiceHTTPServer) func(ct
 	}
 }
 
+func _NovelService_GetStats0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetStatsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationNovelServiceGetStats)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetStats(ctx, req.(*GetStatsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetStatsResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _NovelService_GenerateVideoScript0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in GenerateVideoScriptRequest
@@ -453,6 +476,7 @@ type NovelServiceHTTPClient interface {
 	GenerateVideoScript(ctx context.Context, req *GenerateVideoScriptRequest, opts ...http.CallOption) (rsp *GenerateVideoScriptResponse, err error)
 	GenerateWorldView(ctx context.Context, req *GenerateWorldViewRequest, opts ...http.CallOption) (rsp *GenerateWorldViewResponse, err error)
 	GetProject(ctx context.Context, req *GetProjectRequest, opts ...http.CallOption) (rsp *GetProjectResponse, err error)
+	GetStats(ctx context.Context, req *GetStatsRequest, opts ...http.CallOption) (rsp *GetStatsResponse, err error)
 	ListModels(ctx context.Context, req *ListModelsRequest, opts ...http.CallOption) (rsp *ListModelsResponse, err error)
 	ListProjects(ctx context.Context, req *ListProjectsRequest, opts ...http.CallOption) (rsp *ListProjectsResponse, err error)
 	PolishChapter(ctx context.Context, req *PolishChapterRequest, opts ...http.CallOption) (rsp *PolishChapterResponse, err error)
@@ -602,6 +626,19 @@ func (c *NovelServiceHTTPClientImpl) GetProject(ctx context.Context, in *GetProj
 	pattern := "/api/v1/novel/projects/{project_id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationNovelServiceGetProject))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *NovelServiceHTTPClientImpl) GetStats(ctx context.Context, in *GetStatsRequest, opts ...http.CallOption) (*GetStatsResponse, error) {
+	var out GetStatsResponse
+	pattern := "/api/v1/novel/stats"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationNovelServiceGetStats))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

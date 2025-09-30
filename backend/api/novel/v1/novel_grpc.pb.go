@@ -32,6 +32,7 @@ const (
 	NovelService_CheckConsistency_FullMethodName    = "/novel.v1.NovelService/CheckConsistency"
 	NovelService_GenerateNovel_FullMethodName       = "/novel.v1.NovelService/GenerateNovel"
 	NovelService_ExportNovel_FullMethodName         = "/novel.v1.NovelService/ExportNovel"
+	NovelService_GetStats_FullMethodName            = "/novel.v1.NovelService/GetStats"
 	NovelService_GenerateVideoScript_FullMethodName = "/novel.v1.NovelService/GenerateVideoScript"
 	NovelService_SwitchModel_FullMethodName         = "/novel.v1.NovelService/SwitchModel"
 	NovelService_ListModels_FullMethodName          = "/novel.v1.NovelService/ListModels"
@@ -67,6 +68,8 @@ type NovelServiceClient interface {
 	GenerateNovel(ctx context.Context, in *GenerateNovelRequest, opts ...grpc.CallOption) (NovelService_GenerateNovelClient, error)
 	// 导出小说
 	ExportNovel(ctx context.Context, in *ExportNovelRequest, opts ...grpc.CallOption) (*ExportNovelResponse, error)
+	// 获取统计信息
+	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
 	// 生成短视频分镜脚本
 	GenerateVideoScript(ctx context.Context, in *GenerateVideoScriptRequest, opts ...grpc.CallOption) (*GenerateVideoScriptResponse, error)
 	// 切换AI模型
@@ -223,6 +226,15 @@ func (c *novelServiceClient) ExportNovel(ctx context.Context, in *ExportNovelReq
 	return out, nil
 }
 
+func (c *novelServiceClient) GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error) {
+	out := new(GetStatsResponse)
+	err := c.cc.Invoke(ctx, NovelService_GetStats_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *novelServiceClient) GenerateVideoScript(ctx context.Context, in *GenerateVideoScriptRequest, opts ...grpc.CallOption) (*GenerateVideoScriptResponse, error) {
 	out := new(GenerateVideoScriptResponse)
 	err := c.cc.Invoke(ctx, NovelService_GenerateVideoScript_FullMethodName, in, out, opts...)
@@ -280,6 +292,8 @@ type NovelServiceServer interface {
 	GenerateNovel(*GenerateNovelRequest, NovelService_GenerateNovelServer) error
 	// 导出小说
 	ExportNovel(context.Context, *ExportNovelRequest) (*ExportNovelResponse, error)
+	// 获取统计信息
+	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
 	// 生成短视频分镜脚本
 	GenerateVideoScript(context.Context, *GenerateVideoScriptRequest) (*GenerateVideoScriptResponse, error)
 	// 切换AI模型
@@ -331,6 +345,9 @@ func (UnimplementedNovelServiceServer) GenerateNovel(*GenerateNovelRequest, Nove
 }
 func (UnimplementedNovelServiceServer) ExportNovel(context.Context, *ExportNovelRequest) (*ExportNovelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExportNovel not implemented")
+}
+func (UnimplementedNovelServiceServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
 }
 func (UnimplementedNovelServiceServer) GenerateVideoScript(context.Context, *GenerateVideoScriptRequest) (*GenerateVideoScriptResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateVideoScript not implemented")
@@ -591,6 +608,24 @@ func _NovelService_ExportNovel_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NovelService_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NovelServiceServer).GetStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NovelService_GetStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NovelServiceServer).GetStats(ctx, req.(*GetStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _NovelService_GenerateVideoScript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GenerateVideoScriptRequest)
 	if err := dec(in); err != nil {
@@ -699,6 +734,10 @@ var NovelService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExportNovel",
 			Handler:    _NovelService_ExportNovel_Handler,
+		},
+		{
+			MethodName: "GetStats",
+			Handler:    _NovelService_GetStats_Handler,
 		},
 		{
 			MethodName: "GenerateVideoScript",

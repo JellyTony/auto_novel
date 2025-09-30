@@ -7,8 +7,8 @@ import (
 	"time"
 
 	pb "backend/api/novel/v1"
-	"backend/internal/agent/character"
 	"backend/internal/agent/chapter"
+	"backend/internal/agent/character"
 	"backend/internal/agent/consistency"
 	"backend/internal/agent/orchestrator"
 	"backend/internal/agent/outline"
@@ -16,10 +16,10 @@ import (
 	"backend/internal/agent/quality"
 	"backend/internal/agent/worldbuilding"
 	"backend/internal/biz"
-	"backend/internal/pkg/models"
 	"backend/internal/pkg/eino"
-	"backend/internal/pkg/vector"
 	"backend/internal/pkg/llm"
+	"backend/internal/pkg/models"
+	"backend/internal/pkg/vector"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -28,56 +28,56 @@ import (
 type NovelService struct {
 	pb.UnimplementedNovelServiceServer
 
-	uc           *biz.NovelUsecase
-	orchestrator *orchestrator.OrchestratorAgent
-	worldAgent   *worldbuilding.WorldBuildingAgent
-	charAgent    *character.CharacterAgent
-	outlineAgent *outline.OutlineAgent
-	chapterAgent *chapter.ChapterAgent
-	polishAgent  *polish.PolishAgent
-	qualityAgent *quality.QualityAgent
+	uc               *biz.NovelUsecase
+	orchestrator     *orchestrator.OrchestratorAgent
+	worldAgent       *worldbuilding.WorldBuildingAgent
+	charAgent        *character.CharacterAgent
+	outlineAgent     *outline.OutlineAgent
+	chapterAgent     *chapter.ChapterAgent
+	polishAgent      *polish.PolishAgent
+	qualityAgent     *quality.QualityAgent
 	consistencyAgent *consistency.ConsistencyAgent
-	modelSwitcher *eino.ModelSwitcher
+	modelSwitcher    *eino.ModelSwitcher
 }
 
 // NewNovelService 创建小说服务
 func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher) *NovelService {
 	service := &NovelService{
-		uc:           uc,
-		orchestrator: orchestratorAgent,
-		worldAgent:   worldbuilding.NewWorldBuildingAgent(llmClient),
-		charAgent:    character.NewCharacterAgent(llmClient),
-		outlineAgent: outline.NewOutlineAgent(llmClient),
-		chapterAgent: chapter.NewChapterAgent(llmClient),
-		polishAgent:  polish.NewPolishAgent(llmClient),
+		uc:               uc,
+		orchestrator:     orchestratorAgent,
+		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient),
+		charAgent:        character.NewCharacterAgent(llmClient),
+		outlineAgent:     outline.NewOutlineAgent(llmClient),
+		chapterAgent:     chapter.NewChapterAgent(llmClient),
+		polishAgent:      polish.NewPolishAgent(llmClient),
 		consistencyAgent: consistency.NewConsistencyAgent(llmClient),
-		modelSwitcher: modelSwitcher,
+		modelSwitcher:    modelSwitcher,
 	}
-	
+
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
 	service.qualityAgent = quality.NewQualityAgent(llmClient, service.polishAgent, service.consistencyAgent)
-	
+
 	return service
 }
 
 // NewNovelServiceWithRAG 创建带RAG功能的小说服务
-func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, 
+func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent,
 	einoClient *eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher) *NovelService {
 	service := &NovelService{
-		uc:           uc,
-		orchestrator: orchestratorAgent,
-		worldAgent:   worldbuilding.NewWorldBuildingAgent(llmClient),
-		charAgent:    character.NewCharacterAgent(llmClient),
-		outlineAgent: outline.NewOutlineAgent(llmClient),
-		chapterAgent: chapter.NewChapterAgent(llmClient),
-		polishAgent:  polish.NewPolishAgent(llmClient),
+		uc:               uc,
+		orchestrator:     orchestratorAgent,
+		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient),
+		charAgent:        character.NewCharacterAgent(llmClient),
+		outlineAgent:     outline.NewOutlineAgent(llmClient),
+		chapterAgent:     chapter.NewChapterAgent(llmClient),
+		polishAgent:      polish.NewPolishAgent(llmClient),
 		consistencyAgent: consistency.NewConsistencyAgentWithRAG(llmClient, *einoClient, ragService),
-		modelSwitcher: modelSwitcher,
+		modelSwitcher:    modelSwitcher,
 	}
-	
+
 	// 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
 	service.qualityAgent = quality.NewQualityAgent(llmClient, service.polishAgent, service.consistencyAgent)
-	
+
 	return service
 }
 
@@ -156,7 +156,7 @@ func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWo
 	log.Printf("ProjectId: %s", req.ProjectId)
 	log.Printf("Genre: %s", req.Genre)
 	log.Printf("Setting: %s", req.Setting)
-	
+
 	// 获取项目
 	log.Printf("Getting project with ID: %s", req.ProjectId)
 	project, err := s.uc.GetProject(ctx, req.ProjectId)
@@ -378,7 +378,7 @@ func (s *NovelService) CheckConsistency(ctx context.Context, req *pb.CheckConsis
 // GenerateNovel 生成完整小说（流式响应）
 func (s *NovelService) GenerateNovel(req *pb.GenerateNovelRequest, stream pb.NovelService_GenerateNovelServer) error {
 	ctx := stream.Context()
-	
+
 	project, err := s.uc.GetProject(ctx, req.ProjectId)
 	if err != nil {
 		return err
@@ -508,7 +508,7 @@ func (s *NovelService) CheckQuality(ctx context.Context, req *pb.CheckQualityReq
 		Chapter:   chapter,
 		CheckType: req.CheckType,
 		Options: &llm.GenerateOptions{
-			Temperature:       req.LlmOptions.Temperature,
+			Temperature:      req.LlmOptions.Temperature,
 			TopP:             req.LlmOptions.TopP,
 			MaxTokens:        int(req.LlmOptions.MaxTokens),
 			FrequencyPenalty: req.LlmOptions.FrequencyPenalty,
@@ -537,7 +537,7 @@ func (s *NovelService) CheckQuality(ctx context.Context, req *pb.CheckQualityReq
 			CorrectedContent: result.ProofreadResult.CorrectedContent,
 			Suggestions:      result.ProofreadResult.Suggestions,
 		}
-		
+
 		for _, issue := range result.ProofreadResult.Issues {
 			response.ProofreadResult.Issues = append(response.ProofreadResult.Issues, &pb.QualityIssue{
 				Type:        issue.Type,
@@ -598,7 +598,7 @@ func (s *NovelService) BatchCheckQuality(ctx context.Context, req *pb.BatchCheck
 		Chapters:  chapters,
 		CheckType: req.CheckType,
 		Options: &llm.GenerateOptions{
-			Temperature:       req.LlmOptions.Temperature,
+			Temperature:      req.LlmOptions.Temperature,
 			TopP:             req.LlmOptions.TopP,
 			MaxTokens:        int(req.LlmOptions.MaxTokens),
 			FrequencyPenalty: req.LlmOptions.FrequencyPenalty,
@@ -633,7 +633,7 @@ func (s *NovelService) BatchCheckQuality(ctx context.Context, req *pb.BatchCheck
 				CorrectedContent: res.ProofreadResult.CorrectedContent,
 				Suggestions:      res.ProofreadResult.Suggestions,
 			}
-			
+
 			for _, issue := range res.ProofreadResult.Issues {
 				pbResult.ProofreadResult.Issues = append(pbResult.ProofreadResult.Issues, &pb.QualityIssue{
 					Type:        issue.Type,
@@ -673,10 +673,10 @@ func (s *NovelService) BatchCheckQuality(ctx context.Context, req *pb.BatchCheck
 	// 转换汇总信息
 	if result.Summary != nil {
 		response.Summary = &pb.QualitySummary{
-			TotalIssues:     int32(result.Summary.TotalIssues),
-			IssuesByType:    make(map[string]int32),
+			TotalIssues:      int32(result.Summary.TotalIssues),
+			IssuesByType:     make(map[string]int32),
 			IssuesBySeverity: make(map[string]int32),
-			Recommendations: result.Summary.Recommendations,
+			Recommendations:  result.Summary.Recommendations,
 		}
 
 		for k, v := range result.Summary.IssuesByType {
@@ -920,5 +920,51 @@ func (s *NovelService) ListModels(ctx context.Context, req *pb.ListModelsRequest
 	return &pb.ListModelsResponse{
 		Models:       pbModels,
 		CurrentModel: currentModel,
+	}, nil
+}
+
+// GetStats 获取统计信息
+func (s *NovelService) GetStats(ctx context.Context, req *pb.GetStatsRequest) (*pb.GetStatsResponse, error) {
+	// 获取项目统计信息
+	projects, total, err := s.uc.ListProjects(ctx, 1, 1000) // 获取所有项目
+	if err != nil {
+		return nil, err
+	}
+
+	// 计算统计信息
+	completedCount := 0
+	totalWords := int64(0)
+	monthlyWords := int64(0)
+
+	currentTime := time.Now()
+	currentMonth := currentTime.Month()
+	currentYear := currentTime.Year()
+
+	for _, project := range projects {
+		// 统计已完成项目
+		if project.Status == "completed" {
+			completedCount++
+		}
+
+		// 统计总字数和本月字数
+		if project.Chapters != nil {
+			for _, chapter := range project.Chapters {
+				totalWords += int64(chapter.WordCount)
+
+				// 检查是否为本月创建的章节
+				if chapter.CreatedAt.Month() == currentMonth && chapter.CreatedAt.Year() == currentYear {
+					monthlyWords += int64(chapter.WordCount)
+				}
+			}
+		}
+	}
+
+	return &pb.GetStatsResponse{
+		Stats: &pb.ProjectStats{
+			TotalProjects:     int32(total),
+			CompletedProjects: int32(completedCount),
+			TotalWords:        totalWords,
+			MonthlyWords:      monthlyWords,
+		},
 	}, nil
 }

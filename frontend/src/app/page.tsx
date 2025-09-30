@@ -31,12 +31,13 @@ export default function Home() {
       // 获取统计信息
       try {
         const statsResponse = await NovelAPI.getStats();
+        console.log("获取到的统计信息:", statsResponse.stats);
         setStats(statsResponse.stats);
       } catch (error) {
         console.error('获取统计信息失败:', error);
         // 使用项目数据计算基本统计
         const projects = projectsResponse.projects || [];
-        const completedCount = projects.filter(p => p.status === '已完成').length;
+        const completedCount = projects.filter(p => p.status === 'completed').length;
         const totalWords = projects.reduce((sum, p) => {
           // 估算字数：假设每章平均3000字
           const chapterCount = p.chapters?.length || 0;
@@ -59,24 +60,24 @@ export default function Home() {
           title: "都市修仙传",
           description: "一个现代都市背景下的修仙故事",
           genre: "现代都市",
-          targetAudience: "青年",
+          target_audience: "青年",
           tone: "快节奏",
           themes: ["修仙", "都市", "成长"],
-          status: "进行中",
-          createdAt: "2024-08-15",
-          updatedAt: "2024-09-29"
+          status: "draft",
+          created_at: "2024-08-15",
+          updated_at: "2024-09-29"
         },
         {
           id: "2",
           title: "星际争霸",
           description: "未来世界的星际战争",
           genre: "科幻",
-          targetAudience: "男性向",
+          target_audience: "男性向",
           tone: "冷峻",
           themes: ["科幻", "战争", "太空"],
-          status: "进行中",
-          createdAt: "2024-09-01",
-          updatedAt: "2024-09-28"
+          status: "draft",
+          created_at: "2024-09-01",
+          updated_at: "2024-09-28"
         }
       ]);
       

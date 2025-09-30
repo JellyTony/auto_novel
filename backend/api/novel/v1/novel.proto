@@ -114,6 +114,13 @@ service NovelService {
     };
   }
 
+  // 获取统计信息
+  rpc GetStats (GetStatsRequest) returns (GetStatsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/novel/stats"
+    };
+  }
+
   // 生成短视频分镜脚本
   rpc GenerateVideoScript (GenerateVideoScriptRequest) returns (GenerateVideoScriptResponse) {
     option (google.api.http) = {
@@ -769,4 +776,27 @@ message VideoScriptOptions {
   string platform = 2;
   // 语音类型：male/female/auto
   string voice_type = 3;
+}
+
+// 统计信息请求
+message GetStatsRequest {
+  // 空请求
+}
+
+// 统计信息响应
+message GetStatsResponse {
+  // 统计信息
+  ProjectStats stats = 1;
+}
+
+// 项目统计信息
+message ProjectStats {
+  // 总项目数
+  int32 total_projects = 1;
+  // 已完成项目数
+  int32 completed_projects = 2;
+  // 总字数
+  int64 total_words = 3;
+  // 本月字数
+  int64 monthly_words = 4;
 }
