@@ -32,7 +32,7 @@ export default function OutlinePage() {
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [showGenerateForm, setShowGenerateForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [projects, setProjects] = useState<Project[]>([]);
 
   // 项目列表状态管理
@@ -191,7 +191,7 @@ export default function OutlinePage() {
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部状态</SelectItem>
+                <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="completed">已完成</SelectItem>
                 <SelectItem value="in-progress">进行中</SelectItem>
                 <SelectItem value="planned">已规划</SelectItem>
