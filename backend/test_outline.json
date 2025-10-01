@@ -1,0 +1,26 @@
+{
+  "title": "测试大纲",
+  "summary": "用于测试重排序功能的大纲",
+  "chapters": [
+    {
+      "index": 1,
+      "title": "第一章：开始",
+      "summary": "故事的开始"
+    },
+    {
+      "index": 2,
+      "title": "第二章：发展",
+      "summary": "情节的发展"
+    },
+    {
+      "index": 3,
+      "title": "第三章：高潮",
+      "summary": "故事的高潮"
+    },
+    {
+      "index": 4,
+      "title": "第四章：结局",
+      "summary": "故事的结局"
+    }
+  ]
+}

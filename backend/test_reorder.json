@@ -1,0 +1,30 @@
+{
+  "project_id": "1759281154812681000",
+  "outline": {
+    "theme": "魔法世界的冒险",
+    "main_conflict": "邪恶势力威胁世界和平",
+    "chapters": [
+      {
+        "index": 1,
+        "title": "第一章：觉醒",
+        "summary": "主角发现自己的魔法天赋",
+        "goal": "介绍主角和世界观",
+        "twist_hint": "主角的力量比想象中更强大"
+      },
+      {
+        "index": 2,
+        "title": "第二章：冒险开始",
+        "summary": "主角踏上冒险之路",
+        "goal": "推动故事发展",
+        "twist_hint": "遇到意想不到的盟友"
+      },
+      {
+        "index": 3,
+        "title": "第三章：最终对决",
+        "summary": "与邪恶势力的决战",
+        "goal": "故事高潮",
+        "twist_hint": "真正的敌人另有其人"
+      }
+    ]
+  }
+}

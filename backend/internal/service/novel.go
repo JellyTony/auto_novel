@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"sort"
 	"time"
 
 	pb "backend/api/novel/v1"
@@ -182,6 +181,31 @@ func (s *NovelService) UpdateProject(ctx context.Context, req *pb.UpdateProjectR
 	project.TargetAudience = req.TargetAudience
 	project.Tone = req.Tone
 	project.Themes = req.Themes
+
+	// 更新大纲（如果提供）
+	if req.Outline != nil {
+		s.log.Infof("Updating outline: %+v", req.Outline)
+		outline := &models.Outline{
+			ID:        req.Outline.Id,
+			ProjectID: req.Outline.ProjectId,
+		}
+		
+		if len(req.Outline.Chapters) > 0 {
+			outline.Chapters = make([]*models.ChapterOutline, len(req.Outline.Chapters))
+			for i, pbChapter := range req.Outline.Chapters {
+				outline.Chapters[i] = &models.ChapterOutline{
+					Index:          int(pbChapter.Index),
+					Title:          pbChapter.Title,
+					Summary:        pbChapter.Summary,
+					Goal:           pbChapter.Goal,
+					TwistHint:      pbChapter.TwistHint,
+					ImportantItems: pbChapter.ImportantItems,
+				}
+			}
+		}
+		
+		project.Outline = outline
+	}
 
 	s.log.Infof("Updated project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v",
 		project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
@@ -440,64 +464,112 @@ func (s *NovelService) DeleteChapterOutline(ctx context.Context, req *pb.DeleteC
 
 // ReorderChapterOutline 重排序章节大纲
 func (s *NovelService) ReorderChapterOutline(ctx context.Context, req *pb.ReorderChapterOutlineRequest) (*pb.ReorderChapterOutlineResponse, error) {
+	s.log.WithContext(ctx).Infof("ReorderChapterOutline called for project %s with %d mappings", req.ProjectId, len(req.ChapterMappings))
+
 	// 获取项目
 	project, err := s.uc.GetProject(ctx, req.ProjectId)
 	if err != nil {
+		s.log.WithContext(ctx).Errorf("Failed to get project %s: %v", req.ProjectId, err)
 		return nil, err
 	}
 
 	// 检查项目是否有大纲
-	if project.Outline == nil {
-		return nil, fmt.Errorf("project outline not found")
+	if project.Outline == nil || len(project.Outline.Chapters) == 0 {
+		s.log.WithContext(ctx).Errorf("Project %s has no outline or empty chapters", req.ProjectId)
+		return nil, fmt.Errorf("project outline not found or empty")
 	}
 
-	// 创建新的章节列表
-	newChapters := make([]*models.ChapterOutline, len(project.Outline.Chapters))
-	copy(newChapters, project.Outline.Chapters)
+	originalChapters := project.Outline.Chapters
+	chapterCount := len(originalChapters)
+	s.log.WithContext(ctx).Infof("Original chapter count: %d", chapterCount)
 
-	// 应用重排序映射
-	for _, mapping := range req.ChapterMappings {
+	// 验证所有映射的有效性
+	for i, mapping := range req.ChapterMappings {
 		oldIndex := int(mapping.OldIndex)
 		newIndex := int(mapping.NewIndex)
+		
+		s.log.WithContext(ctx).Infof("Mapping %d: %d -> %d", i, oldIndex, newIndex)
 
-		// 验证索引有效性
-		if oldIndex < 1 || oldIndex > len(newChapters) || newIndex < 1 || newIndex > len(newChapters) {
-			return nil, fmt.Errorf("invalid chapter index: old=%d, new=%d", oldIndex, newIndex)
+		// 索引从1开始，转换为从0开始的数组索引
+		if oldIndex < 1 || oldIndex > chapterCount || newIndex < 1 || newIndex > chapterCount {
+			s.log.WithContext(ctx).Errorf("Invalid index mapping: old=%d, new=%d, chapter_count=%d", oldIndex, newIndex, chapterCount)
+			return nil, fmt.Errorf("invalid chapter index: old=%d, new=%d (valid range: 1-%d)", oldIndex, newIndex, chapterCount)
+		}
+	}
+
+	// 如果只有一个映射，使用简单的移动算法
+	if len(req.ChapterMappings) == 1 {
+		mapping := req.ChapterMappings[0]
+		fromIndex := int(mapping.OldIndex) - 1  // 转换为0基索引
+		toIndex := int(mapping.NewIndex) - 1    // 转换为0基索引
+
+		s.log.WithContext(ctx).Infof("Single mapping: moving chapter from position %d to %d", fromIndex, toIndex)
+
+		// 创建新的章节数组
+		newChapters := make([]*models.ChapterOutline, chapterCount)
+		copy(newChapters, originalChapters)
+
+		// 移动章节
+		if fromIndex != toIndex {
+			chapterToMove := newChapters[fromIndex]
+			
+			// 移除原位置的章节
+			if fromIndex < toIndex {
+				// 向后移动：将中间的章节向前移动
+				copy(newChapters[fromIndex:toIndex], newChapters[fromIndex+1:toIndex+1])
+			} else {
+				// 向前移动：将中间的章节向后移动
+				copy(newChapters[toIndex+1:fromIndex+1], newChapters[toIndex:fromIndex])
+			}
+			
+			// 插入到新位置
+			newChapters[toIndex] = chapterToMove
 		}
 
-		// 找到要移动的章节
-		var chapterToMove *models.ChapterOutline
-		for _, chapter := range newChapters {
-			if chapter.Index == oldIndex {
-				chapterToMove = chapter
-				break
+		// 重新编号所有章节的Index字段
+		for i, chapter := range newChapters {
+			chapter.Index = i + 1
+			s.log.WithContext(ctx).Infof("Chapter %d: %s (new index: %d)", i, chapter.Title, chapter.Index)
+		}
+
+		// 更新项目大纲
+		project.Outline.Chapters = newChapters
+	} else {
+		// 多个映射的情况，使用更复杂的算法
+		s.log.WithContext(ctx).Infof("Multiple mappings detected, using complex reordering algorithm")
+		
+		// 构建索引映射表
+		indexMappings := make([]struct {
+			OldIndex int
+			NewIndex int
+		}, len(req.ChapterMappings))
+		
+		for i, mapping := range req.ChapterMappings {
+			indexMappings[i] = struct {
+				OldIndex int
+				NewIndex int
+			}{
+				OldIndex: int(mapping.OldIndex),
+				NewIndex: int(mapping.NewIndex),
 			}
 		}
 
-		if chapterToMove == nil {
-			return nil, fmt.Errorf("chapter with index %d not found", oldIndex)
+		// 调用业务层的重排序方法
+		err = s.uc.ReorderChapterOutline(ctx, req.ProjectId, indexMappings)
+		if err != nil {
+			s.log.WithContext(ctx).Errorf("Failed to reorder chapters in business layer: %v", err)
+			return nil, err
 		}
 
-		// 更新章节索引
-		chapterToMove.Index = newIndex
+		// 重新获取更新后的项目
+		project, err = s.uc.GetProject(ctx, req.ProjectId)
+		if err != nil {
+			s.log.WithContext(ctx).Errorf("Failed to get updated project: %v", err)
+			return nil, err
+		}
 	}
 
-	// 按新索引排序
-	sort.Slice(newChapters, func(i, j int) bool {
-		return newChapters[i].Index < newChapters[j].Index
-	})
-
-	// 更新项目大纲
-	project.Outline.Chapters = newChapters
-
-	// 添加日志
-	s.log.WithContext(ctx).Infof("Reordered chapters for project %s", req.ProjectId)
-
-	// 保存更新后的项目
-	_, err = s.uc.UpdateProject(ctx, project)
-	if err != nil {
-		return nil, err
-	}
+	s.log.WithContext(ctx).Infof("Successfully reordered chapters for project %s", req.ProjectId)
 
 	return &pb.ReorderChapterOutlineResponse{
 		Outline: convertOutlineToProto(project.Outline),

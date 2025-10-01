@@ -246,39 +246,72 @@ func (uc *NovelUsecase) ReorderChapterOutline(ctx context.Context, projectID str
 	chapters := project.Outline.Chapters
 	chapterCount := len(chapters)
 
-	// 验证索引映射的有效性
+	// 验证索引映射的有效性 (注意：这里的索引是1基的，需要转换为0基)
 	for _, mapping := range indexMappings {
-		if mapping.OldIndex < 0 || mapping.OldIndex >= chapterCount ||
-			mapping.NewIndex < 0 || mapping.NewIndex >= chapterCount {
-			return fmt.Errorf("invalid index mapping: old=%d, new=%d", mapping.OldIndex, mapping.NewIndex)
+		// 转换为0基索引进行验证
+		oldIndex := mapping.OldIndex - 1
+		newIndex := mapping.NewIndex - 1
+		
+		if oldIndex < 0 || oldIndex >= chapterCount ||
+			newIndex < 0 || newIndex >= chapterCount {
+			return fmt.Errorf("invalid index mapping: old=%d, new=%d (valid range: 1-%d)", mapping.OldIndex, mapping.NewIndex, chapterCount)
 		}
 	}
 
-	// 创建新的章节数组
+	// 创建新的章节数组，用于存储重排序后的结果
 	newChapters := make([]*models.ChapterOutline, chapterCount)
-	copy(newChapters, chapters)
-
-	// 应用重排序
+	
+	// 创建一个映射表，记录每个原始位置的章节应该移动到哪个新位置
+	// 默认情况下，每个章节保持在原位置
+	targetPositions := make([]int, chapterCount)
+	for i := 0; i < chapterCount; i++ {
+		targetPositions[i] = i
+	}
+	
+	// 应用所有的索引映射
 	for _, mapping := range indexMappings {
-		if mapping.OldIndex != mapping.NewIndex {
-			// 移动章节到新位置
-			chapter := chapters[mapping.OldIndex]
-			
-			// 从原位置移除
-			if mapping.OldIndex < mapping.NewIndex {
-				// 向后移动
-				copy(newChapters[mapping.OldIndex:mapping.NewIndex], newChapters[mapping.OldIndex+1:mapping.NewIndex+1])
-			} else {
-				// 向前移动
-				copy(newChapters[mapping.NewIndex+1:mapping.OldIndex+1], newChapters[mapping.NewIndex:mapping.OldIndex])
-			}
-			
-			// 插入到新位置
-			newChapters[mapping.NewIndex] = chapter
+		oldIndex := mapping.OldIndex - 1  // 转换为0基索引
+		newIndex := mapping.NewIndex - 1  // 转换为0基索引
+		
+		uc.log.WithContext(ctx).Infof("Applying mapping: chapter at position %d -> position %d", oldIndex, newIndex)
+		
+		// 更新目标位置映射
+		targetPositions[oldIndex] = newIndex
+	}
+	
+	// 根据目标位置映射重新排列章节
+	// 首先，创建一个临时数组来存储按目标位置排序的章节
+	type chapterWithTarget struct {
+		chapter *models.ChapterOutline
+		targetPos int
+		originalPos int
+	}
+	
+	chaptersWithTargets := make([]chapterWithTarget, chapterCount)
+	for i, chapter := range chapters {
+		chaptersWithTargets[i] = chapterWithTarget{
+			chapter: chapter,
+			targetPos: targetPositions[i],
+			originalPos: i,
 		}
 	}
+	
+	// 按目标位置排序
+	for i := 0; i < chapterCount-1; i++ {
+		for j := i + 1; j < chapterCount; j++ {
+			if chaptersWithTargets[i].targetPos > chaptersWithTargets[j].targetPos {
+				chaptersWithTargets[i], chaptersWithTargets[j] = chaptersWithTargets[j], chaptersWithTargets[i]
+			}
+		}
+	}
+	
+	// 将排序后的章节放入新数组
+	for i, item := range chaptersWithTargets {
+		newChapters[i] = item.chapter
+		uc.log.WithContext(ctx).Infof("Chapter '%s' moved from position %d to position %d", item.chapter.Title, item.originalPos, i)
+	}
 
-	// 重新编号所有章节
+	// 重新编号所有章节的Index字段
 	for i, chapter := range newChapters {
 		chapter.Index = i + 1
 	}
@@ -290,6 +323,7 @@ func (uc *NovelUsecase) ReorderChapterOutline(ctx context.Context, projectID str
 		return fmt.Errorf("failed to update project: %w", err)
 	}
 
+	uc.log.WithContext(ctx).Infof("Successfully reordered chapter outline for project %s", projectID)
 	return nil
 }
 

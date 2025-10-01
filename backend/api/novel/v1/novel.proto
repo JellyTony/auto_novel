@@ -248,6 +248,8 @@ message UpdateProjectRequest {
   string tone = 6;
   // 主题标签
   repeated string themes = 7;
+  // 大纲
+  Outline outline = 8;
 }
 
 // 更新项目响应
