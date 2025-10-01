@@ -91,8 +91,7 @@ export function ChapterGenerationDialog({
     
     const request = {
       project_id: projectId,
-      chapter_number: chapterIndex,
-      outline: {
+      chapter_outline: {
         index: chapterIndex,
         title: title.trim(),
         summary: summary.trim(),

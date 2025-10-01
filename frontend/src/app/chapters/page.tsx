@@ -77,7 +77,6 @@ export default function ChaptersPage() {
       setShowGenerateForm(false);
       setGenerateRequest({
         project_id: selectedProject,
-        chapter_index: selectedChapter,
         chapter_outline: {
           index: selectedChapter,
           title: `第${selectedChapter}章`,
@@ -127,7 +126,6 @@ export default function ChaptersPage() {
   // 生成请求表单状态
   const [generateRequest, setGenerateRequest] = useState<GenerateChapterRequest>({
     project_id: "",
-    chapter_index: 1,
     chapter_outline: {
       index: 1,
       title: "第1章",
@@ -177,8 +175,7 @@ export default function ChaptersPage() {
 
     const requestData = {
       ...generateRequest,
-      project_id: selectedProject,
-      chapter_index: selectedChapter
+      project_id: selectedProject
     };
 
     try {

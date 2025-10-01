@@ -392,9 +392,9 @@ export interface GenerationContext {
 
 export interface GenerateChapterRequest {
   project_id: string;
-  chapter_number: number;
-  outline: ChapterOutline;
+  chapter_outline: ChapterOutline;
   context?: GenerationContext;
+  target_word_count?: number;
   llm_options?: LLMOptions;
 }
 

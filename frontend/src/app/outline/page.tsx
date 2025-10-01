@@ -399,8 +399,7 @@ export default function OutlinePage() {
     setGeneratingChapter(chapterIndex);
     const request: GenerateChapterRequest = {
       project_id: selectedProject,
-      chapter_number: chapterIndex,
-      outline: chapterOutline
+      chapter_outline: chapterOutline
     };
     generateChapterApi.mutate(
       () => NovelAPI.generateChapter(request),
