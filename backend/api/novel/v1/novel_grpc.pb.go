@@ -19,25 +19,27 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	NovelService_CreateProject_FullMethodName        = "/novel.v1.NovelService/CreateProject"
-	NovelService_GetProject_FullMethodName           = "/novel.v1.NovelService/GetProject"
-	NovelService_ListProjects_FullMethodName         = "/novel.v1.NovelService/ListProjects"
-	NovelService_UpdateProject_FullMethodName        = "/novel.v1.NovelService/UpdateProject"
-	NovelService_GenerateWorldView_FullMethodName    = "/novel.v1.NovelService/GenerateWorldView"
-	NovelService_GenerateCharacters_FullMethodName   = "/novel.v1.NovelService/GenerateCharacters"
-	NovelService_GenerateOutline_FullMethodName      = "/novel.v1.NovelService/GenerateOutline"
-	NovelService_UpdateChapterOutline_FullMethodName = "/novel.v1.NovelService/UpdateChapterOutline"
-	NovelService_GenerateChapter_FullMethodName      = "/novel.v1.NovelService/GenerateChapter"
-	NovelService_PolishChapter_FullMethodName        = "/novel.v1.NovelService/PolishChapter"
-	NovelService_CheckQuality_FullMethodName         = "/novel.v1.NovelService/CheckQuality"
-	NovelService_BatchCheckQuality_FullMethodName    = "/novel.v1.NovelService/BatchCheckQuality"
-	NovelService_CheckConsistency_FullMethodName     = "/novel.v1.NovelService/CheckConsistency"
-	NovelService_GenerateNovel_FullMethodName        = "/novel.v1.NovelService/GenerateNovel"
-	NovelService_ExportNovel_FullMethodName          = "/novel.v1.NovelService/ExportNovel"
-	NovelService_GetStats_FullMethodName             = "/novel.v1.NovelService/GetStats"
-	NovelService_GenerateVideoScript_FullMethodName  = "/novel.v1.NovelService/GenerateVideoScript"
-	NovelService_SwitchModel_FullMethodName          = "/novel.v1.NovelService/SwitchModel"
-	NovelService_ListModels_FullMethodName           = "/novel.v1.NovelService/ListModels"
+	NovelService_CreateProject_FullMethodName         = "/novel.v1.NovelService/CreateProject"
+	NovelService_GetProject_FullMethodName            = "/novel.v1.NovelService/GetProject"
+	NovelService_ListProjects_FullMethodName          = "/novel.v1.NovelService/ListProjects"
+	NovelService_UpdateProject_FullMethodName         = "/novel.v1.NovelService/UpdateProject"
+	NovelService_GenerateWorldView_FullMethodName     = "/novel.v1.NovelService/GenerateWorldView"
+	NovelService_GenerateCharacters_FullMethodName    = "/novel.v1.NovelService/GenerateCharacters"
+	NovelService_GenerateOutline_FullMethodName       = "/novel.v1.NovelService/GenerateOutline"
+	NovelService_UpdateChapterOutline_FullMethodName  = "/novel.v1.NovelService/UpdateChapterOutline"
+	NovelService_DeleteChapterOutline_FullMethodName  = "/novel.v1.NovelService/DeleteChapterOutline"
+	NovelService_ReorderChapterOutline_FullMethodName = "/novel.v1.NovelService/ReorderChapterOutline"
+	NovelService_GenerateChapter_FullMethodName       = "/novel.v1.NovelService/GenerateChapter"
+	NovelService_PolishChapter_FullMethodName         = "/novel.v1.NovelService/PolishChapter"
+	NovelService_CheckQuality_FullMethodName          = "/novel.v1.NovelService/CheckQuality"
+	NovelService_BatchCheckQuality_FullMethodName     = "/novel.v1.NovelService/BatchCheckQuality"
+	NovelService_CheckConsistency_FullMethodName      = "/novel.v1.NovelService/CheckConsistency"
+	NovelService_GenerateNovel_FullMethodName         = "/novel.v1.NovelService/GenerateNovel"
+	NovelService_ExportNovel_FullMethodName           = "/novel.v1.NovelService/ExportNovel"
+	NovelService_GetStats_FullMethodName              = "/novel.v1.NovelService/GetStats"
+	NovelService_GenerateVideoScript_FullMethodName   = "/novel.v1.NovelService/GenerateVideoScript"
+	NovelService_SwitchModel_FullMethodName           = "/novel.v1.NovelService/SwitchModel"
+	NovelService_ListModels_FullMethodName            = "/novel.v1.NovelService/ListModels"
 )
 
 // NovelServiceClient is the client API for NovelService service.
@@ -60,6 +62,10 @@ type NovelServiceClient interface {
 	GenerateOutline(ctx context.Context, in *GenerateOutlineRequest, opts ...grpc.CallOption) (*GenerateOutlineResponse, error)
 	// 更新章节大纲
 	UpdateChapterOutline(ctx context.Context, in *UpdateChapterOutlineRequest, opts ...grpc.CallOption) (*UpdateChapterOutlineResponse, error)
+	// 删除章节大纲
+	DeleteChapterOutline(ctx context.Context, in *DeleteChapterOutlineRequest, opts ...grpc.CallOption) (*DeleteChapterOutlineResponse, error)
+	// 重排序章节大纲
+	ReorderChapterOutline(ctx context.Context, in *ReorderChapterOutlineRequest, opts ...grpc.CallOption) (*ReorderChapterOutlineResponse, error)
 	// 生成章节内容
 	GenerateChapter(ctx context.Context, in *GenerateChapterRequest, opts ...grpc.CallOption) (*GenerateChapterResponse, error)
 	// 润色章节
@@ -158,6 +164,24 @@ func (c *novelServiceClient) GenerateOutline(ctx context.Context, in *GenerateOu
 func (c *novelServiceClient) UpdateChapterOutline(ctx context.Context, in *UpdateChapterOutlineRequest, opts ...grpc.CallOption) (*UpdateChapterOutlineResponse, error) {
 	out := new(UpdateChapterOutlineResponse)
 	err := c.cc.Invoke(ctx, NovelService_UpdateChapterOutline_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *novelServiceClient) DeleteChapterOutline(ctx context.Context, in *DeleteChapterOutlineRequest, opts ...grpc.CallOption) (*DeleteChapterOutlineResponse, error) {
+	out := new(DeleteChapterOutlineResponse)
+	err := c.cc.Invoke(ctx, NovelService_DeleteChapterOutline_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *novelServiceClient) ReorderChapterOutline(ctx context.Context, in *ReorderChapterOutlineRequest, opts ...grpc.CallOption) (*ReorderChapterOutlineResponse, error) {
+	out := new(ReorderChapterOutlineResponse)
+	err := c.cc.Invoke(ctx, NovelService_ReorderChapterOutline_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -306,6 +330,10 @@ type NovelServiceServer interface {
 	GenerateOutline(context.Context, *GenerateOutlineRequest) (*GenerateOutlineResponse, error)
 	// 更新章节大纲
 	UpdateChapterOutline(context.Context, *UpdateChapterOutlineRequest) (*UpdateChapterOutlineResponse, error)
+	// 删除章节大纲
+	DeleteChapterOutline(context.Context, *DeleteChapterOutlineRequest) (*DeleteChapterOutlineResponse, error)
+	// 重排序章节大纲
+	ReorderChapterOutline(context.Context, *ReorderChapterOutlineRequest) (*ReorderChapterOutlineResponse, error)
 	// 生成章节内容
 	GenerateChapter(context.Context, *GenerateChapterRequest) (*GenerateChapterResponse, error)
 	// 润色章节
@@ -358,6 +386,12 @@ func (UnimplementedNovelServiceServer) GenerateOutline(context.Context, *Generat
 }
 func (UnimplementedNovelServiceServer) UpdateChapterOutline(context.Context, *UpdateChapterOutlineRequest) (*UpdateChapterOutlineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateChapterOutline not implemented")
+}
+func (UnimplementedNovelServiceServer) DeleteChapterOutline(context.Context, *DeleteChapterOutlineRequest) (*DeleteChapterOutlineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteChapterOutline not implemented")
+}
+func (UnimplementedNovelServiceServer) ReorderChapterOutline(context.Context, *ReorderChapterOutlineRequest) (*ReorderChapterOutlineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReorderChapterOutline not implemented")
 }
 func (UnimplementedNovelServiceServer) GenerateChapter(context.Context, *GenerateChapterRequest) (*GenerateChapterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateChapter not implemented")
@@ -545,6 +579,42 @@ func _NovelService_UpdateChapterOutline_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(NovelServiceServer).UpdateChapterOutline(ctx, req.(*UpdateChapterOutlineRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NovelService_DeleteChapterOutline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteChapterOutlineRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NovelServiceServer).DeleteChapterOutline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NovelService_DeleteChapterOutline_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NovelServiceServer).DeleteChapterOutline(ctx, req.(*DeleteChapterOutlineRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NovelService_ReorderChapterOutline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReorderChapterOutlineRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NovelServiceServer).ReorderChapterOutline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NovelService_ReorderChapterOutline_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NovelServiceServer).ReorderChapterOutline(ctx, req.(*ReorderChapterOutlineRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -788,6 +858,14 @@ var NovelService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateChapterOutline",
 			Handler:    _NovelService_UpdateChapterOutline_Handler,
+		},
+		{
+			MethodName: "DeleteChapterOutline",
+			Handler:    _NovelService_DeleteChapterOutline_Handler,
+		},
+		{
+			MethodName: "ReorderChapterOutline",
+			Handler:    _NovelService_ReorderChapterOutline_Handler,
 		},
 		{
 			MethodName: "GenerateChapter",

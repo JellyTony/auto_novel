@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	pb "backend/api/novel/v1"
@@ -383,6 +384,122 @@ func (s *NovelService) UpdateChapterOutline(ctx context.Context, req *pb.UpdateC
 	}
 
 	return &pb.UpdateChapterOutlineResponse{
+		Outline: convertOutlineToProto(project.Outline),
+	}, nil
+}
+
+// DeleteChapterOutline 删除章节大纲
+func (s *NovelService) DeleteChapterOutline(ctx context.Context, req *pb.DeleteChapterOutlineRequest) (*pb.DeleteChapterOutlineResponse, error) {
+	// 获取项目
+	project, err := s.uc.GetProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查项目是否有大纲
+	if project.Outline == nil {
+		return nil, fmt.Errorf("project outline not found")
+	}
+
+	// 查找要删除的章节
+	targetChapterIndex := int(req.ChapterIndex)
+	var foundIndex = -1
+	
+	for i, chapter := range project.Outline.Chapters {
+		if chapter.Index == targetChapterIndex {
+			foundIndex = i
+			break
+		}
+	}
+	
+	if foundIndex == -1 {
+		return nil, fmt.Errorf("chapter with index %d not found", targetChapterIndex)
+	}
+
+	// 删除章节
+	project.Outline.Chapters = append(project.Outline.Chapters[:foundIndex], project.Outline.Chapters[foundIndex+1:]...)
+
+	// 重新调整后续章节的索引
+	for i := foundIndex; i < len(project.Outline.Chapters); i++ {
+		project.Outline.Chapters[i].Index = i + 1
+	}
+
+	// 添加日志
+	s.log.WithContext(ctx).Infof("Deleted chapter %d", req.ChapterIndex)
+
+	// 保存更新后的项目
+	_, err = s.uc.UpdateProject(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.DeleteChapterOutlineResponse{
+		Outline: convertOutlineToProto(project.Outline),
+	}, nil
+}
+
+// ReorderChapterOutline 重排序章节大纲
+func (s *NovelService) ReorderChapterOutline(ctx context.Context, req *pb.ReorderChapterOutlineRequest) (*pb.ReorderChapterOutlineResponse, error) {
+	// 获取项目
+	project, err := s.uc.GetProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查项目是否有大纲
+	if project.Outline == nil {
+		return nil, fmt.Errorf("project outline not found")
+	}
+
+	// 创建新的章节列表
+	newChapters := make([]*models.ChapterOutline, len(project.Outline.Chapters))
+	copy(newChapters, project.Outline.Chapters)
+
+	// 应用重排序映射
+	for _, mapping := range req.ChapterMappings {
+		oldIndex := int(mapping.OldIndex)
+		newIndex := int(mapping.NewIndex)
+
+		// 验证索引有效性
+		if oldIndex < 1 || oldIndex > len(newChapters) || newIndex < 1 || newIndex > len(newChapters) {
+			return nil, fmt.Errorf("invalid chapter index: old=%d, new=%d", oldIndex, newIndex)
+		}
+
+		// 找到要移动的章节
+		var chapterToMove *models.ChapterOutline
+		for _, chapter := range newChapters {
+			if chapter.Index == oldIndex {
+				chapterToMove = chapter
+				break
+			}
+		}
+
+		if chapterToMove == nil {
+			return nil, fmt.Errorf("chapter with index %d not found", oldIndex)
+		}
+
+		// 更新章节索引
+		chapterToMove.Index = newIndex
+	}
+
+	// 按新索引排序
+	sort.Slice(newChapters, func(i, j int) bool {
+		return newChapters[i].Index < newChapters[j].Index
+	})
+
+	// 更新项目大纲
+	project.Outline.Chapters = newChapters
+
+	// 添加日志
+	s.log.WithContext(ctx).Infof("Reordered chapters for project %s", req.ProjectId)
+
+	// 保存更新后的项目
+	_, err = s.uc.UpdateProject(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.ReorderChapterOutlineResponse{
 		Outline: convertOutlineToProto(project.Outline),
 	}, nil
 }

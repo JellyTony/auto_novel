@@ -361,6 +361,58 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.UpdateChapterOutlineResponse'
+        delete:
+            tags:
+                - NovelService
+            description: 删除章节大纲
+            operationId: NovelService_DeleteChapterOutline
+            parameters:
+                - name: project_id
+                  in: path
+                  description: 项目ID
+                  required: true
+                  schema:
+                    type: string
+                - name: chapter_index
+                  in: path
+                  description: 章节索引
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.DeleteChapterOutlineResponse'
+    /api/v1/novel/projects/{project_id}/outline/reorder:
+        post:
+            tags:
+                - NovelService
+            description: 重排序章节大纲
+            operationId: NovelService_ReorderChapterOutline
+            parameters:
+                - name: project_id
+                  in: path
+                  description: 项目ID
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.ReorderChapterOutlineRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.ReorderChapterOutlineResponse'
     /api/v1/novel/projects/{project_id}/quality/batch:
         post:
             tags:
@@ -925,6 +977,18 @@ components:
                     description: 更新时间
                     format: date-time
             description: 章节
+        novel.v1.ChapterIndexMapping:
+            type: object
+            properties:
+                old_index:
+                    type: integer
+                    description: 原索引
+                    format: int32
+                new_index:
+                    type: integer
+                    description: 新索引
+                    format: int32
+            description: 章节索引映射
         novel.v1.ChapterOutline:
             type: object
             properties:
@@ -1172,6 +1236,14 @@ components:
                     description: 总质量分
                     format: int32
             description: 逻辑检查结果
+        novel.v1.DeleteChapterOutlineResponse:
+            type: object
+            properties:
+                outline:
+                    allOf:
+                        - $ref: '#/components/schemas/novel.v1.Outline'
+                    description: 更新后的章节大纲
+            description: 删除章节大纲响应
         novel.v1.ExportNovelRequest:
             type: object
             properties:
@@ -1749,6 +1821,26 @@ components:
                         format: double
                     description: 质量趋势（按章节）
             description: 质量检测摘要
+        novel.v1.ReorderChapterOutlineRequest:
+            type: object
+            properties:
+                project_id:
+                    type: string
+                    description: 项目ID
+                chapter_mappings:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/novel.v1.ChapterIndexMapping'
+                    description: 章节索引映射：旧索引 -> 新索引
+            description: 重排序章节大纲请求
+        novel.v1.ReorderChapterOutlineResponse:
+            type: object
+            properties:
+                outline:
+                    allOf:
+                        - $ref: '#/components/schemas/novel.v1.Outline'
+                    description: 更新后的章节大纲
+            description: 重排序章节大纲响应
         novel.v1.SwitchModelRequest:
             type: object
             properties:

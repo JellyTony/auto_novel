@@ -187,6 +187,112 @@ func (uc *NovelUsecase) DeleteChapter(ctx context.Context, chapterID string) err
 	return uc.repo.DeleteChapter(ctx, chapterID)
 }
 
+// DeleteChapterOutline 删除章节大纲
+func (uc *NovelUsecase) DeleteChapterOutline(ctx context.Context, projectID string, chapterIndex int) error {
+	uc.log.WithContext(ctx).Infof("Deleting chapter outline: project=%s, index=%d", projectID, chapterIndex)
+
+	// 获取项目
+	project, err := uc.repo.GetProject(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	// 检查大纲是否存在
+	if project.Outline == nil || len(project.Outline.Chapters) == 0 {
+		return fmt.Errorf("project outline not found")
+	}
+
+	// 检查章节索引是否有效
+	if chapterIndex < 0 || chapterIndex >= len(project.Outline.Chapters) {
+		return fmt.Errorf("invalid chapter index: %d", chapterIndex)
+	}
+
+	// 删除指定索引的章节
+	chapters := project.Outline.Chapters
+	project.Outline.Chapters = append(chapters[:chapterIndex], chapters[chapterIndex+1:]...)
+
+	// 重新编号后续章节
+	for i := chapterIndex; i < len(project.Outline.Chapters); i++ {
+		project.Outline.Chapters[i].Index = i + 1
+	}
+
+	// 更新项目
+	_, err = uc.repo.UpdateProject(ctx, project)
+	if err != nil {
+		return fmt.Errorf("failed to update project: %w", err)
+	}
+
+	return nil
+}
+
+// ReorderChapterOutline 重排序章节大纲
+func (uc *NovelUsecase) ReorderChapterOutline(ctx context.Context, projectID string, indexMappings []struct {
+	OldIndex int
+	NewIndex int
+}) error {
+	uc.log.WithContext(ctx).Infof("Reordering chapter outline: project=%s, mappings=%v", projectID, indexMappings)
+
+	// 获取项目
+	project, err := uc.repo.GetProject(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	// 检查大纲是否存在
+	if project.Outline == nil || len(project.Outline.Chapters) == 0 {
+		return fmt.Errorf("project outline not found")
+	}
+
+	chapters := project.Outline.Chapters
+	chapterCount := len(chapters)
+
+	// 验证索引映射的有效性
+	for _, mapping := range indexMappings {
+		if mapping.OldIndex < 0 || mapping.OldIndex >= chapterCount ||
+			mapping.NewIndex < 0 || mapping.NewIndex >= chapterCount {
+			return fmt.Errorf("invalid index mapping: old=%d, new=%d", mapping.OldIndex, mapping.NewIndex)
+		}
+	}
+
+	// 创建新的章节数组
+	newChapters := make([]*models.ChapterOutline, chapterCount)
+	copy(newChapters, chapters)
+
+	// 应用重排序
+	for _, mapping := range indexMappings {
+		if mapping.OldIndex != mapping.NewIndex {
+			// 移动章节到新位置
+			chapter := chapters[mapping.OldIndex]
+			
+			// 从原位置移除
+			if mapping.OldIndex < mapping.NewIndex {
+				// 向后移动
+				copy(newChapters[mapping.OldIndex:mapping.NewIndex], newChapters[mapping.OldIndex+1:mapping.NewIndex+1])
+			} else {
+				// 向前移动
+				copy(newChapters[mapping.NewIndex+1:mapping.OldIndex+1], newChapters[mapping.NewIndex:mapping.OldIndex])
+			}
+			
+			// 插入到新位置
+			newChapters[mapping.NewIndex] = chapter
+		}
+	}
+
+	// 重新编号所有章节
+	for i, chapter := range newChapters {
+		chapter.Index = i + 1
+	}
+
+	// 更新项目
+	project.Outline.Chapters = newChapters
+	_, err = uc.repo.UpdateProject(ctx, project)
+	if err != nil {
+		return fmt.Errorf("failed to update project: %w", err)
+	}
+
+	return nil
+}
+
 // ExportNovel 导出小说
 func (uc *NovelUsecase) ExportNovel(ctx context.Context, project *models.NovelProject, format string, options *models.ExportOptions) (*models.ExportResult, error) {
 	uc.log.WithContext(ctx).Infof("Exporting novel: %s, format: %s", project.ID, format)

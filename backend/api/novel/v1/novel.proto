@@ -74,6 +74,21 @@ service NovelService {
     };
   }
 
+  // 删除章节大纲
+  rpc DeleteChapterOutline (DeleteChapterOutlineRequest) returns (DeleteChapterOutlineResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}"
+    };
+  }
+
+  // 重排序章节大纲
+  rpc ReorderChapterOutline (ReorderChapterOutlineRequest) returns (ReorderChapterOutlineResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/novel/projects/{project_id}/outline/reorder"
+      body: "*"
+    };
+  }
+
   // 生成章节内容
   rpc GenerateChapter (GenerateChapterRequest) returns (GenerateChapterResponse) {
     option (google.api.http) = {
@@ -325,6 +340,42 @@ message UpdateChapterOutlineRequest {
 
 // 更新章节大纲响应
 message UpdateChapterOutlineResponse {
+  // 更新后的章节大纲
+  Outline outline = 1;
+}
+
+// 删除章节大纲请求
+message DeleteChapterOutlineRequest {
+  // 项目ID
+  string project_id = 1;
+  // 章节索引
+  int32 chapter_index = 2;
+}
+
+// 删除章节大纲响应
+message DeleteChapterOutlineResponse {
+  // 更新后的章节大纲
+  Outline outline = 1;
+}
+
+// 重排序章节大纲请求
+message ReorderChapterOutlineRequest {
+  // 项目ID
+  string project_id = 1;
+  // 章节索引映射：旧索引 -> 新索引
+  repeated ChapterIndexMapping chapter_mappings = 2;
+}
+
+// 章节索引映射
+message ChapterIndexMapping {
+  // 原索引
+  int32 old_index = 1;
+  // 新索引
+  int32 new_index = 2;
+}
+
+// 重排序章节大纲响应
+message ReorderChapterOutlineResponse {
   // 更新后的章节大纲
   Outline outline = 1;
 }

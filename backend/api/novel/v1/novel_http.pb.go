@@ -23,6 +23,7 @@ const OperationNovelServiceBatchCheckQuality = "/novel.v1.NovelService/BatchChec
 const OperationNovelServiceCheckConsistency = "/novel.v1.NovelService/CheckConsistency"
 const OperationNovelServiceCheckQuality = "/novel.v1.NovelService/CheckQuality"
 const OperationNovelServiceCreateProject = "/novel.v1.NovelService/CreateProject"
+const OperationNovelServiceDeleteChapterOutline = "/novel.v1.NovelService/DeleteChapterOutline"
 const OperationNovelServiceExportNovel = "/novel.v1.NovelService/ExportNovel"
 const OperationNovelServiceGenerateChapter = "/novel.v1.NovelService/GenerateChapter"
 const OperationNovelServiceGenerateCharacters = "/novel.v1.NovelService/GenerateCharacters"
@@ -34,6 +35,7 @@ const OperationNovelServiceGetStats = "/novel.v1.NovelService/GetStats"
 const OperationNovelServiceListModels = "/novel.v1.NovelService/ListModels"
 const OperationNovelServiceListProjects = "/novel.v1.NovelService/ListProjects"
 const OperationNovelServicePolishChapter = "/novel.v1.NovelService/PolishChapter"
+const OperationNovelServiceReorderChapterOutline = "/novel.v1.NovelService/ReorderChapterOutline"
 const OperationNovelServiceSwitchModel = "/novel.v1.NovelService/SwitchModel"
 const OperationNovelServiceUpdateChapterOutline = "/novel.v1.NovelService/UpdateChapterOutline"
 const OperationNovelServiceUpdateProject = "/novel.v1.NovelService/UpdateProject"
@@ -47,6 +49,8 @@ type NovelServiceHTTPServer interface {
 	CheckQuality(context.Context, *CheckQualityRequest) (*CheckQualityResponse, error)
 	// CreateProject 创建小说项目
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
+	// DeleteChapterOutline 删除章节大纲
+	DeleteChapterOutline(context.Context, *DeleteChapterOutlineRequest) (*DeleteChapterOutlineResponse, error)
 	// ExportNovel 导出小说
 	ExportNovel(context.Context, *ExportNovelRequest) (*ExportNovelResponse, error)
 	// GenerateChapter 生成章节内容
@@ -69,6 +73,8 @@ type NovelServiceHTTPServer interface {
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
 	// PolishChapter 润色章节
 	PolishChapter(context.Context, *PolishChapterRequest) (*PolishChapterResponse, error)
+	// ReorderChapterOutline 重排序章节大纲
+	ReorderChapterOutline(context.Context, *ReorderChapterOutlineRequest) (*ReorderChapterOutlineResponse, error)
 	// SwitchModel 切换AI模型
 	SwitchModel(context.Context, *SwitchModelRequest) (*SwitchModelResponse, error)
 	// UpdateChapterOutline 更新章节大纲
@@ -87,6 +93,8 @@ func RegisterNovelServiceHTTPServer(s *http.Server, srv NovelServiceHTTPServer) 
 	r.POST("/api/v1/novel/projects/{project_id}/characters", _NovelService_GenerateCharacters0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/outline", _NovelService_GenerateOutline0_HTTP_Handler(srv))
 	r.PUT("/api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}", _NovelService_UpdateChapterOutline0_HTTP_Handler(srv))
+	r.DELETE("/api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}", _NovelService_DeleteChapterOutline0_HTTP_Handler(srv))
+	r.POST("/api/v1/novel/projects/{project_id}/outline/reorder", _NovelService_ReorderChapterOutline0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/chapters", _NovelService_GenerateChapter0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/polish", _NovelService_PolishChapter0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/quality", _NovelService_CheckQuality0_HTTP_Handler(srv))
@@ -283,6 +291,53 @@ func _NovelService_UpdateChapterOutline0_HTTP_Handler(srv NovelServiceHTTPServer
 			return err
 		}
 		reply := out.(*UpdateChapterOutlineResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _NovelService_DeleteChapterOutline0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteChapterOutlineRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationNovelServiceDeleteChapterOutline)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteChapterOutline(ctx, req.(*DeleteChapterOutlineRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeleteChapterOutlineResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _NovelService_ReorderChapterOutline0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ReorderChapterOutlineRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationNovelServiceReorderChapterOutline)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ReorderChapterOutline(ctx, req.(*ReorderChapterOutlineRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ReorderChapterOutlineResponse)
 		return ctx.Result(200, reply)
 	}
 }
@@ -527,6 +582,7 @@ type NovelServiceHTTPClient interface {
 	CheckConsistency(ctx context.Context, req *CheckConsistencyRequest, opts ...http.CallOption) (rsp *CheckConsistencyResponse, err error)
 	CheckQuality(ctx context.Context, req *CheckQualityRequest, opts ...http.CallOption) (rsp *CheckQualityResponse, err error)
 	CreateProject(ctx context.Context, req *CreateProjectRequest, opts ...http.CallOption) (rsp *CreateProjectResponse, err error)
+	DeleteChapterOutline(ctx context.Context, req *DeleteChapterOutlineRequest, opts ...http.CallOption) (rsp *DeleteChapterOutlineResponse, err error)
 	ExportNovel(ctx context.Context, req *ExportNovelRequest, opts ...http.CallOption) (rsp *ExportNovelResponse, err error)
 	GenerateChapter(ctx context.Context, req *GenerateChapterRequest, opts ...http.CallOption) (rsp *GenerateChapterResponse, err error)
 	GenerateCharacters(ctx context.Context, req *GenerateCharactersRequest, opts ...http.CallOption) (rsp *GenerateCharactersResponse, err error)
@@ -538,6 +594,7 @@ type NovelServiceHTTPClient interface {
 	ListModels(ctx context.Context, req *ListModelsRequest, opts ...http.CallOption) (rsp *ListModelsResponse, err error)
 	ListProjects(ctx context.Context, req *ListProjectsRequest, opts ...http.CallOption) (rsp *ListProjectsResponse, err error)
 	PolishChapter(ctx context.Context, req *PolishChapterRequest, opts ...http.CallOption) (rsp *PolishChapterResponse, err error)
+	ReorderChapterOutline(ctx context.Context, req *ReorderChapterOutlineRequest, opts ...http.CallOption) (rsp *ReorderChapterOutlineResponse, err error)
 	SwitchModel(ctx context.Context, req *SwitchModelRequest, opts ...http.CallOption) (rsp *SwitchModelResponse, err error)
 	UpdateChapterOutline(ctx context.Context, req *UpdateChapterOutlineRequest, opts ...http.CallOption) (rsp *UpdateChapterOutlineResponse, err error)
 	UpdateProject(ctx context.Context, req *UpdateProjectRequest, opts ...http.CallOption) (rsp *UpdateProjectResponse, err error)
@@ -597,6 +654,19 @@ func (c *NovelServiceHTTPClientImpl) CreateProject(ctx context.Context, in *Crea
 	opts = append(opts, http.Operation(OperationNovelServiceCreateProject))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *NovelServiceHTTPClientImpl) DeleteChapterOutline(ctx context.Context, in *DeleteChapterOutlineRequest, opts ...http.CallOption) (*DeleteChapterOutlineResponse, error) {
+	var out DeleteChapterOutlineResponse
+	pattern := "/api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationNovelServiceDeleteChapterOutline))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -738,6 +808,19 @@ func (c *NovelServiceHTTPClientImpl) PolishChapter(ctx context.Context, in *Poli
 	pattern := "/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/polish"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationNovelServicePolishChapter))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *NovelServiceHTTPClientImpl) ReorderChapterOutline(ctx context.Context, in *ReorderChapterOutlineRequest, opts ...http.CallOption) (*ReorderChapterOutlineResponse, error) {
+	var out ReorderChapterOutlineResponse
+	pattern := "/api/v1/novel/projects/{project_id}/outline/reorder"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationNovelServiceReorderChapterOutline))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
