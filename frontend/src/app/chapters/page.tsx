@@ -253,7 +253,7 @@ export default function ChaptersPage() {
       chapter.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (chapter.summary && chapter.summary.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = statusFilter === "" || chapter.status === statusFilter;
+    const matchesStatus = statusFilter === "" || statusFilter === "all" || chapter.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -318,7 +318,7 @@ export default function ChaptersPage() {
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部状态</SelectItem>
+                <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="published">已发布</SelectItem>
                 <SelectItem value="draft">草稿</SelectItem>
                 <SelectItem value="reviewing">审核中</SelectItem>

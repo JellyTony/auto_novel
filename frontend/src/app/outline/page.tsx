@@ -46,7 +46,9 @@ import {
   ReorderChapterOutlineRequest,
   ReorderChapterOutlineResponse,
   AddChapterOutlineRequest,
-  AddChapterOutlineResponse
+  AddChapterOutlineResponse,
+  Chapter,
+  GenerateChapterRequest
 } from "@/lib/api";
 import { useApiList, useApiMutation } from "@/lib/hooks/useApi";
 import { Loading, CardSkeleton } from "@/components/ui/loading";
@@ -84,6 +86,7 @@ export default function OutlinePage() {
   const [generateRequest, setGenerateRequest] = useState({
     chapter_count: 10
   });
+  const [generatingChapter, setGeneratingChapter] = useState<number | null>(null);
 
   // 项目列表状态管理
   const projectsApi = useApiList<Project>({
@@ -176,6 +179,19 @@ export default function OutlinePage() {
     onError: (error) => {
       console.error('章节添加失败:', error);
       toast.error('章节添加失败，请重试');
+    }
+  });
+
+  // 章节生成状态管理（在当前页面直接生成）
+  const generateChapterApi = useApiMutation<{ chapter: Chapter }, GenerateChapterRequest>({
+    onSuccess: () => {
+      toast.success('章节生成成功！');
+      setGeneratingChapter(null);
+    },
+    onError: (error) => {
+      console.error('章节生成失败:', error);
+      toast.error('章节生成失败，请重试');
+      setGeneratingChapter(null);
     }
   });
 
@@ -362,9 +378,27 @@ export default function OutlinePage() {
     });
   };
 
-  // 跳转到写作页面
+  // 在当前页面直接生成章节内容
   const handleStartWriting = (chapterIndex: number) => {
-    router.push(`/chapters?project=${selectedProject}&chapter=${chapterIndex}`);
+    if (!selectedProject) {
+      toast.error('请先选择项目');
+      return;
+    }
+    const outline = chapters.find(c => c.index === chapterIndex);
+    if (!outline) {
+      toast.error('未找到对应的章节大纲');
+      return;
+    }
+    setGeneratingChapter(chapterIndex);
+    const request: GenerateChapterRequest = {
+      project_id: selectedProject,
+      chapter_number: chapterIndex,
+      outline
+    };
+    generateChapterApi.mutate(
+      () => NovelAPI.generateChapter(request),
+      request
+    );
   };
 
   if (projectsApi.loading) {
@@ -826,11 +860,21 @@ export default function OutlinePage() {
                         <div className="flex justify-end pt-2 border-t border-gray-100">
                           <Button 
                             onClick={() => handleStartWriting(chapter.index)}
-                            className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-sm transition-all duration-200"
+                            disabled={generatingChapter === chapter.index || !selectedProject}
+                            className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-sm transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                             size="sm"
                           >
-                            <PenTool className="h-4 w-4" />
-                            开始写作
+                            {generatingChapter === chapter.index ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                生成中...
+                              </>
+                            ) : (
+                              <>
+                                <PenTool className="h-4 w-4" />
+                                开始写作
+                              </>
+                            )}
                           </Button>
                         </div>
                       </CardContent>
