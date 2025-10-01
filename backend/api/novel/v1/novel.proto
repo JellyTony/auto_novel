@@ -66,6 +66,14 @@ service NovelService {
     };
   }
 
+  // 更新章节大纲
+  rpc UpdateChapterOutline (UpdateChapterOutlineRequest) returns (UpdateChapterOutlineResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}"
+      body: "*"
+    };
+  }
+
   // 生成章节内容
   rpc GenerateChapter (GenerateChapterRequest) returns (GenerateChapterResponse) {
     option (google.api.http) = {
@@ -294,6 +302,30 @@ message GenerateOutlineRequest {
 // 生成章节大纲响应
 message GenerateOutlineResponse {
   // 章节大纲
+  Outline outline = 1;
+}
+
+// 更新章节大纲请求
+message UpdateChapterOutlineRequest {
+  // 项目ID
+  string project_id = 1;
+  // 章节索引
+  int32 chapter_index = 2;
+  // 章节标题
+  string title = 3;
+  // 章节概要
+  string summary = 4;
+  // 剧情目标
+  string goal = 5;
+  // 小冲突/反转点
+  string twist_hint = 6;
+  // 关键道具/线索
+  repeated string important_items = 7;
+}
+
+// 更新章节大纲响应
+message UpdateChapterOutlineResponse {
+  // 更新后的章节大纲
   Outline outline = 1;
 }
 

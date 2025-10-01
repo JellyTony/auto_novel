@@ -332,6 +332,44 @@ func (s *NovelService) GenerateOutline(ctx context.Context, req *pb.GenerateOutl
 	}, nil
 }
 
+// UpdateChapterOutline 更新章节大纲
+func (s *NovelService) UpdateChapterOutline(ctx context.Context, req *pb.UpdateChapterOutlineRequest) (*pb.UpdateChapterOutlineResponse, error) {
+	// 获取项目
+	project, err := s.uc.GetProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查项目是否有大纲
+	if project.Outline == nil {
+		return nil, fmt.Errorf("project outline not found")
+	}
+
+	// 查找要更新的章节
+	chapterIndex := int(req.ChapterIndex)
+	if chapterIndex < 0 || chapterIndex >= len(project.Outline.Chapters) {
+		return nil, fmt.Errorf("chapter index out of range")
+	}
+
+	// 更新章节大纲
+	chapter := project.Outline.Chapters[chapterIndex]
+	chapter.Title = req.Title
+	chapter.Summary = req.Summary
+	chapter.Goal = req.Goal
+	chapter.TwistHint = req.TwistHint
+	chapter.ImportantItems = req.ImportantItems
+
+	// 保存更新后的项目
+	_, err = s.uc.UpdateProject(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.UpdateChapterOutlineResponse{
+		Outline: convertOutlineToProto(project.Outline),
+	}, nil
+}
+
 // GenerateChapter 生成章节
 func (s *NovelService) GenerateChapter(ctx context.Context, req *pb.GenerateChapterRequest) (*pb.GenerateChapterResponse, error) {
 	chapterReq := &chapter.GenerateChapterRequest{

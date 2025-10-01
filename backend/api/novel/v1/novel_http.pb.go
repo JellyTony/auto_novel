@@ -35,6 +35,7 @@ const OperationNovelServiceListModels = "/novel.v1.NovelService/ListModels"
 const OperationNovelServiceListProjects = "/novel.v1.NovelService/ListProjects"
 const OperationNovelServicePolishChapter = "/novel.v1.NovelService/PolishChapter"
 const OperationNovelServiceSwitchModel = "/novel.v1.NovelService/SwitchModel"
+const OperationNovelServiceUpdateChapterOutline = "/novel.v1.NovelService/UpdateChapterOutline"
 const OperationNovelServiceUpdateProject = "/novel.v1.NovelService/UpdateProject"
 
 type NovelServiceHTTPServer interface {
@@ -70,6 +71,8 @@ type NovelServiceHTTPServer interface {
 	PolishChapter(context.Context, *PolishChapterRequest) (*PolishChapterResponse, error)
 	// SwitchModel 切换AI模型
 	SwitchModel(context.Context, *SwitchModelRequest) (*SwitchModelResponse, error)
+	// UpdateChapterOutline 更新章节大纲
+	UpdateChapterOutline(context.Context, *UpdateChapterOutlineRequest) (*UpdateChapterOutlineResponse, error)
 	// UpdateProject 更新项目
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 }
@@ -83,6 +86,7 @@ func RegisterNovelServiceHTTPServer(s *http.Server, srv NovelServiceHTTPServer) 
 	r.POST("/api/v1/novel/projects/{project_id}/worldview", _NovelService_GenerateWorldView0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/characters", _NovelService_GenerateCharacters0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/outline", _NovelService_GenerateOutline0_HTTP_Handler(srv))
+	r.PUT("/api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}", _NovelService_UpdateChapterOutline0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/chapters", _NovelService_GenerateChapter0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/polish", _NovelService_PolishChapter0_HTTP_Handler(srv))
 	r.POST("/api/v1/novel/projects/{project_id}/chapters/{chapter_id}/quality", _NovelService_CheckQuality0_HTTP_Handler(srv))
@@ -254,6 +258,31 @@ func _NovelService_GenerateOutline0_HTTP_Handler(srv NovelServiceHTTPServer) fun
 			return err
 		}
 		reply := out.(*GenerateOutlineResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _NovelService_UpdateChapterOutline0_HTTP_Handler(srv NovelServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateChapterOutlineRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationNovelServiceUpdateChapterOutline)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateChapterOutline(ctx, req.(*UpdateChapterOutlineRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateChapterOutlineResponse)
 		return ctx.Result(200, reply)
 	}
 }
@@ -510,6 +539,7 @@ type NovelServiceHTTPClient interface {
 	ListProjects(ctx context.Context, req *ListProjectsRequest, opts ...http.CallOption) (rsp *ListProjectsResponse, err error)
 	PolishChapter(ctx context.Context, req *PolishChapterRequest, opts ...http.CallOption) (rsp *PolishChapterResponse, err error)
 	SwitchModel(ctx context.Context, req *SwitchModelRequest, opts ...http.CallOption) (rsp *SwitchModelResponse, err error)
+	UpdateChapterOutline(ctx context.Context, req *UpdateChapterOutlineRequest, opts ...http.CallOption) (rsp *UpdateChapterOutlineResponse, err error)
 	UpdateProject(ctx context.Context, req *UpdateProjectRequest, opts ...http.CallOption) (rsp *UpdateProjectResponse, err error)
 }
 
@@ -723,6 +753,19 @@ func (c *NovelServiceHTTPClientImpl) SwitchModel(ctx context.Context, in *Switch
 	opts = append(opts, http.Operation(OperationNovelServiceSwitchModel))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *NovelServiceHTTPClientImpl) UpdateChapterOutline(ctx context.Context, in *UpdateChapterOutlineRequest, opts ...http.CallOption) (*UpdateChapterOutlineResponse, error) {
+	var out UpdateChapterOutlineResponse
+	pattern := "/api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationNovelServiceUpdateChapterOutline))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -328,6 +328,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/novel.v1.GenerateOutlineResponse'
+    /api/v1/novel/projects/{project_id}/outline/chapters/{chapter_index}:
+        put:
+            tags:
+                - NovelService
+            description: 更新章节大纲
+            operationId: NovelService_UpdateChapterOutline
+            parameters:
+                - name: project_id
+                  in: path
+                  description: 项目ID
+                  required: true
+                  schema:
+                    type: string
+                - name: chapter_index
+                  in: path
+                  description: 章节索引
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/novel.v1.UpdateChapterOutlineRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/novel.v1.UpdateChapterOutlineResponse'
     /api/v1/novel/projects/{project_id}/quality/batch:
         post:
             tags:
@@ -1749,6 +1782,42 @@ components:
                     type: string
                     description: 事件详细描述
             description: 时间线事件
+        novel.v1.UpdateChapterOutlineRequest:
+            type: object
+            properties:
+                project_id:
+                    type: string
+                    description: 项目ID
+                chapter_index:
+                    type: integer
+                    description: 章节索引
+                    format: int32
+                title:
+                    type: string
+                    description: 章节标题
+                summary:
+                    type: string
+                    description: 章节概要
+                goal:
+                    type: string
+                    description: 剧情目标
+                twist_hint:
+                    type: string
+                    description: 小冲突/反转点
+                important_items:
+                    type: array
+                    items:
+                        type: string
+                    description: 关键道具/线索
+            description: 更新章节大纲请求
+        novel.v1.UpdateChapterOutlineResponse:
+            type: object
+            properties:
+                outline:
+                    allOf:
+                        - $ref: '#/components/schemas/novel.v1.Outline'
+                    description: 更新后的章节大纲
+            description: 更新章节大纲响应
         novel.v1.UpdateProjectRequest:
             type: object
             properties:
