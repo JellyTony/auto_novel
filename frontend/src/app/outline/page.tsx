@@ -29,9 +29,14 @@ import {
   PenTool,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Filter
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
   NovelAPI, 
@@ -65,15 +70,21 @@ interface EditingChapter {
 
 export default function OutlinePage() {
   const router = useRouter();
-  const [selectedProject, setSelectedProject] = useState<string>("");
-  const [showGenerateForm, setShowGenerateForm] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  
+  // 基础状态
+  const [selectedProject, setSelectedProject] = useState<string>('');
   const [chapters, setChapters] = useState<ChapterOutline[]>([]);
+  const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingChapter, setEditingChapter] = useState<EditingChapter | null>(null);
+  const [generatingChapter, setGeneratingChapter] = useState<number | null>(null);
+  
+  // 搜索状态
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 其他状态
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [newChapter, setNewChapter] = useState<Omit<ChapterOutline, 'index'>>({
     title: "",
     summary: "",
@@ -86,7 +97,6 @@ export default function OutlinePage() {
   const [generateRequest, setGenerateRequest] = useState({
     chapter_count: 10
   });
-  const [generatingChapter, setGeneratingChapter] = useState<number | null>(null);
 
   // 项目列表状态管理
   const projectsApi = useApiList<Project>({
@@ -107,6 +117,7 @@ export default function OutlinePage() {
       console.log('大纲生成成功:', data);
       setChapters(data.outline.chapters || []);
       setShowGenerateForm(false);
+
       toast.success('大纲生成成功！');
     },
     onError: (error) => {
@@ -231,13 +242,26 @@ export default function OutlinePage() {
     }
   }, [selectedProject, loadProjectDetail]);
 
-  // 过滤项目
-  const filteredProjects = (projectsApi.data || []).filter((project: Project) => {
-    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (project.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || project.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // 搜索和过滤逻辑
+  const filteredChapters = useMemo(() => {
+    if (!searchQuery.trim()) return chapters;
+    
+    const query = searchQuery.toLowerCase();
+    return chapters.filter(chapter => 
+      chapter.title.toLowerCase().includes(query) ||
+      chapter.summary.toLowerCase().includes(query) ||
+      chapter.goal.toLowerCase().includes(query) ||
+      (chapter.twist_hint && chapter.twist_hint.toLowerCase().includes(query)) ||
+      (chapter.important_items && chapter.important_items.some(item => 
+        item.toLowerCase().includes(query)
+      ))
+    );
+  }, [chapters, searchQuery]);
+
+  // 显示所有搜索结果
+  const currentChapters = filteredChapters;
+
+
 
   // 生成大纲
   const handleGenerateOutline = async () => {
@@ -450,23 +474,18 @@ export default function OutlinePage() {
         <div className="mb-6 space-y-4">
           {/* 项目选择区域 */}
           <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-end">
-            <div className="flex-1 min-w-0 space-y-2">
-              <Label htmlFor="project-select" className="text-sm font-medium text-gray-700">
-                选择项目
-              </Label>
+            <div className="flex-1 space-y-2 min-w-0">
+              <Label htmlFor="project-select" className="text-sm font-medium">选择项目</Label>
               <Select value={selectedProject} onValueChange={setSelectedProject}>
-                <SelectTrigger className="w-full h-10">
+                <SelectTrigger id="project-select" className="h-12">
                   <SelectValue placeholder="请选择一个项目" />
                 </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {filteredProjects.map((project) => (
-                    <SelectItem key={project.id} value={project.id} className="cursor-pointer">
-                      <div className="flex items-center gap-2 w-full max-w-sm">
-                        <span className="truncate flex-1">{project.title}</span>
-                        <Badge 
-                          variant={project.status === 'completed' ? 'default' : 'secondary'} 
-                          className="shrink-0 text-xs px-2 py-0.5"
-                        >
+                <SelectContent>
+                  {projectsApi.data?.map((project: Project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{project.title}</span>
+                        <Badge variant="outline" className="text-xs">
                           {project.status}
                         </Badge>
                       </div>
@@ -476,30 +495,43 @@ export default function OutlinePage() {
               </Select>
             </div>
 
-            {/* 搜索和筛选区域 */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto xl:min-w-96">
-              <div className="relative min-w-0 flex-1 sm:flex-initial">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
-                <Input
-                  placeholder="搜索项目..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full sm:w-64 h-10"
-                />
-              </div>
-              
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-32 h-10">
+            <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+              <Select value="全部" onValueChange={() => {}}>
+                <SelectTrigger className="h-12 w-full sm:w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="draft">草稿</SelectItem>
-                  <SelectItem value="generating">生成中</SelectItem>
-                  <SelectItem value="completed">已完成</SelectItem>
-                  <SelectItem value="error">错误</SelectItem>
+                  <SelectItem value="全部">全部</SelectItem>
+                  <SelectItem value="已完成">已完成</SelectItem>
+                  <SelectItem value="进行中">进行中</SelectItem>
+                  <SelectItem value="未开始">未开始</SelectItem>
                 </SelectContent>
               </Select>
+
+              <div className="relative flex-1 sm:flex-initial">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="搜索章节..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12 w-full sm:w-64"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearchQuery('');
+                    }
+                  }}
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -662,7 +694,7 @@ export default function OutlinePage() {
                           id="new-twist"
                           value={newChapter.twist_hint}
                           onChange={(e) => setNewChapter({...newChapter, twist_hint: e.target.value})}
-                          placeholder="本章节的转折或悬念"
+                          placeholder="本章节的转折或惊喜元素"
                           rows={2}
                           className="resize-none"
                         />
@@ -738,7 +770,7 @@ export default function OutlinePage() {
               <div className="space-y-4">
                 {/* 章节网格容器 */}
                 <div className="grid gap-4 lg:gap-6 max-h-[75vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                  {chapters.slice(0, 20).map((chapter: ChapterOutline, index: number) => (
+                  {currentChapters.map((chapter: ChapterOutline, index: number) => (
                     <Card key={chapter.index} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
                       <CardHeader className="pb-3">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -888,25 +920,14 @@ export default function OutlinePage() {
                   ))}
                 </div>
 
-                {/* 加载更多提示 */}
-                {chapters.length > 20 && (
-                  <div className="mt-6">
-                    <Card className="border-2 border-dashed border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 hover:from-blue-50 hover:to-indigo-50 transition-all duration-300">
-                      <CardContent className="flex items-center justify-center py-8">
-                        <div className="text-center space-y-3">
-                          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
-                            <FileText className="h-6 w-6 text-blue-500" />
-                          </div>
-                          <div>
-                            <p className="text-gray-700 font-medium mb-1">还有 {chapters.length - 20} 个章节未显示</p>
-                            <p className="text-sm text-gray-500">为了页面性能，仅显示前20个章节</p>
-                          </div>
-                          <Badge variant="outline" className="bg-white border-blue-200 text-blue-600 px-3 py-1">
-                            性能优化
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
+                {/* 章节统计信息 */}
+                {filteredChapters.length > 0 && (
+                  <div className="mt-6 text-center text-sm text-gray-600">
+                    {searchQuery ? (
+                      <span>搜索到 {filteredChapters.length} 个章节</span>
+                    ) : (
+                      <span>共 {filteredChapters.length} 个章节</span>
+                    )}
                   </div>
                 )}
               </div>

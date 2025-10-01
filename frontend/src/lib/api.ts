@@ -491,6 +491,37 @@ export interface ExportNovelResponse {
   expires_at: string;
 }
 
+// 章节相关接口
+export interface GetChapterRequest {
+  project_id: string;
+  chapter_id: string;
+}
+
+export interface GetChapterResponse {
+  chapter: Chapter;
+}
+
+export interface UpdateChapterRequest {
+  project_id: string;
+  chapter_id: string;
+  title?: string;
+  content?: string;
+  status?: 'draft' | 'generating' | 'completed' | 'polished';
+}
+
+export interface UpdateChapterResponse {
+  chapter: Chapter;
+}
+
+export interface DeleteChapterRequest {
+  project_id: string;
+  chapter_id: string;
+}
+
+export interface DeleteChapterResponse {
+  success: boolean;
+}
+
 // 视频脚本相关类型 - 根据OpenAPI规范更新
 export interface VideoScene {
   index: number;
@@ -747,6 +778,26 @@ export class NovelAPI {
   // 获取统计信息
   static async getStats(): Promise<GetStatsResponse> {
     return apiRequest<GetStatsResponse>('/api/v1/novel/stats');
+  }
+
+  // 章节详情获取
+  static async getChapter(data: GetChapterRequest): Promise<GetChapterResponse> {
+    return apiRequest<GetChapterResponse>(`/api/v1/novel/projects/${data.project_id}/chapters/${data.chapter_id}`);
+  }
+
+  // 章节更新
+  static async updateChapter(data: UpdateChapterRequest): Promise<UpdateChapterResponse> {
+    return apiRequest<UpdateChapterResponse>(`/api/v1/novel/projects/${data.project_id}/chapters/${data.chapter_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 章节删除
+  static async deleteChapter(data: DeleteChapterRequest): Promise<DeleteChapterResponse> {
+    return apiRequest<DeleteChapterResponse>(`/api/v1/novel/projects/${data.project_id}/chapters/${data.chapter_id}`, {
+      method: 'DELETE',
+    });
   }
 }
 

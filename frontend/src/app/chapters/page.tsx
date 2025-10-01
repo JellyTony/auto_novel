@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { ChapterGenerationDialog } from "@/components/chapter-generation-dialog";
 import { 
   FileText,
@@ -28,13 +29,28 @@ import {
   Edit,
   Trash2,
   Download,
-  Share
+  Share,
+  X,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { NovelAPI, Chapter, GenerateChapterRequest, PolishChapterRequest, Project, QualityCheckRequest } from "@/lib/api";
+import { 
+  NovelAPI, 
+  Chapter, 
+  GenerateChapterRequest, 
+  PolishChapterRequest, 
+  Project, 
+  QualityCheckRequest,
+  GetChapterRequest,
+  UpdateChapterRequest,
+  DeleteChapterRequest,
+  ExportNovelRequest
+} from "@/lib/api";
 import { useApiList, useApiMutation } from "@/lib/hooks/useApi";
 import { Loading, CardSkeleton } from "@/components/ui/loading";
 import { ApiError, EmptyState } from "@/components/ui/error-boundary";
+import { toast } from "sonner";
 
 export default function ChaptersPage() {
   const [selectedProject, setSelectedProject] = useState<string>("");
@@ -47,6 +63,24 @@ export default function ChaptersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projects, setProjects] = useState<Project[]>([]);
 
+  // 新增状态管理
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showReadDialog, setShowReadDialog] = useState(false);
+  const [selectedChapterForAction, setSelectedChapterForAction] = useState<Chapter | null>(null);
+  const [editingChapter, setEditingChapter] = useState<{
+    title: string;
+    content: string;
+    status: string;
+  }>({
+    title: "",
+    content: "",
+    status: "draft"
+  });
+
   // 项目列表状态管理
   const projectsApi = useApiList<Project>({
     onSuccess: (data) => {
@@ -57,6 +91,7 @@ export default function ChaptersPage() {
     },
     onError: (error) => {
       console.error('项目列表加载失败:', error);
+      toast.error('项目列表加载失败');
     }
   });
 
@@ -67,6 +102,64 @@ export default function ChaptersPage() {
     },
     onError: (error) => {
       console.error('项目详情加载失败:', error);
+      toast.error('项目详情加载失败');
+    }
+  });
+
+  // 章节详情获取
+  const chapterDetailApi = useApiMutation<{ chapter: Chapter }, GetChapterRequest>({
+    onSuccess: (data) => {
+      setSelectedChapterForAction(data.chapter);
+    },
+    onError: (error) => {
+      console.error('章节详情加载失败:', error);
+      toast.error('章节详情加载失败');
+    }
+  });
+
+  // 章节更新
+  const updateChapterApi = useApiMutation<{ chapter: Chapter }, UpdateChapterRequest>({
+    onSuccess: (data) => {
+      toast.success('章节更新成功');
+      setShowEditDialog(false);
+      loadProjectDetail(); // 重新加载项目详情
+    },
+    onError: (error) => {
+      console.error('章节更新失败:', error);
+      toast.error('章节更新失败');
+    }
+  });
+
+  // 章节删除
+  const deleteChapterApi = useApiMutation<{ success: boolean }, DeleteChapterRequest>({
+    onSuccess: () => {
+      toast.success('章节删除成功');
+      setShowDeleteDialog(false);
+      setSelectedChapterForAction(null);
+      loadProjectDetail(); // 重新加载项目详情
+    },
+    onError: (error) => {
+      console.error('章节删除失败:', error);
+      toast.error('章节删除失败');
+    }
+  });
+
+  // 导出功能
+  const exportApi = useApiMutation<{ download_url: string; file_name: string }, ExportNovelRequest>({
+    onSuccess: (data) => {
+      toast.success('导出成功，开始下载');
+      // 创建下载链接
+      const link = document.createElement('a');
+      link.href = data.download_url;
+      link.download = data.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setShowExportDialog(false);
+    },
+    onError: (error) => {
+      console.error('导出失败:', error);
+      toast.error('导出失败');
     }
   });
 
@@ -88,9 +181,11 @@ export default function ChaptersPage() {
       });
       // 重新加载项目详情以获取最新的章节
       loadProjectDetail();
+      toast.success('章节生成成功');
     },
     onError: (error) => {
       console.error('章节生成失败:', error);
+      toast.error('章节生成失败');
     }
   });
 
@@ -102,13 +197,16 @@ export default function ChaptersPage() {
       setPolishRequest({
         project_id: selectedProject,
         chapter_id: "",
-        requirements: "语言表达优化、情节连贯性、人物刻画深度"
+        style: "优雅流畅",
+        focus: ["语言表达优化", "情节连贯性", "人物刻画深度"]
       });
       // 重新加载项目详情以获取最新的章节
       loadProjectDetail();
+      toast.success('章节润色成功');
     },
     onError: (error) => {
       console.error('章节润色失败:', error);
+      toast.error('章节润色失败');
     }
   });
 
@@ -117,9 +215,11 @@ export default function ChaptersPage() {
     onSuccess: (data) => {
       console.log('质量检测成功:', data);
       setShowQualityForm(false);
+      toast.success('质量检测完成');
     },
     onError: (error) => {
       console.error('质量检测失败:', error);
+      toast.error('质量检测失败');
     }
   });
 
@@ -140,13 +240,22 @@ export default function ChaptersPage() {
   const [polishRequest, setPolishRequest] = useState<PolishChapterRequest>({
     project_id: "",
     chapter_id: "",
-    requirements: "语言表达优化、情节连贯性、人物刻画深度"
+    style: "优雅流畅",
+    focus: ["语言表达优化", "情节连贯性", "人物刻画深度"]
   });
 
   // 质量检测请求表单状态
   const [qualityRequest, setQualityRequest] = useState<QualityCheckRequest>({
     project_id: "",
-    chapter_ids: []
+    chapter_id: "",
+    check_type: "all"
+  });
+
+  // 导出表单状态
+  const [exportRequest, setExportRequest] = useState<ExportNovelRequest>({
+    project_id: "",
+    format: "txt",
+    include_metadata: true
   });
 
   // 加载项目列表
@@ -167,6 +276,112 @@ export default function ChaptersPage() {
     } catch (error) {
       console.error('加载项目详情失败:', error);
     }
+  };
+
+  // 预览章节
+  const handlePreviewChapter = async (chapter: Chapter) => {
+    setSelectedChapterForAction(chapter);
+    setShowPreviewDialog(true);
+  };
+
+  // 编辑章节
+  const handleEditChapter = async (chapter: Chapter) => {
+    setSelectedChapterForAction(chapter);
+    setEditingChapter({
+      title: chapter.title,
+      content: chapter.content,
+      status: chapter.status
+    });
+    setShowEditDialog(true);
+  };
+
+  // 保存编辑
+  const handleSaveEdit = async () => {
+    if (!selectedChapterForAction) return;
+
+    const requestData: UpdateChapterRequest = {
+      project_id: selectedProject,
+      chapter_id: selectedChapterForAction.id,
+      title: editingChapter.title,
+      content: editingChapter.content,
+      status: editingChapter.status as any
+    };
+
+    try {
+      await updateChapterApi.mutate(
+        (data: UpdateChapterRequest) => NovelAPI.updateChapter(data),
+        requestData
+      );
+    } catch (error) {
+      console.error('保存编辑失败:', error);
+    }
+  };
+
+  // 删除章节
+  const handleDeleteChapter = async (chapter: Chapter) => {
+    setSelectedChapterForAction(chapter);
+    setShowDeleteDialog(true);
+  };
+
+  // 确认删除
+  const handleConfirmDelete = async () => {
+    if (!selectedChapterForAction) return;
+
+    const requestData: DeleteChapterRequest = {
+      project_id: selectedProject,
+      chapter_id: selectedChapterForAction.id
+    };
+
+    try {
+      await deleteChapterApi.mutate(
+        (data: DeleteChapterRequest) => NovelAPI.deleteChapter(data),
+        requestData
+      );
+    } catch (error) {
+      console.error('删除章节失败:', error);
+    }
+  };
+
+  // 导出章节
+  const handleExportChapter = () => {
+    setExportRequest(prev => ({ ...prev, project_id: selectedProject }));
+    setShowExportDialog(true);
+  };
+
+  // 执行导出
+  const handleConfirmExport = async () => {
+    try {
+      await exportApi.mutate(
+        (data: ExportNovelRequest) => NovelAPI.exportNovel(data),
+        exportRequest
+      );
+    } catch (error) {
+      console.error('导出失败:', error);
+    }
+  };
+
+  // 分享章节
+  const handleShareChapter = (chapter: Chapter) => {
+    setSelectedChapterForAction(chapter);
+    setShowShareDialog(true);
+  };
+
+  // 复制分享链接
+  const handleCopyShareLink = () => {
+    if (!selectedChapterForAction) return;
+    
+    const shareUrl = `${window.location.origin}/chapters/${selectedChapterForAction.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast.success('分享链接已复制到剪贴板');
+    }).catch(() => {
+      toast.error('复制失败');
+    });
+  };
+
+  // 阅读全文
+  const handleReadFullChapter = (chapter: Chapter) => {
+    setSelectedChapterForAction(chapter);
+    setShowReadDialog(true);
   };
 
   // 生成章节
@@ -238,6 +453,7 @@ export default function ChaptersPage() {
       setGenerateRequest(prev => ({ ...prev, project_id: selectedProject }));
       setPolishRequest(prev => ({ ...prev, project_id: selectedProject }));
       setQualityRequest(prev => ({ ...prev, project_id: selectedProject }));
+      setExportRequest(prev => ({ ...prev, project_id: selectedProject }));
       loadProjectDetail();
     }
   }, [selectedProject]);
@@ -250,7 +466,7 @@ export default function ChaptersPage() {
   const filteredChapters = chapters.filter(chapter => {
     const matchesSearch = searchTerm === "" || 
       chapter.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (chapter.summary && chapter.summary.toLowerCase().includes(searchTerm.toLowerCase()));
+      (chapter.content && chapter.content.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === "" || statusFilter === "all" || chapter.status === statusFilter;
     
@@ -260,9 +476,10 @@ export default function ChaptersPage() {
   // 获取状态颜色
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'reviewing': return 'bg-blue-100 text-blue-800';
+      case 'generating': return 'bg-blue-100 text-blue-800';
+      case 'polished': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -270,9 +487,10 @@ export default function ChaptersPage() {
   // 获取状态文本
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'published': return '已发布';
+      case 'completed': return '已完成';
       case 'draft': return '草稿';
-      case 'reviewing': return '审核中';
+      case 'generating': return '生成中';
+      case 'polished': return '已润色';
       default: return '未知';
     }
   };
@@ -318,9 +536,10 @@ export default function ChaptersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="published">已发布</SelectItem>
+                <SelectItem value="completed">已完成</SelectItem>
                 <SelectItem value="draft">草稿</SelectItem>
-                <SelectItem value="reviewing">审核中</SelectItem>
+                <SelectItem value="generating">生成中</SelectItem>
+                <SelectItem value="polished">已润色</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -347,32 +566,40 @@ export default function ChaptersPage() {
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>选择检测章节</Label>
-                    <div className="max-h-40 overflow-y-auto space-y-2">
-                      {chapters.map((chapter) => (
-                        <div key={chapter.id} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={chapter.id}
-                            checked={qualityRequest.chapter_ids.includes(chapter.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setQualityRequest(prev => ({
-                                  ...prev,
-                                  chapter_ids: [...prev.chapter_ids, chapter.id]
-                                }));
-                              } else {
-                                setQualityRequest(prev => ({
-                                  ...prev,
-                                  chapter_ids: prev.chapter_ids.filter(id => id !== chapter.id)
-                                }));
-                              }
-                            }}
-                          />
-                          <Label htmlFor={chapter.id} className="text-sm">
+                    <Select 
+                      value={qualityRequest.chapter_id} 
+                      onValueChange={(value) => setQualityRequest(prev => ({ ...prev, chapter_id: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择章节" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {chapters.map((chapter) => (
+                          <SelectItem key={chapter.id} value={chapter.id}>
                             {chapter.title}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>检测类型</Label>
+                    <Select 
+                      value={qualityRequest.check_type} 
+                      onValueChange={(value) => setQualityRequest((prev) => ({ ...prev, check_type: value as any }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">全面检测</SelectItem>
+                        <SelectItem value="polish">润色建议</SelectItem>
+                        <SelectItem value="proofread">校对检查</SelectItem>
+                        <SelectItem value="critique">文学评价</SelectItem>
+                        <SelectItem value="consistency">一致性检查</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -386,7 +613,7 @@ export default function ChaptersPage() {
                   </Button>
                   <Button 
                     onClick={handleQualityCheck}
-                    disabled={qualityRequest.chapter_ids.length === 0 || qualityCheckApi.loading}
+                    disabled={!qualityRequest.chapter_id || qualityCheckApi.loading}
                   >
                     {qualityCheckApi.loading ? (
                       <>
@@ -593,15 +820,15 @@ export default function ChaptersPage() {
                       {currentProject?.title} - 章节管理
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      共 {chapters.length} 章，总字数 {chapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0)} 字
+                      共 {chapters.length} 章，总字数 {chapters.reduce((sum: number, ch: Chapter) => sum + (ch.word_count || 0), 0)} 字
                     </CardDescription>
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleExportChapter}>
                       <Download className="w-4 h-4 mr-2" />
                       导出
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setShowShareDialog(true)}>
                       <Share className="w-4 h-4 mr-2" />
                       分享
                     </Button>
@@ -617,19 +844,19 @@ export default function ChaptersPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
-                      {chapters.filter(ch => ch.status === 'published').length}
+                      {chapters.filter((ch: Chapter) => ch.status === 'completed').length}
                     </div>
-                    <div className="text-sm text-gray-500">已发布</div>
+                    <div className="text-sm text-gray-500">已完成</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-yellow-600">
-                      {chapters.filter(ch => ch.status === 'draft').length}
+                      {chapters.filter((ch: Chapter) => ch.status === 'draft').length}
                     </div>
                     <div className="text-sm text-gray-500">草稿</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">
-                      {chapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0)}
+                      {chapters.reduce((sum: number, ch: Chapter) => sum + (ch.word_count || 0), 0)}
                     </div>
                     <div className="text-sm text-gray-500">总字数</div>
                   </div>
@@ -646,7 +873,7 @@ export default function ChaptersPage() {
                   icon={<Search className="w-12 h-12 text-gray-400" />}
                 />
               ) : (
-                filteredChapters.map((chapter) => (
+                filteredChapters.map((chapter: Chapter) => (
                   <Card key={chapter.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
@@ -686,10 +913,20 @@ export default function ChaptersPage() {
                         </div>
                         
                         <div className="flex space-x-2 ml-4">
-                          <Button variant="ghost" size="sm" title="预览">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="预览"
+                            onClick={() => handlePreviewChapter(chapter)}
+                          >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" title="编辑">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="编辑"
+                            onClick={() => handleEditChapter(chapter)}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button 
@@ -701,18 +938,31 @@ export default function ChaptersPage() {
                           >
                             <Sparkles className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" title="删除">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700" 
+                            title="删除"
+                            onClick={() => handleDeleteChapter(chapter)}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
                       
                       <div className="flex space-x-2 mt-4 pt-4 border-t border-gray-100">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleReadFullChapter(chapter)}
+                        >
                           <Eye className="w-4 h-4 mr-2" />
                           阅读全文
                         </Button>
-                        <Button size="sm">
+                        <Button 
+                          size="sm"
+                          onClick={() => handleEditChapter(chapter)}
+                        >
                           <Edit className="w-4 h-4 mr-2" />
                           编辑章节
                         </Button>
@@ -724,6 +974,316 @@ export default function ChaptersPage() {
             </div>
           </>
         )}
+
+        {/* 预览对话框 */}
+        <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                章节预览 - {selectedChapterForAction?.title}
+              </DialogTitle>
+              <DialogDescription>
+                预览章节内容，字数：{selectedChapterForAction?.word_count || 0} 字
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[60vh] p-4 bg-gray-50 rounded-lg">
+              <div className="prose max-w-none">
+                <h3 className="text-xl font-bold mb-4">{selectedChapterForAction?.title}</h3>
+                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                  {selectedChapterForAction?.content || '暂无内容'}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+                关闭
+              </Button>
+              <Button onClick={() => {
+                if (selectedChapterForAction) {
+                  handleEditChapter(selectedChapterForAction);
+                  setShowPreviewDialog(false);
+                }
+              }}>
+                <Edit className="w-4 h-4 mr-2" />
+                编辑
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 编辑对话框 */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit className="w-5 h-5" />
+                编辑章节 - {selectedChapterForAction?.title}
+              </DialogTitle>
+              <DialogDescription>
+                编辑章节标题和内容
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 overflow-y-auto max-h-[60vh]">
+              <div className="space-y-2">
+                <Label htmlFor="edit_title">章节标题</Label>
+                <Input
+                  id="edit_title"
+                  value={editingChapter.title}
+                  onChange={(e) => setEditingChapter(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="输入章节标题"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_status">章节状态</Label>
+                <Select 
+                  value={editingChapter.status} 
+                  onValueChange={(value) => setEditingChapter(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">草稿</SelectItem>
+                    <SelectItem value="completed">已完成</SelectItem>
+                    <SelectItem value="polished">已润色</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_content">章节内容</Label>
+                <Textarea
+                  id="edit_content"
+                  value={editingChapter.content}
+                  onChange={(e) => setEditingChapter(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="输入章节内容"
+                  className="min-h-[300px] resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEditDialog(false)}
+                disabled={updateChapterApi.loading}
+              >
+                取消
+              </Button>
+              <Button 
+                onClick={handleSaveEdit}
+                disabled={!editingChapter.title || updateChapterApi.loading}
+              >
+                {updateChapterApi.loading ? (
+                  <>
+                    <Loading size="sm" className="mr-2" />
+                    保存中...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="w-4 h-4 mr-2" />
+                    保存
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 删除确认对话框 */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                确认删除
+              </DialogTitle>
+              <DialogDescription>
+                您确定要删除章节 "{selectedChapterForAction?.title}" 吗？此操作不可撤销。
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={deleteChapterApi.loading}
+              >
+                取消
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={deleteChapterApi.loading}
+              >
+                {deleteChapterApi.loading ? (
+                  <>
+                    <Loading size="sm" className="mr-2" />
+                    删除中...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    确认删除
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 导出对话框 */}
+        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                导出小说
+              </DialogTitle>
+              <DialogDescription>
+                选择导出格式和设置
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>导出格式</Label>
+                <Select 
+                  value={exportRequest.format} 
+                  onValueChange={(value) => setExportRequest(prev => ({ ...prev, format: value as any }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="txt">TXT 文本</SelectItem>
+                    <SelectItem value="epub">EPUB 电子书</SelectItem>
+                    <SelectItem value="pdf">PDF 文档</SelectItem>
+                    <SelectItem value="docx">Word 文档</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="include_metadata"
+                  checked={exportRequest.include_metadata}
+                  onCheckedChange={(checked) => setExportRequest(prev => ({ ...prev, include_metadata: !!checked }))}
+                />
+                <Label htmlFor="include_metadata">包含元数据</Label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowExportDialog(false)}
+                disabled={exportApi.loading}
+              >
+                取消
+              </Button>
+              <Button 
+                onClick={handleConfirmExport}
+                disabled={exportApi.loading}
+              >
+                {exportApi.loading ? (
+                  <>
+                    <Loading size="sm" className="mr-2" />
+                    导出中...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    开始导出
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 分享对话框 */}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Share className="w-5 h-5" />
+                分享章节
+              </DialogTitle>
+              <DialogDescription>
+                生成分享链接，让其他人可以阅读您的章节
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>分享链接</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    value={selectedChapterForAction ? `${window.location.origin}/chapters/${selectedChapterForAction.id}` : ''}
+                    readOnly
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={handleCopyShareLink}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                任何拥有此链接的人都可以阅读该章节内容
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowShareDialog(false)}>
+                关闭
+              </Button>
+              <Button onClick={handleCopyShareLink}>
+                <Copy className="w-4 h-4 mr-2" />
+                复制链接
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 阅读全文对话框 */}
+        <Dialog open={showReadDialog} onOpenChange={setShowReadDialog}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                {selectedChapterForAction?.title}
+              </DialogTitle>
+              <DialogDescription>
+                全屏阅读模式 - 字数：{selectedChapterForAction?.word_count || 0} 字
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[75vh] p-6 bg-white">
+              <div className="prose prose-lg max-w-none">
+                <h1 className="text-3xl font-bold mb-6 text-center">{selectedChapterForAction?.title}</h1>
+                <div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-lg">
+                  {selectedChapterForAction?.content || '暂无内容'}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-500">
+                预计阅读时间：{Math.ceil((selectedChapterForAction?.word_count || 0) / 300)} 分钟
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowReadDialog(false)}>
+                  关闭
+                </Button>
+                <Button onClick={() => {
+                  if (selectedChapterForAction) {
+                    handleEditChapter(selectedChapterForAction);
+                    setShowReadDialog(false);
+                  }
+                }}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  编辑
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
