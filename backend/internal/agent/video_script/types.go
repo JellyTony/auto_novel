@@ -1,6 +1,9 @@
 package video_script
 
-import "backend/internal/pkg/models"
+import (
+	"context"
+	"backend/internal/pkg/models"
+)
 
 // GenerateVideoScriptRequest 生成短视频脚本请求
 type GenerateVideoScriptRequest struct {
@@ -44,13 +47,13 @@ type GeneratePlatformVariantsResponse struct {
 // VideoScriptAgent 短视频脚本生成Agent接口
 type VideoScriptAgent interface {
 	// GenerateVideoScript 生成短视频脚本
-	GenerateVideoScript(req *GenerateVideoScriptRequest) (*GenerateVideoScriptResponse, error)
+	GenerateVideoScript(ctx context.Context, req *GenerateVideoScriptRequest) (*GenerateVideoScriptResponse, error)
 	
 	// OptimizeVideoScript 优化短视频脚本
-	OptimizeVideoScript(req *OptimizeVideoScriptRequest) (*OptimizeVideoScriptResponse, error)
+	OptimizeVideoScript(ctx context.Context, req *OptimizeVideoScriptRequest) (*OptimizeVideoScriptResponse, error)
 	
 	// GeneratePlatformVariants 生成不同平台的脚本变体
-	GeneratePlatformVariants(req *GeneratePlatformVariantsRequest) (*GeneratePlatformVariantsResponse, error)
+	GeneratePlatformVariants(ctx context.Context, req *GeneratePlatformVariantsRequest) (*GeneratePlatformVariantsResponse, error)
 	
 	// GetCapabilities 获取Agent能力描述
 	GetCapabilities() map[string]interface{}

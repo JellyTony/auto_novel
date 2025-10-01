@@ -16,14 +16,14 @@ import (
 type VideoScriptService struct {
 	pb.UnimplementedVideoScriptServiceServer
 	bizUC      *biz.VideoScriptUseCase
-	videoAgent *video_script.EinoVideoScriptAgent
+	videoAgent video_script.VideoScriptAgent
 	logger     *log.Helper
 }
 
 // NewVideoScriptService 创建短视频脚本服务
 func NewVideoScriptService(
 	bizUC *biz.VideoScriptUseCase,
-	videoAgent *video_script.EinoVideoScriptAgent,
+	videoAgent video_script.VideoScriptAgent,
 	logger log.Logger,
 ) *VideoScriptService {
 	return &VideoScriptService{

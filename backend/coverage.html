@@ -1,0 +1,2783 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>service: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">backend/internal/service/export.go (0.0%)</option>
+				
+				<option value="file1">backend/internal/service/greeter.go (60.0%)</option>
+				
+				<option value="file2">backend/internal/service/mocks/mock_export_service.go (0.0%)</option>
+				
+				<option value="file3">backend/internal/service/mocks/mock_greeter.go (0.0%)</option>
+				
+				<option value="file4">backend/internal/service/mocks/mock_novel.go (0.0%)</option>
+				
+				<option value="file5">backend/internal/service/mocks/mock_video_script.go (0.0%)</option>
+				
+				<option value="file6">backend/internal/service/mocks/mock_video_script_agent.go (0.0%)</option>
+				
+				<option value="file7">backend/internal/service/mocks/mock_video_script_service.go (0.0%)</option>
+				
+				<option value="file8">backend/internal/service/novel.go (6.4%)</option>
+				
+				<option value="file9">backend/internal/service/test_helper.go (0.0%)</option>
+				
+				<option value="file10">backend/internal/service/video_script.go (30.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package service
+
+import (
+        "context"
+        "fmt"
+
+        "backend/internal/agent/export"
+        "backend/internal/biz"
+        "backend/internal/pkg/models"
+
+        "github.com/go-kratos/kratos/v2/log"
+)
+
+// ExportService 导出服务实现
+type ExportService struct {
+        exportAgent *export.ExportAgent
+        log         *log.Helper
+}
+
+// NewExportService 创建导出服务
+func NewExportService(logger log.Logger) biz.ExportService <span class="cov0" title="0">{
+        // 创建导出目录，这里使用默认路径
+        outputDir := "./exports"
+        
+        exportAgent := export.NewExportAgent(outputDir)
+
+        return &amp;ExportService{
+                exportAgent: exportAgent,
+                log:         log.NewHelper(logger),
+        }
+}</span>
+
+// ExportNovel 导出小说
+func (s *ExportService) ExportNovel(ctx context.Context, project *models.NovelProject, format string, options *models.ExportOptions) (*models.ExportResult, error) <span class="cov0" title="0">{
+        s.log.WithContext(ctx).Infof("Exporting novel %s in format %s", project.ID, format)
+
+        // 验证格式
+        if format != "txt" &amp;&amp; format != "epub" </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("unsupported export format: %s", format)
+        }</span>
+
+        // 调用导出代理
+        <span class="cov0" title="0">result, err := s.exportAgent.ExportNovel(ctx, project, format, options)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.WithContext(ctx).Errorf("Failed to export novel: %v", err)
+                return nil, fmt.Errorf("export failed: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">s.log.WithContext(ctx).Infof("Successfully exported novel %s, file: %s, size: %d bytes", 
+                project.ID, result.FileName, result.FileSize)
+
+        return result, nil</span>
+}</pre>
+		
+		<pre class="file" id="file1" style="display: none">package service
+
+import (
+        "context"
+
+        v1 "backend/api/helloworld/v1"
+        "backend/internal/biz"
+)
+
+// GreeterService is a greeter service.
+type GreeterService struct {
+        v1.UnimplementedGreeterServer
+
+        uc *biz.GreeterUsecase
+}
+
+// NewGreeterService new a greeter service.
+func NewGreeterService(uc *biz.GreeterUsecase) *GreeterService <span class="cov8" title="1">{
+        return &amp;GreeterService{uc: uc}
+}</span>
+
+// SayHello implements helloworld.GreeterServer.
+func (s *GreeterService) SayHello(ctx context.Context, in *v1.HelloRequest) (*v1.HelloReply, error) <span class="cov8" title="1">{
+        g, err := s.uc.CreateGreeter(ctx, &amp;biz.Greeter{Hello: in.Name})
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;v1.HelloReply{Message: "Hello " + g.Hello}, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: backend/internal/biz/novel.go
+
+package mocks
+
+import (
+        "context"
+        "reflect"
+
+        "backend/internal/pkg/models"
+        "github.com/golang/mock/gomock"
+)
+
+// MockExportService is a mock of ExportService interface.
+type MockExportService struct {
+        ctrl     *gomock.Controller
+        recorder *MockExportServiceMockRecorder
+}
+
+// MockExportServiceMockRecorder is the mock recorder for MockExportService.
+type MockExportServiceMockRecorder struct {
+        mock *MockExportService
+}
+
+// NewMockExportService creates a new mock instance.
+func NewMockExportService(ctrl *gomock.Controller) *MockExportService <span class="cov0" title="0">{
+        mock := &amp;MockExportService{ctrl: ctrl}
+        mock.recorder = &amp;MockExportServiceMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockExportService) EXPECT() *MockExportServiceMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// ExportNovel mocks base method.
+func (m *MockExportService) ExportNovel(ctx context.Context, project *models.NovelProject, format string, options *models.ExportOptions) (*models.ExportResult, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ExportNovel", ctx, project, format, options)
+        ret0, _ := ret[0].(*models.ExportResult)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// ExportNovel indicates an expected call of ExportNovel.
+func (mr *MockExportServiceMockRecorder) ExportNovel(ctx, project, format, options interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportNovel", reflect.TypeOf((*MockExportService)(nil).ExportNovel), ctx, project, format, options)
+}</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: backend/internal/biz/greeter.go
+
+package mocks
+
+import (
+        "context"
+        "reflect"
+
+        "backend/internal/biz"
+        "github.com/golang/mock/gomock"
+)
+
+// MockGreeterRepo is a mock of GreeterRepo interface.
+type MockGreeterRepo struct {
+        ctrl     *gomock.Controller
+        recorder *MockGreeterRepoMockRecorder
+}
+
+// MockGreeterRepoMockRecorder is the mock recorder for MockGreeterRepo.
+type MockGreeterRepoMockRecorder struct {
+        mock *MockGreeterRepo
+}
+
+// NewMockGreeterRepo creates a new mock instance.
+func NewMockGreeterRepo(ctrl *gomock.Controller) *MockGreeterRepo <span class="cov0" title="0">{
+        mock := &amp;MockGreeterRepo{ctrl: ctrl}
+        mock.recorder = &amp;MockGreeterRepoMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGreeterRepo) EXPECT() *MockGreeterRepoMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// FindByID mocks base method.
+func (m *MockGreeterRepo) FindByID(ctx context.Context, id int64) (*biz.Greeter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "FindByID", ctx, id)
+        ret0, _ := ret[0].(*biz.Greeter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// FindByID indicates an expected call of FindByID.
+func (mr *MockGreeterRepoMockRecorder) FindByID(ctx, id interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByID", reflect.TypeOf((*MockGreeterRepo)(nil).FindByID), ctx, id)
+}</span>
+
+// ListAll mocks base method.
+func (m *MockGreeterRepo) ListAll(ctx context.Context) ([]*biz.Greeter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ListAll", ctx)
+        ret0, _ := ret[0].([]*biz.Greeter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// ListAll indicates an expected call of ListAll.
+func (mr *MockGreeterRepoMockRecorder) ListAll(ctx interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MockGreeterRepo)(nil).ListAll), ctx)
+}</span>
+
+// ListByHello mocks base method.
+func (m *MockGreeterRepo) ListByHello(ctx context.Context, hello string) ([]*biz.Greeter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ListByHello", ctx, hello)
+        ret0, _ := ret[0].([]*biz.Greeter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// ListByHello indicates an expected call of ListByHello.
+func (mr *MockGreeterRepoMockRecorder) ListByHello(ctx, hello interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByHello", reflect.TypeOf((*MockGreeterRepo)(nil).ListByHello), ctx, hello)
+}</span>
+
+// Save mocks base method.
+func (m *MockGreeterRepo) Save(ctx context.Context, greeter *biz.Greeter) (*biz.Greeter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Save", ctx, greeter)
+        ret0, _ := ret[0].(*biz.Greeter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// Save indicates an expected call of Save.
+func (mr *MockGreeterRepoMockRecorder) Save(ctx, greeter interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockGreeterRepo)(nil).Save), ctx, greeter)
+}</span>
+
+// Update mocks base method.
+func (m *MockGreeterRepo) Update(ctx context.Context, greeter *biz.Greeter) (*biz.Greeter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Update", ctx, greeter)
+        ret0, _ := ret[0].(*biz.Greeter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// Update indicates an expected call of Update.
+func (mr *MockGreeterRepoMockRecorder) Update(ctx, greeter interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockGreeterRepo)(nil).Update), ctx, greeter)
+}</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: backend/internal/biz/novel.go
+
+package mocks
+
+import (
+        context "context"
+        reflect "reflect"
+
+        models "backend/internal/pkg/models"
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockNovelRepo is a mock of NovelRepo interface.
+type MockNovelRepo struct {
+        ctrl     *gomock.Controller
+        recorder *MockNovelRepoMockRecorder
+}
+
+// MockNovelRepoMockRecorder is the mock recorder for MockNovelRepo.
+type MockNovelRepoMockRecorder struct {
+        mock *MockNovelRepo
+}
+
+// NewMockNovelRepo creates a new mock instance.
+func NewMockNovelRepo(ctrl *gomock.Controller) *MockNovelRepo <span class="cov0" title="0">{
+        mock := &amp;MockNovelRepo{ctrl: ctrl}
+        mock.recorder = &amp;MockNovelRepoMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockNovelRepo) EXPECT() *MockNovelRepoMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// CreateProject mocks base method.
+func (m *MockNovelRepo) CreateProject(arg0 context.Context, arg1 *models.NovelProject) (*models.NovelProject, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "CreateProject", arg0, arg1)
+        ret0, _ := ret[0].(*models.NovelProject)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// CreateProject indicates an expected call of CreateProject.
+func (mr *MockNovelRepoMockRecorder) CreateProject(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProject", reflect.TypeOf((*MockNovelRepo)(nil).CreateProject), arg0, arg1)
+}</span>
+
+// DeleteProject mocks base method.
+func (m *MockNovelRepo) DeleteProject(arg0 context.Context, arg1 string) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "DeleteProject", arg0, arg1)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// DeleteProject indicates an expected call of DeleteProject.
+func (mr *MockNovelRepoMockRecorder) DeleteProject(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockNovelRepo)(nil).DeleteProject), arg0, arg1)
+}</span>
+
+// GetProject mocks base method.
+func (m *MockNovelRepo) GetProject(arg0 context.Context, arg1 string) (*models.NovelProject, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetProject", arg0, arg1)
+        ret0, _ := ret[0].(*models.NovelProject)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetProject indicates an expected call of GetProject.
+func (mr *MockNovelRepoMockRecorder) GetProject(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockNovelRepo)(nil).GetProject), arg0, arg1)
+}</span>
+
+// ListProjects mocks base method.
+func (m *MockNovelRepo) ListProjects(arg0 context.Context, arg1, arg2 int) ([]*models.NovelProject, int, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ListProjects", arg0, arg1, arg2)
+        ret0, _ := ret[0].([]*models.NovelProject)
+        ret1, _ := ret[1].(int)
+        ret2, _ := ret[2].(error)
+        return ret0, ret1, ret2
+}</span>
+
+// ListProjects indicates an expected call of ListProjects.
+func (mr *MockNovelRepoMockRecorder) ListProjects(arg0, arg1, arg2 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProjects", reflect.TypeOf((*MockNovelRepo)(nil).ListProjects), arg0, arg1, arg2)
+}</span>
+
+// UpdateProject mocks base method.
+func (m *MockNovelRepo) UpdateProject(arg0 context.Context, arg1 *models.NovelProject) (*models.NovelProject, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateProject", arg0, arg1)
+        ret0, _ := ret[0].(*models.NovelProject)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// UpdateProject indicates an expected call of UpdateProject.
+func (mr *MockNovelRepoMockRecorder) UpdateProject(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProject", reflect.TypeOf((*MockNovelRepo)(nil).UpdateProject), arg0, arg1)
+}</span>
+
+// DeleteChapter mocks base method.
+func (m *MockNovelRepo) DeleteChapter(arg0 context.Context, arg1 string) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "DeleteChapter", arg0, arg1)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// DeleteChapter indicates an expected call of DeleteChapter.
+func (mr *MockNovelRepoMockRecorder) DeleteChapter(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteChapter", reflect.TypeOf((*MockNovelRepo)(nil).DeleteChapter), arg0, arg1)
+}</span>
+
+// GetChapter mocks base method.
+func (m *MockNovelRepo) GetChapter(arg0 context.Context, arg1 string) (*models.Chapter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetChapter", arg0, arg1)
+        ret0, _ := ret[0].(*models.Chapter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetChapter indicates an expected call of GetChapter.
+func (mr *MockNovelRepoMockRecorder) GetChapter(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChapter", reflect.TypeOf((*MockNovelRepo)(nil).GetChapter), arg0, arg1)
+}</span>
+
+// ListChapters mocks base method.
+func (m *MockNovelRepo) ListChapters(arg0 context.Context, arg1 string) ([]*models.Chapter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ListChapters", arg0, arg1)
+        ret0, _ := ret[0].([]*models.Chapter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// ListChapters indicates an expected call of ListChapters.
+func (mr *MockNovelRepoMockRecorder) ListChapters(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListChapters", reflect.TypeOf((*MockNovelRepo)(nil).ListChapters), arg0, arg1)
+}</span>
+
+// SaveChapter mocks base method.
+func (m *MockNovelRepo) SaveChapter(arg0 context.Context, arg1 *models.Chapter) (*models.Chapter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SaveChapter", arg0, arg1)
+        ret0, _ := ret[0].(*models.Chapter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// SaveChapter indicates an expected call of SaveChapter.
+func (mr *MockNovelRepoMockRecorder) SaveChapter(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveChapter", reflect.TypeOf((*MockNovelRepo)(nil).SaveChapter), arg0, arg1)
+}</span>
+
+// UpdateChapter mocks base method.
+func (m *MockNovelRepo) UpdateChapter(arg0 context.Context, arg1 *models.Chapter) (*models.Chapter, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateChapter", arg0, arg1)
+        ret0, _ := ret[0].(*models.Chapter)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// UpdateChapter indicates an expected call of UpdateChapter.
+func (mr *MockNovelRepoMockRecorder) UpdateChapter(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateChapter", reflect.TypeOf((*MockNovelRepo)(nil).UpdateChapter), arg0, arg1)
+}</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/biz/video_script.go
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        models "backend/internal/pkg/models"
+        context "context"
+        reflect "reflect"
+
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockVideoScriptRepo is a mock of VideoScriptRepo interface.
+type MockVideoScriptRepo struct {
+        ctrl     *gomock.Controller
+        recorder *MockVideoScriptRepoMockRecorder
+}
+
+// MockVideoScriptRepoMockRecorder is the mock recorder for MockVideoScriptRepo.
+type MockVideoScriptRepoMockRecorder struct {
+        mock *MockVideoScriptRepo
+}
+
+// NewMockVideoScriptRepo creates a new mock instance.
+func NewMockVideoScriptRepo(ctrl *gomock.Controller) *MockVideoScriptRepo <span class="cov0" title="0">{
+        mock := &amp;MockVideoScriptRepo{ctrl: ctrl}
+        mock.recorder = &amp;MockVideoScriptRepoMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVideoScriptRepo) EXPECT() *MockVideoScriptRepoMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// DeleteVideoScript mocks base method.
+func (m *MockVideoScriptRepo) DeleteVideoScript(ctx context.Context, id string) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "DeleteVideoScript", ctx, id)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// DeleteVideoScript indicates an expected call of DeleteVideoScript.
+func (mr *MockVideoScriptRepoMockRecorder) DeleteVideoScript(ctx, id interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVideoScript", reflect.TypeOf((*MockVideoScriptRepo)(nil).DeleteVideoScript), ctx, id)
+}</span>
+
+// GetVideoScript mocks base method.
+func (m *MockVideoScriptRepo) GetVideoScript(ctx context.Context, id string) (*models.VideoScript, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetVideoScript", ctx, id)
+        ret0, _ := ret[0].(*models.VideoScript)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetVideoScript indicates an expected call of GetVideoScript.
+func (mr *MockVideoScriptRepoMockRecorder) GetVideoScript(ctx, id interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVideoScript", reflect.TypeOf((*MockVideoScriptRepo)(nil).GetVideoScript), ctx, id)
+}</span>
+
+// ListVideoScripts mocks base method.
+func (m *MockVideoScriptRepo) ListVideoScripts(ctx context.Context, projectID string, page, pageSize int) ([]*models.VideoScript, int, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ListVideoScripts", ctx, projectID, page, pageSize)
+        ret0, _ := ret[0].([]*models.VideoScript)
+        ret1, _ := ret[1].(int)
+        ret2, _ := ret[2].(error)
+        return ret0, ret1, ret2
+}</span>
+
+// ListVideoScripts indicates an expected call of ListVideoScripts.
+func (mr *MockVideoScriptRepoMockRecorder) ListVideoScripts(ctx, projectID, page, pageSize interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVideoScripts", reflect.TypeOf((*MockVideoScriptRepo)(nil).ListVideoScripts), ctx, projectID, page, pageSize)
+}</span>
+
+// ListVideoScriptsByChapter mocks base method.
+func (m *MockVideoScriptRepo) ListVideoScriptsByChapter(ctx context.Context, chapterID string) ([]*models.VideoScript, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "ListVideoScriptsByChapter", ctx, chapterID)
+        ret0, _ := ret[0].([]*models.VideoScript)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// ListVideoScriptsByChapter indicates an expected call of ListVideoScriptsByChapter.
+func (mr *MockVideoScriptRepoMockRecorder) ListVideoScriptsByChapter(ctx, chapterID interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVideoScriptsByChapter", reflect.TypeOf((*MockVideoScriptRepo)(nil).ListVideoScriptsByChapter), ctx, chapterID)
+}</span>
+
+// SaveVideoScript mocks base method.
+func (m *MockVideoScriptRepo) SaveVideoScript(ctx context.Context, script *models.VideoScript) (*models.VideoScript, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SaveVideoScript", ctx, script)
+        ret0, _ := ret[0].(*models.VideoScript)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// SaveVideoScript indicates an expected call of SaveVideoScript.
+func (mr *MockVideoScriptRepoMockRecorder) SaveVideoScript(ctx, script interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveVideoScript", reflect.TypeOf((*MockVideoScriptRepo)(nil).SaveVideoScript), ctx, script)
+}</span>
+
+// UpdateVideoScript mocks base method.
+func (m *MockVideoScriptRepo) UpdateVideoScript(ctx context.Context, script *models.VideoScript) (*models.VideoScript, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateVideoScript", ctx, script)
+        ret0, _ := ret[0].(*models.VideoScript)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// UpdateVideoScript indicates an expected call of UpdateVideoScript.
+func (mr *MockVideoScriptRepoMockRecorder) UpdateVideoScript(ctx, script interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVideoScript", reflect.TypeOf((*MockVideoScriptRepo)(nil).UpdateVideoScript), ctx, script)
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/agent/video_script/types.go
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        video_script "backend/internal/agent/video_script"
+        context "context"
+        reflect "reflect"
+
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockVideoScriptAgent is a mock of VideoScriptAgent interface.
+type MockVideoScriptAgent struct {
+        ctrl     *gomock.Controller
+        recorder *MockVideoScriptAgentMockRecorder
+}
+
+// MockVideoScriptAgentMockRecorder is the mock recorder for MockVideoScriptAgent.
+type MockVideoScriptAgentMockRecorder struct {
+        mock *MockVideoScriptAgent
+}
+
+// NewMockVideoScriptAgent creates a new mock instance.
+func NewMockVideoScriptAgent(ctrl *gomock.Controller) *MockVideoScriptAgent <span class="cov0" title="0">{
+        mock := &amp;MockVideoScriptAgent{ctrl: ctrl}
+        mock.recorder = &amp;MockVideoScriptAgentMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVideoScriptAgent) EXPECT() *MockVideoScriptAgentMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// GeneratePlatformVariants mocks base method.
+func (m *MockVideoScriptAgent) GeneratePlatformVariants(ctx context.Context, req *video_script.GeneratePlatformVariantsRequest) (*video_script.GeneratePlatformVariantsResponse, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GeneratePlatformVariants", ctx, req)
+        ret0, _ := ret[0].(*video_script.GeneratePlatformVariantsResponse)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GeneratePlatformVariants indicates an expected call of GeneratePlatformVariants.
+func (mr *MockVideoScriptAgentMockRecorder) GeneratePlatformVariants(ctx, req interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GeneratePlatformVariants", reflect.TypeOf((*MockVideoScriptAgent)(nil).GeneratePlatformVariants), ctx, req)
+}</span>
+
+// GenerateVideoScript mocks base method.
+func (m *MockVideoScriptAgent) GenerateVideoScript(ctx context.Context, req *video_script.GenerateVideoScriptRequest) (*video_script.GenerateVideoScriptResponse, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GenerateVideoScript", ctx, req)
+        ret0, _ := ret[0].(*video_script.GenerateVideoScriptResponse)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GenerateVideoScript indicates an expected call of GenerateVideoScript.
+func (mr *MockVideoScriptAgentMockRecorder) GenerateVideoScript(ctx, req interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateVideoScript", reflect.TypeOf((*MockVideoScriptAgent)(nil).GenerateVideoScript), ctx, req)
+}</span>
+
+// GetCapabilities mocks base method.
+func (m *MockVideoScriptAgent) GetCapabilities() map[string]interface{} <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetCapabilities")
+        ret0, _ := ret[0].(map[string]interface{})
+        return ret0
+}</span>
+
+// GetCapabilities indicates an expected call of GetCapabilities.
+func (mr *MockVideoScriptAgentMockRecorder) GetCapabilities() *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapabilities", reflect.TypeOf((*MockVideoScriptAgent)(nil).GetCapabilities))
+}</span>
+
+// OptimizeVideoScript mocks base method.
+func (m *MockVideoScriptAgent) OptimizeVideoScript(ctx context.Context, req *video_script.OptimizeVideoScriptRequest) (*video_script.OptimizeVideoScriptResponse, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "OptimizeVideoScript", ctx, req)
+        ret0, _ := ret[0].(*video_script.OptimizeVideoScriptResponse)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// OptimizeVideoScript indicates an expected call of OptimizeVideoScript.
+func (mr *MockVideoScriptAgentMockRecorder) OptimizeVideoScript(ctx, req interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OptimizeVideoScript", reflect.TypeOf((*MockVideoScriptAgent)(nil).OptimizeVideoScript), ctx, req)
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: backend/internal/biz/novel.go
+
+package mocks
+
+import (
+        "context"
+        "reflect"
+
+        "backend/internal/pkg/models"
+        "github.com/golang/mock/gomock"
+)
+
+// MockVideoScriptService is a mock of VideoScriptService interface.
+type MockVideoScriptService struct {
+        ctrl     *gomock.Controller
+        recorder *MockVideoScriptServiceMockRecorder
+}
+
+// MockVideoScriptServiceMockRecorder is the mock recorder for MockVideoScriptService.
+type MockVideoScriptServiceMockRecorder struct {
+        mock *MockVideoScriptService
+}
+
+// NewMockVideoScriptService creates a new mock instance.
+func NewMockVideoScriptService(ctrl *gomock.Controller) *MockVideoScriptService <span class="cov0" title="0">{
+        mock := &amp;MockVideoScriptService{ctrl: ctrl}
+        mock.recorder = &amp;MockVideoScriptServiceMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVideoScriptService) EXPECT() *MockVideoScriptServiceMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// GenerateVideoScript mocks base method.
+func (m *MockVideoScriptService) GenerateVideoScript(ctx context.Context, chapters []*models.Chapter, options *models.VideoScriptOptions) ([]*models.VideoScene, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GenerateVideoScript", ctx, chapters, options)
+        ret0, _ := ret[0].([]*models.VideoScene)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GenerateVideoScript indicates an expected call of GenerateVideoScript.
+func (mr *MockVideoScriptServiceMockRecorder) GenerateVideoScript(ctx, chapters, options interface{}) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateVideoScript", reflect.TypeOf((*MockVideoScriptService)(nil).GenerateVideoScript), ctx, chapters, options)
+}</pre>
+		
+		<pre class="file" id="file8" style="display: none">package service
+
+import (
+        "context"
+        "fmt"
+        "time"
+
+        pb "backend/api/novel/v1"
+        "backend/internal/agent/chapter"
+        "backend/internal/agent/character"
+        "backend/internal/agent/consistency"
+        "backend/internal/agent/orchestrator"
+        "backend/internal/agent/outline"
+        "backend/internal/agent/polish"
+        "backend/internal/agent/quality"
+        "backend/internal/agent/worldbuilding"
+        "backend/internal/biz"
+        "backend/internal/pkg/eino"
+        "backend/internal/pkg/llm"
+        "backend/internal/pkg/models"
+        "backend/internal/pkg/vector"
+        "github.com/go-kratos/kratos/v2/log"
+
+        "google.golang.org/protobuf/types/known/timestamppb"
+)
+
+// NovelService 小说生成服务
+type NovelService struct {
+        pb.UnimplementedNovelServiceServer
+
+        uc               *biz.NovelUsecase
+        orchestrator     *orchestrator.OrchestratorAgent
+        worldAgent       *worldbuilding.WorldBuildingAgent
+        charAgent        *character.CharacterAgent
+        outlineAgent     *outline.OutlineAgent
+        chapterAgent     *chapter.ChapterAgent
+        polishAgent      *polish.PolishAgent
+        qualityAgent     *quality.QualityAgent
+        consistencyAgent *consistency.ConsistencyAgent
+        modelSwitcher    *eino.ModelSwitcher
+        log              *log.Helper
+}
+
+// NewNovelService 创建小说服务
+func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, chapterAgent *chapter.ChapterAgent, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher, logger log.Logger) *NovelService <span class="cov0" title="0">{
+        service := &amp;NovelService{
+                uc:               uc,
+                orchestrator:     orchestratorAgent,
+                worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient, logger),
+                charAgent:        character.NewCharacterAgent(llmClient),
+                outlineAgent:     outline.NewOutlineAgent(llmClient),
+                chapterAgent:     chapterAgent,
+                polishAgent:      polish.NewPolishAgent(llmClient),
+                consistencyAgent: consistency.NewConsistencyAgent(llmClient),
+                modelSwitcher:    modelSwitcher,
+                log:              log.NewHelper(logger),
+        }
+
+        // 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
+        service.qualityAgent = quality.NewQualityAgent(llmClient, service.polishAgent, service.consistencyAgent)
+
+        return service
+}</span>
+
+// NewNovelServiceWithRAG 创建带RAG功能的小说服务
+func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, chapterAgent *chapter.ChapterAgent,
+        einoClient *eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher, logger log.Logger) *NovelService <span class="cov0" title="0">{
+        service := &amp;NovelService{
+                uc:               uc,
+                orchestrator:     orchestratorAgent,
+                worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient, logger),
+                charAgent:        character.NewCharacterAgent(llmClient),
+                outlineAgent:     outline.NewOutlineAgent(llmClient),
+                chapterAgent:     chapterAgent,
+                polishAgent:      polish.NewPolishAgent(llmClient),
+                consistencyAgent: consistency.NewConsistencyAgentWithRAG(llmClient, *einoClient, ragService),
+                modelSwitcher:    modelSwitcher,
+                log:              log.NewHelper(logger),
+        }
+
+        // 初始化qualityAgent，需要依赖polishAgent和consistencyAgent
+        service.qualityAgent = quality.NewQualityAgent(llmClient, service.polishAgent, service.consistencyAgent)
+
+        return service
+}</span>
+
+// CreateProject 创建小说项目
+func (s *NovelService) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) <span class="cov8" title="1">{
+        project := &amp;models.NovelProject{
+                ID:             generateID(),
+                Title:          req.Title,
+                Description:    req.Description,
+                Genre:          req.Genre,
+                TargetAudience: req.TargetAudience,
+                Tone:           req.Tone,
+                Themes:         req.Themes,
+                Status:         "draft",
+                CreatedAt:      time.Now(),
+                UpdatedAt:      time.Now(),
+        }
+
+        createdProject, err := s.uc.CreateProject(ctx, project)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;pb.CreateProjectResponse{
+                ProjectId: createdProject.ID,
+                Title:     createdProject.Title,
+                Status:    createdProject.Status,
+                CreatedAt: timestamppb.New(createdProject.CreatedAt),
+        }, nil</span>
+}
+
+// GetProject 获取项目详情
+func (s *NovelService) GetProject(ctx context.Context, req *pb.GetProjectRequest) (*pb.GetProjectResponse, error) <span class="cov8" title="1">{
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;pb.GetProjectResponse{
+                Project: convertProjectToProto(project),
+        }, nil</span>
+}
+
+// ListProjects 获取项目列表
+func (s *NovelService) ListProjects(ctx context.Context, req *pb.ListProjectsRequest) (*pb.ListProjectsResponse, error) <span class="cov8" title="1">{
+        // 设置默认分页参数
+        page := int(req.Page)
+        pageSize := int(req.PageSize)
+        if page &lt;= 0 </span><span class="cov8" title="1">{
+                page = 1
+        }</span>
+        <span class="cov8" title="1">if pageSize &lt;= 0 </span><span class="cov8" title="1">{
+                pageSize = 10
+        }</span>
+
+        <span class="cov8" title="1">projects, total, err := s.uc.ListProjects(ctx, page, pageSize)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">pbProjects := make([]*pb.Project, len(projects))
+        for i, project := range projects </span><span class="cov8" title="1">{
+                pbProjects[i] = convertProjectToProto(project)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;pb.ListProjectsResponse{
+                Projects: pbProjects,
+                Total:    int32(total),
+        }, nil</span>
+}
+
+// UpdateProject 更新项目
+func (s *NovelService) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.UpdateProjectResponse, error) <span class="cov0" title="0">{
+        s.log.Infof("=== UpdateProject called ===")
+        s.log.Infof("Request: %+v", req)
+        s.log.Infof("ProjectId: %s", req.ProjectId)
+        s.log.Infof("Title: %s", req.Title)
+        s.log.Infof("Description: %s", req.Description)
+        s.log.Infof("Genre: %s", req.Genre)
+        s.log.Infof("TargetAudience: %s", req.TargetAudience)
+        s.log.Infof("Tone: %s", req.Tone)
+        s.log.Infof("Themes: %v", req.Themes)
+
+        // 获取现有项目
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.Errorf("Error getting project: %v", err)
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">s.log.Infof("Original project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v",
+                project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
+
+        // 更新项目字段 - 直接更新所有字段，允许设置为空值
+        project.Title = req.Title
+        project.Description = req.Description
+        project.Genre = req.Genre
+        project.TargetAudience = req.TargetAudience
+        project.Tone = req.Tone
+        project.Themes = req.Themes
+
+        // 更新大纲（如果提供）
+        if req.Outline != nil </span><span class="cov0" title="0">{
+                s.log.Infof("Updating outline: %+v", req.Outline)
+                outline := &amp;models.Outline{
+                        ID:        req.Outline.Id,
+                        ProjectID: req.Outline.ProjectId,
+                }
+                
+                if len(req.Outline.Chapters) &gt; 0 </span><span class="cov0" title="0">{
+                        outline.Chapters = make([]*models.ChapterOutline, len(req.Outline.Chapters))
+                        for i, pbChapter := range req.Outline.Chapters </span><span class="cov0" title="0">{
+                                outline.Chapters[i] = &amp;models.ChapterOutline{
+                                        Index:          int(pbChapter.Index),
+                                        Title:          pbChapter.Title,
+                                        Summary:        pbChapter.Summary,
+                                        Goal:           pbChapter.Goal,
+                                        TwistHint:      pbChapter.TwistHint,
+                                        ImportantItems: pbChapter.ImportantItems,
+                                }
+                        }</span>
+                }
+                
+                <span class="cov0" title="0">project.Outline = outline</span>
+        }
+
+        <span class="cov0" title="0">s.log.Infof("Updated project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v",
+                project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
+
+        // 保存更新后的项目
+        _, err = s.uc.UpdateProject(ctx, project)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.Errorf("Error updating project: %v", err)
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">s.log.Infof("Successfully updated project")
+
+        return &amp;pb.UpdateProjectResponse{
+                Project: convertProjectToProto(project),
+        }, nil</span>
+}
+
+// GenerateWorldView 生成世界观
+func (s *NovelService) GenerateWorldView(ctx context.Context, req *pb.GenerateWorldViewRequest) (*pb.GenerateWorldViewResponse, error) <span class="cov0" title="0">{
+        s.log.Infof("=== GenerateWorldView called ===")
+        s.log.Infof("Request: %+v", req)
+        s.log.Infof("ProjectId: %s", req.ProjectId)
+        s.log.Infof("Genre: %s", req.Genre)
+        s.log.Infof("Setting: %s", req.Setting)
+
+        // 获取项目信息
+        s.log.Infof("Getting project with ID: %s", req.ProjectId)
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.Errorf("Error getting project: %v", err)
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">s.log.Infof("Project retrieved successfully: %+v", project)
+
+        // 构建世界观生成请求
+        s.log.Infof("Building worldview generation request...")
+        worldReq := &amp;worldbuilding.GenerateWorldViewRequest{
+                ProjectID: req.ProjectId,
+                Genre:     req.Genre,
+                Setting:   req.Setting,
+                KeyRules:  req.KeyRules,
+                Tone:      req.Tone,
+                Audience:  req.TargetAudience,
+                Themes:    req.Themes,
+        }
+        s.log.Infof("Worldview request: %+v", worldReq)
+
+        // 生成世界观
+        s.log.Infof("Calling world agent GenerateWorldView...")
+        worldView, err := s.worldAgent.GenerateWorldView(ctx, worldReq)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.Errorf("Error generating worldview: %v", err)
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">s.log.Infof("Worldview generated successfully: %+v", worldView)
+
+        // 更新项目的世界观
+        s.log.Infof("Updating project worldview...")
+        project.WorldView = worldView
+
+        // 保存项目
+        s.log.Infof("Saving updated project...")
+        _, err = s.uc.UpdateProject(ctx, project)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.Errorf("Error updating project: %v", err)
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">s.log.Infof("Project updated successfully")
+
+        s.log.Infof("=== GenerateWorldView completed ===")
+        return &amp;pb.GenerateWorldViewResponse{
+                WorldView: &amp;pb.WorldView{
+                        Title:        worldView.Title,
+                        Synopsis:     worldView.Synopsis,
+                        Setting:      worldView.Setting,
+                        KeyRules:     worldView.KeyRules,
+                        ToneExamples: worldView.ToneExamples,
+                        Themes:       worldView.Themes,
+                },
+        }, nil</span>
+}
+
+// GenerateCharacters 生成角色卡
+func (s *NovelService) GenerateCharacters(ctx context.Context, req *pb.GenerateCharactersRequest) (*pb.GenerateCharactersResponse, error) <span class="cov0" title="0">{
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">charReq := &amp;character.GenerateCharactersRequest{
+                ProjectID:      req.ProjectId,
+                WorldView:      project.WorldView,
+                CharacterNames: req.CharacterNames,
+                Options:        convertLLMOptionsFromProto(req.LlmOptions),
+        }
+
+        resp, err := s.charAgent.GenerateCharacters(ctx, charReq)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // 保存角色到项目中
+        <span class="cov0" title="0">project.Characters = resp.Characters
+        _, err = s.uc.UpdateProject(ctx, project)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">pbCharacters := make([]*pb.Character, len(resp.Characters))
+        for i, char := range resp.Characters </span><span class="cov0" title="0">{
+                pbCharacters[i] = convertCharacterToProto(char)
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.GenerateCharactersResponse{
+                Characters: pbCharacters,
+        }, nil</span>
+}
+
+// GenerateOutline 生成大纲
+func (s *NovelService) GenerateOutline(ctx context.Context, req *pb.GenerateOutlineRequest) (*pb.GenerateOutlineResponse, error) <span class="cov0" title="0">{
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">outlineReq := &amp;outline.GenerateOutlineRequest{
+                ProjectID:    req.ProjectId,
+                WorldView:    project.WorldView,
+                Characters:   project.Characters,
+                ChapterCount: int(req.ChapterCount),
+                Options:      convertLLMOptionsFromProto(req.LlmOptions),
+        }
+
+        resp, err := s.outlineAgent.GenerateOutline(ctx, outlineReq)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // 保存大纲到项目中
+        <span class="cov0" title="0">project.Outline = resp.Outline
+        _, err = s.uc.UpdateProject(ctx, project)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.GenerateOutlineResponse{
+                Outline: convertOutlineToProto(resp.Outline),
+        }, nil</span>
+}
+
+// UpdateChapterOutline 更新章节大纲
+func (s *NovelService) UpdateChapterOutline(ctx context.Context, req *pb.UpdateChapterOutlineRequest) (*pb.UpdateChapterOutlineResponse, error) <span class="cov0" title="0">{
+        // 获取项目
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // 检查项目是否有大纲
+        <span class="cov0" title="0">if project.Outline == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("project outline not found")
+        }</span>
+
+        // 查找要更新的章节 - 按章节的Index字段查找，而不是数组索引
+        <span class="cov0" title="0">targetChapterIndex := int(req.ChapterIndex)
+        var foundIndex = -1
+        
+        for i, chapter := range project.Outline.Chapters </span><span class="cov0" title="0">{
+                if chapter.Index == targetChapterIndex </span><span class="cov0" title="0">{
+                        foundIndex = i
+                        break</span>
+                }
+        }
+        
+        <span class="cov0" title="0">if foundIndex == -1 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("chapter with index %d not found", targetChapterIndex)
+        }</span>
+
+        // 更新章节大纲 - 创建新的 ChapterOutline 对象
+        <span class="cov0" title="0">updatedChapter := &amp;models.ChapterOutline{
+                Index:          targetChapterIndex,
+                Title:          req.Title,
+                Summary:        req.Summary,
+                Goal:           req.Goal,
+                TwistHint:      req.TwistHint,
+                ImportantItems: req.ImportantItems,
+        }
+
+        // 替换到找到的位置
+        project.Outline.Chapters[foundIndex] = updatedChapter
+
+        // 添加日志以便调试
+        s.log.WithContext(ctx).Infof("Updated chapter %d: %s", req.ChapterIndex, req.Title)
+
+        // 保存更新后的项目
+        _, err = s.uc.UpdateProject(ctx, project)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.UpdateChapterOutlineResponse{
+                Outline: convertOutlineToProto(project.Outline),
+        }, nil</span>
+}
+
+// DeleteChapterOutline 删除章节大纲
+func (s *NovelService) DeleteChapterOutline(ctx context.Context, req *pb.DeleteChapterOutlineRequest) (*pb.DeleteChapterOutlineResponse, error) <span class="cov0" title="0">{
+        // 获取项目
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // 检查项目是否有大纲
+        <span class="cov0" title="0">if project.Outline == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("project outline not found")
+        }</span>
+
+        // 查找要删除的章节
+        <span class="cov0" title="0">targetChapterIndex := int(req.ChapterIndex)
+        var foundIndex = -1
+        
+        for i, chapter := range project.Outline.Chapters </span><span class="cov0" title="0">{
+                if chapter.Index == targetChapterIndex </span><span class="cov0" title="0">{
+                        foundIndex = i
+                        break</span>
+                }
+        }
+        
+        <span class="cov0" title="0">if foundIndex == -1 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("chapter with index %d not found", targetChapterIndex)
+        }</span>
+
+        // 删除章节
+        <span class="cov0" title="0">project.Outline.Chapters = append(project.Outline.Chapters[:foundIndex], project.Outline.Chapters[foundIndex+1:]...)
+
+        // 重新调整后续章节的索引
+        for i := foundIndex; i &lt; len(project.Outline.Chapters); i++ </span><span class="cov0" title="0">{
+                project.Outline.Chapters[i].Index = i + 1
+        }</span>
+
+        // 添加日志
+        <span class="cov0" title="0">s.log.WithContext(ctx).Infof("Deleted chapter %d", req.ChapterIndex)
+
+        // 保存更新后的项目
+        _, err = s.uc.UpdateProject(ctx, project)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.DeleteChapterOutlineResponse{
+                Outline: convertOutlineToProto(project.Outline),
+        }, nil</span>
+}
+
+// ReorderChapterOutline 重排序章节大纲
+func (s *NovelService) ReorderChapterOutline(ctx context.Context, req *pb.ReorderChapterOutlineRequest) (*pb.ReorderChapterOutlineResponse, error) <span class="cov0" title="0">{
+        s.log.WithContext(ctx).Infof("ReorderChapterOutline called for project %s with %d mappings", req.ProjectId, len(req.ChapterMappings))
+
+        // 获取项目
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.WithContext(ctx).Errorf("Failed to get project %s: %v", req.ProjectId, err)
+                return nil, err
+        }</span>
+
+        // 检查项目是否有大纲
+        <span class="cov0" title="0">if project.Outline == nil || len(project.Outline.Chapters) == 0 </span><span class="cov0" title="0">{
+                s.log.WithContext(ctx).Errorf("Project %s has no outline or empty chapters", req.ProjectId)
+                return nil, fmt.Errorf("project outline not found or empty")
+        }</span>
+
+        <span class="cov0" title="0">originalChapters := project.Outline.Chapters
+        chapterCount := len(originalChapters)
+        s.log.WithContext(ctx).Infof("Original chapter count: %d", chapterCount)
+
+        // 验证所有映射的有效性
+        for i, mapping := range req.ChapterMappings </span><span class="cov0" title="0">{
+                oldIndex := int(mapping.OldIndex)
+                newIndex := int(mapping.NewIndex)
+                
+                s.log.WithContext(ctx).Infof("Mapping %d: %d -&gt; %d", i, oldIndex, newIndex)
+
+                // 索引从1开始，转换为从0开始的数组索引
+                if oldIndex &lt; 1 || oldIndex &gt; chapterCount || newIndex &lt; 1 || newIndex &gt; chapterCount </span><span class="cov0" title="0">{
+                        s.log.WithContext(ctx).Errorf("Invalid index mapping: old=%d, new=%d, chapter_count=%d", oldIndex, newIndex, chapterCount)
+                        return nil, fmt.Errorf("invalid chapter index: old=%d, new=%d (valid range: 1-%d)", oldIndex, newIndex, chapterCount)
+                }</span>
+        }
+
+        // 如果只有一个映射，使用简单的移动算法
+        <span class="cov0" title="0">if len(req.ChapterMappings) == 1 </span><span class="cov0" title="0">{
+                mapping := req.ChapterMappings[0]
+                fromIndex := int(mapping.OldIndex) - 1  // 转换为0基索引
+                toIndex := int(mapping.NewIndex) - 1    // 转换为0基索引
+
+                s.log.WithContext(ctx).Infof("Single mapping: moving chapter from position %d to %d", fromIndex, toIndex)
+
+                // 创建新的章节数组
+                newChapters := make([]*models.ChapterOutline, chapterCount)
+                copy(newChapters, originalChapters)
+
+                // 移动章节
+                if fromIndex != toIndex </span><span class="cov0" title="0">{
+                        chapterToMove := newChapters[fromIndex]
+                        
+                        // 移除原位置的章节
+                        if fromIndex &lt; toIndex </span><span class="cov0" title="0">{
+                                // 向后移动：将中间的章节向前移动
+                                copy(newChapters[fromIndex:toIndex], newChapters[fromIndex+1:toIndex+1])
+                        }</span> else<span class="cov0" title="0"> {
+                                // 向前移动：将中间的章节向后移动
+                                copy(newChapters[toIndex+1:fromIndex+1], newChapters[toIndex:fromIndex])
+                        }</span>
+                        
+                        // 插入到新位置
+                        <span class="cov0" title="0">newChapters[toIndex] = chapterToMove</span>
+                }
+
+                // 重新编号所有章节的Index字段
+                <span class="cov0" title="0">for i, chapter := range newChapters </span><span class="cov0" title="0">{
+                        chapter.Index = i + 1
+                        s.log.WithContext(ctx).Infof("Chapter %d: %s (new index: %d)", i, chapter.Title, chapter.Index)
+                }</span>
+
+                // 更新项目大纲
+                <span class="cov0" title="0">project.Outline.Chapters = newChapters</span>
+        } else<span class="cov0" title="0"> {
+                // 多个映射的情况，使用更复杂的算法
+                s.log.WithContext(ctx).Infof("Multiple mappings detected, using complex reordering algorithm")
+                
+                // 构建索引映射表
+                indexMappings := make([]struct {
+                        OldIndex int
+                        NewIndex int
+                }, len(req.ChapterMappings))
+                
+                for i, mapping := range req.ChapterMappings </span><span class="cov0" title="0">{
+                        indexMappings[i] = struct {
+                                OldIndex int
+                                NewIndex int
+                        }{
+                                OldIndex: int(mapping.OldIndex),
+                                NewIndex: int(mapping.NewIndex),
+                        }
+                }</span>
+
+                // 调用业务层的重排序方法
+                <span class="cov0" title="0">err = s.uc.ReorderChapterOutline(ctx, req.ProjectId, indexMappings)
+                if err != nil </span><span class="cov0" title="0">{
+                        s.log.WithContext(ctx).Errorf("Failed to reorder chapters in business layer: %v", err)
+                        return nil, err
+                }</span>
+
+                // 重新获取更新后的项目
+                <span class="cov0" title="0">project, err = s.uc.GetProject(ctx, req.ProjectId)
+                if err != nil </span><span class="cov0" title="0">{
+                        s.log.WithContext(ctx).Errorf("Failed to get updated project: %v", err)
+                        return nil, err
+                }</span>
+        }
+
+        <span class="cov0" title="0">s.log.WithContext(ctx).Infof("Successfully reordered chapters for project %s", req.ProjectId)
+
+        return &amp;pb.ReorderChapterOutlineResponse{
+                Outline: convertOutlineToProto(project.Outline),
+        }, nil</span>
+}
+
+// GenerateChapter 生成章节
+func (s *NovelService) GenerateChapter(ctx context.Context, req *pb.GenerateChapterRequest) (*pb.GenerateChapterResponse, error) <span class="cov0" title="0">{
+        // 添加空值检查
+        if s.chapterAgent == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("chapter agent not initialized")
+        }</span>
+        
+        <span class="cov0" title="0">if req == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("request cannot be nil")
+        }</span>
+        
+        <span class="cov0" title="0">if req.ChapterOutline == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("chapter outline cannot be nil")
+        }</span>
+
+        <span class="cov0" title="0">chapterReq := &amp;chapter.GenerateChapterRequest{
+                ProjectID:       req.ProjectId,
+                ChapterOutline:  convertChapterOutlineFromProto(req.ChapterOutline),
+                Context:         convertContextFromProto(req.Context),
+                TargetWordCount: int(req.TargetWordCount),
+                Options:         convertLLMOptionsFromProto(req.LlmOptions),
+        }
+
+        resp, err := s.chapterAgent.GenerateChapter(ctx, chapterReq)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.WithContext(ctx).Errorf("Failed to generate chapter: %v", err)
+                return nil, fmt.Errorf("章节生成失败: %w", err)
+        }</span>
+
+        // 保存章节
+        <span class="cov0" title="0">savedChapter, err := s.uc.SaveChapter(ctx, resp.Chapter)
+        if err != nil </span><span class="cov0" title="0">{
+                s.log.WithContext(ctx).Errorf("Failed to save chapter: %v", err)
+                return nil, fmt.Errorf("章节保存失败: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.GenerateChapterResponse{
+                Chapter: convertChapterToProto(savedChapter),
+        }, nil</span>
+}
+
+// StreamCallback 流式生成回调处理器
+type StreamCallback struct {
+        stream     pb.NovelService_GenerateChapterStreamServer
+        chapterID  string
+        title      string
+        wordCount  int32
+        chunkIndex int32
+}
+
+// OnContent 处理内容片段
+func (c *StreamCallback) OnContent(content string) error <span class="cov0" title="0">{
+        c.chunkIndex++
+        c.wordCount += int32(len([]rune(content)))
+
+        return c.stream.Send(&amp;pb.GenerateChapterStreamResponse{
+                Type:         pb.GenerateChapterStreamResponse_CONTENT,
+                ContentChunk: content,
+                ChunkIndex:   c.chunkIndex,
+                ChapterId:    c.chapterID,
+                Title:        c.title,
+                WordCount:    c.wordCount,
+        })
+}</span>
+
+// OnProgress 处理进度更新
+func (c *StreamCallback) OnProgress(stage string, progress int) error <span class="cov0" title="0">{
+        return c.stream.Send(&amp;pb.GenerateChapterStreamResponse{
+                Type:     pb.GenerateChapterStreamResponse_PROGRESS,
+                Progress: float32(progress) / 100.0,
+                Stage:    stage,
+        })
+}</span>
+
+// OnComplete 处理完成回调
+func (c *StreamCallback) OnComplete(chapter *models.Chapter) error <span class="cov0" title="0">{
+        return nil // 完成处理在主函数中进行
+}</span>
+
+// OnError 处理错误回调
+func (c *StreamCallback) OnError(err error) error <span class="cov0" title="0">{
+        return c.stream.Send(&amp;pb.GenerateChapterStreamResponse{
+                Type:         pb.GenerateChapterStreamResponse_ERROR,
+                ErrorMessage: err.Error(),
+                ErrorCode:    "GENERATION_ERROR",
+        })
+}</span>
+
+// GenerateChapterStream 流式生成章节
+func (s *NovelService) GenerateChapterStream(req *pb.GenerateChapterRequest, stream pb.NovelService_GenerateChapterStreamServer) error <span class="cov0" title="0">{
+        ctx := stream.Context()
+
+        // 发送开始信号
+        if err := stream.Send(&amp;pb.GenerateChapterStreamResponse{
+                Type:     pb.GenerateChapterStreamResponse_PROGRESS,
+                Progress: 0.0,
+                Stage:    "开始生成章节...",
+        }); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // 构建生成请求
+        <span class="cov0" title="0">chapterReq := &amp;chapter.GenerateChapterRequest{
+                ProjectID:       req.ProjectId,
+                ChapterOutline:  convertChapterOutlineFromProto(req.ChapterOutline),
+                Context:         convertContextFromProto(req.Context),
+                TargetWordCount: int(req.TargetWordCount),
+                Options:         convertLLMOptionsFromProto(req.LlmOptions),
+        }
+
+        // 生成章节ID和标题
+        chapterID := generateChapterID()
+        title := req.ChapterOutline.Title
+
+        // 创建流式生成回调
+        callback := &amp;StreamCallback{
+                stream:    stream,
+                chapterID: chapterID,
+                title:     title,
+        }
+
+        // 执行流式生成
+        err := s.chapterAgent.GenerateChapterStream(ctx, chapterReq, callback)
+        if err != nil </span><span class="cov0" title="0">{
+                // 发送错误信息
+                return stream.Send(&amp;pb.GenerateChapterStreamResponse{
+                        Type:         pb.GenerateChapterStreamResponse_ERROR,
+                        ErrorMessage: err.Error(),
+                        ErrorCode:    "GENERATION_FAILED",
+                })
+        }</span>
+
+        // 创建章节对象（从生成的内容构建）
+        <span class="cov0" title="0">chapter := &amp;models.Chapter{
+                ID:              chapterID,
+                Title:           title,
+                RawContent:      "", // 内容已通过流式传输
+                PolishedContent: "",
+                WordCount:       int(callback.wordCount),
+                ProjectID:       req.ProjectId,
+                Status:          "generated",
+        }
+
+        // 保存章节
+        savedChapter, err := s.uc.SaveChapter(ctx, chapter)
+        if err != nil </span><span class="cov0" title="0">{
+                return stream.Send(&amp;pb.GenerateChapterStreamResponse{
+                        Type:         pb.GenerateChapterStreamResponse_ERROR,
+                        ErrorMessage: "保存章节失败",
+                        ErrorCode:    "SAVE_FAILED",
+                })
+        }</span>
+
+        // 发送完成信号
+        <span class="cov0" title="0">return stream.Send(&amp;pb.GenerateChapterStreamResponse{
+                Type:         pb.GenerateChapterStreamResponse_COMPLETE,
+                Progress:     1.0,
+                FinalChapter: convertChapterToProto(savedChapter),
+        })</span>
+}
+
+// generateChapterID 生成章节ID
+func generateChapterID() string <span class="cov0" title="0">{
+        return fmt.Sprintf("chapter_%d", time.Now().UnixNano())
+}</span>
+
+// PolishChapter 润色章节
+func (s *NovelService) PolishChapter(ctx context.Context, req *pb.PolishChapterRequest) (*pb.PolishChapterResponse, error) <span class="cov0" title="0">{
+        chapter, err := s.uc.GetChapter(ctx, req.ChapterId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">polishReq := &amp;polish.PolishChapterRequest{
+                Chapter: chapter,
+                Style:   req.Style,
+                Focus:   req.Focus,
+                Options: convertLLMOptionsFromProto(req.LlmOptions),
+        }
+
+        resp, err := s.polishAgent.PolishChapter(ctx, polishReq)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // 更新章节
+        <span class="cov0" title="0">updatedChapter, err := s.uc.UpdateChapter(ctx, resp.Chapter)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.PolishChapterResponse{
+                PolishedChapter: convertChapterToProto(updatedChapter),
+        }, nil</span>
+}
+
+// CheckConsistency 检查一致性
+func (s *NovelService) CheckConsistency(ctx context.Context, req *pb.CheckConsistencyRequest) (*pb.CheckConsistencyResponse, error) <span class="cov0" title="0">{
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">consistencyReq := &amp;consistency.CheckConsistencyRequest{
+                Project:   project,
+                Chapters:  project.Chapters,
+                CheckType: req.CheckType,
+                Options:   convertLLMOptionsFromProto(req.LlmOptions),
+        }
+
+        resp, err := s.consistencyAgent.CheckConsistency(ctx, consistencyReq)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">pbIssues := make([]*pb.ConsistencyIssue, len(resp.Issues))
+        for i, issue := range resp.Issues </span><span class="cov0" title="0">{
+                pbIssues[i] = &amp;pb.ConsistencyIssue{
+                        Type:        issue.Type,
+                        Severity:    issue.Severity,
+                        Description: issue.Description,
+                        Location:    issue.Location,
+                        Suggestion:  issue.Suggestion,
+                }
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.CheckConsistencyResponse{
+                Issues:       pbIssues,
+                Suggestions:  resp.Suggestions,
+                OverallScore: resp.OverallScore,
+        }, nil</span>
+}
+
+// GenerateNovel 生成完整小说（流式响应）
+func (s *NovelService) GenerateNovel(req *pb.GenerateNovelRequest, stream pb.NovelService_GenerateNovelServer) error <span class="cov0" title="0">{
+        ctx := stream.Context()
+
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">orchestratorReq := &amp;orchestrator.GenerateNovelRequest{
+                Project: project,
+                Options: convertGenerateOptionsFromProto(req.Options),
+        }
+
+        resp, err := s.orchestrator.GenerateNovel(ctx, orchestratorReq)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // 保存生成的内容
+        <span class="cov0" title="0">_, err = s.uc.UpdateProject(ctx, resp.Project)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">pbChapters := make([]*pb.Chapter, len(resp.Chapters))
+        for i, chapter := range resp.Chapters </span><span class="cov0" title="0">{
+                pbChapters[i] = convertChapterToProto(chapter)
+        }</span>
+
+        // 发送响应
+        <span class="cov0" title="0">return stream.Send(&amp;pb.GenerateNovelResponse{
+                Status:       resp.Status,
+                Progress:     resp.Progress,
+                CurrentStage: resp.Message,
+                Message:      resp.Message,
+                Chapters:     pbChapters,
+                Issues:       resp.Issues,
+        })</span>
+}
+
+// ExportNovel 导出小说
+func (s *NovelService) ExportNovel(ctx context.Context, req *pb.ExportNovelRequest) (*pb.ExportNovelResponse, error) <span class="cov0" title="0">{
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">options := &amp;models.ExportOptions{
+                IncludeMetadata: req.Options.IncludeMetadata,
+                IncludeOutline:  req.Options.IncludeOutline,
+                FontFamily:      req.Options.FontFamily,
+                FontSize:        int(req.Options.FontSize),
+        }
+
+        result, err := s.uc.ExportNovel(ctx, project, req.Format, options)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.ExportNovelResponse{
+                DownloadUrl: result.DownloadURL,
+                FileName:    result.FileName,
+                FileSize:    result.FileSize,
+        }, nil</span>
+}
+
+// GenerateVideoScript 生成视频脚本
+func (s *NovelService) GenerateVideoScript(ctx context.Context, req *pb.GenerateVideoScriptRequest) (*pb.GenerateVideoScriptResponse, error) <span class="cov0" title="0">{
+        // 获取章节
+        chapters := make([]*models.Chapter, 0)
+        for _, chapterID := range req.ChapterIds </span><span class="cov0" title="0">{
+                chapter, err := s.uc.GetChapter(ctx, chapterID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov0" title="0">chapters = append(chapters, chapter)</span>
+        }
+
+        <span class="cov0" title="0">options := &amp;models.VideoScriptOptions{
+                ScenesPerChapter: int(req.Options.ScenesPerChapter),
+                Platform:         req.Options.Platform,
+                VoiceType:        req.Options.VoiceType,
+        }
+
+        scenes, err := s.uc.GenerateVideoScript(ctx, chapters, options)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">pbScenes := make([]*pb.VideoScene, len(scenes))
+        for i, scene := range scenes </span><span class="cov0" title="0">{
+                pbScenes[i] = &amp;pb.VideoScene{
+                        ScreenIndex:       int32(scene.ScreenIndex),
+                        Text:              scene.Text,
+                        SuggestedBgmTag:   scene.SuggestedBGMTag,
+                        SuggestedImageTag: scene.SuggestedImageTag,
+                        TtsVoice:          scene.TTSVoice,
+                        Notes:             scene.Notes,
+                }
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.GenerateVideoScriptResponse{
+                Scenes: pbScenes,
+        }, nil</span>
+}
+
+// CheckQuality 质量检测
+func (s *NovelService) CheckQuality(ctx context.Context, req *pb.CheckQualityRequest) (*pb.CheckQualityResponse, error) <span class="cov0" title="0">{
+        // 获取项目信息
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("获取项目失败: %w", err)
+        }</span>
+
+        // 获取章节信息
+        <span class="cov0" title="0">chapter, err := s.uc.GetChapter(ctx, req.ChapterId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("获取章节失败: %w", err)
+        }</span>
+
+        // 构建质量检测请求
+        <span class="cov0" title="0">qualityReq := &amp;quality.QualityCheckRequest{
+                Project:   project,
+                Chapter:   chapter,
+                CheckType: req.CheckType,
+                Options: &amp;llm.GenerateOptions{
+                        Temperature:      req.LlmOptions.Temperature,
+                        TopP:             req.LlmOptions.TopP,
+                        MaxTokens:        int(req.LlmOptions.MaxTokens),
+                        FrequencyPenalty: req.LlmOptions.FrequencyPenalty,
+                        PresencePenalty:  req.LlmOptions.PresencePenalty,
+                },
+        }
+
+        // 执行质量检测
+        result, err := s.qualityAgent.CheckQuality(ctx, qualityReq)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("质量检测失败: %w", err)
+        }</span>
+
+        // 转换响应
+        <span class="cov0" title="0">response := &amp;pb.CheckQualityResponse{
+                OverallScore:    result.OverallScore,
+                Recommendations: result.Recommendations,
+        }
+
+        if result.PolishedChapter != nil </span><span class="cov0" title="0">{
+                response.PolishedChapter = convertChapterToProto(result.PolishedChapter)
+        }</span>
+
+        <span class="cov0" title="0">if result.ProofreadResult != nil </span><span class="cov0" title="0">{
+                response.ProofreadResult = &amp;pb.ProofreadResult{
+                        CorrectedContent: result.ProofreadResult.CorrectedContent,
+                        Suggestions:      result.ProofreadResult.Suggestions,
+                }
+
+                for _, issue := range result.ProofreadResult.Issues </span><span class="cov0" title="0">{
+                        response.ProofreadResult.Issues = append(response.ProofreadResult.Issues, &amp;pb.QualityIssue{
+                                Type:        issue.Type,
+                                Severity:    issue.Severity,
+                                Description: issue.Description,
+                                Position:    issue.Position,
+                                Original:    issue.Original,
+                                Corrected:   issue.Corrected,
+                        })
+                }</span>
+        }
+
+        <span class="cov0" title="0">if result.CritiqueResult != nil </span><span class="cov0" title="0">{
+                response.CritiqueResult = &amp;pb.CritiqueResult{
+                        LogicalIssues:   result.CritiqueResult.LogicalIssues,
+                        CharacterIssues: result.CritiqueResult.CharacterIssues,
+                        PacingIssues:    result.CritiqueResult.PacingIssues,
+                        Improvements:    result.CritiqueResult.Improvements,
+                        FixedExample:    result.CritiqueResult.FixedExample,
+                        OverallScore:    int32(result.CritiqueResult.OverallScore),
+                }
+        }</span>
+
+        <span class="cov0" title="0">for _, issue := range result.ConsistencyIssues </span><span class="cov0" title="0">{
+                response.ConsistencyIssues = append(response.ConsistencyIssues, &amp;pb.ConsistencyIssue{
+                        Type:        issue.Type,
+                        Severity:    issue.Severity,
+                        Description: issue.Description,
+                        Location:    issue.Location,
+                        Suggestion:  issue.Suggestion,
+                })
+        }</span>
+
+        <span class="cov0" title="0">return response, nil</span>
+}
+
+// BatchCheckQuality 批量质量检测
+func (s *NovelService) BatchCheckQuality(ctx context.Context, req *pb.BatchCheckQualityRequest) (*pb.BatchCheckQualityResponse, error) <span class="cov0" title="0">{
+        // 获取项目信息
+        project, err := s.uc.GetProject(ctx, req.ProjectId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("获取项目失败: %w", err)
+        }</span>
+
+        // 获取章节信息
+        <span class="cov0" title="0">var chapters []*models.Chapter
+        for _, chapterID := range req.ChapterIds </span><span class="cov0" title="0">{
+                chapter, err := s.uc.GetChapter(ctx, chapterID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("获取章节 %s 失败: %w", chapterID, err)
+                }</span>
+                <span class="cov0" title="0">chapters = append(chapters, chapter)</span>
+        }
+
+        // 构建批量质量检测请求
+        <span class="cov0" title="0">batchReq := &amp;quality.BatchQualityCheckRequest{
+                Project:   project,
+                Chapters:  chapters,
+                CheckType: req.CheckType,
+                Options: &amp;llm.GenerateOptions{
+                        Temperature:      req.LlmOptions.Temperature,
+                        TopP:             req.LlmOptions.TopP,
+                        MaxTokens:        int(req.LlmOptions.MaxTokens),
+                        FrequencyPenalty: req.LlmOptions.FrequencyPenalty,
+                        PresencePenalty:  req.LlmOptions.PresencePenalty,
+                },
+        }
+
+        // 执行批量质量检测
+        result, err := s.qualityAgent.BatchCheckQuality(ctx, batchReq)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("批量质量检测失败: %w", err)
+        }</span>
+
+        // 转换响应
+        <span class="cov0" title="0">response := &amp;pb.BatchCheckQualityResponse{
+                OverallScore: result.OverallScore,
+        }
+
+        // 转换单个结果
+        for _, res := range result.Results </span><span class="cov0" title="0">{
+                pbResult := &amp;pb.CheckQualityResponse{
+                        OverallScore:    res.OverallScore,
+                        Recommendations: res.Recommendations,
+                }
+
+                if res.PolishedChapter != nil </span><span class="cov0" title="0">{
+                        pbResult.PolishedChapter = convertChapterToProto(res.PolishedChapter)
+                }</span>
+
+                <span class="cov0" title="0">if res.ProofreadResult != nil </span><span class="cov0" title="0">{
+                        pbResult.ProofreadResult = &amp;pb.ProofreadResult{
+                                CorrectedContent: res.ProofreadResult.CorrectedContent,
+                                Suggestions:      res.ProofreadResult.Suggestions,
+                        }
+
+                        for _, issue := range res.ProofreadResult.Issues </span><span class="cov0" title="0">{
+                                pbResult.ProofreadResult.Issues = append(pbResult.ProofreadResult.Issues, &amp;pb.QualityIssue{
+                                        Type:        issue.Type,
+                                        Severity:    issue.Severity,
+                                        Description: issue.Description,
+                                        Position:    issue.Position,
+                                        Original:    issue.Original,
+                                        Corrected:   issue.Corrected,
+                                })
+                        }</span>
+                }
+
+                <span class="cov0" title="0">if res.CritiqueResult != nil </span><span class="cov0" title="0">{
+                        pbResult.CritiqueResult = &amp;pb.CritiqueResult{
+                                LogicalIssues:   res.CritiqueResult.LogicalIssues,
+                                CharacterIssues: res.CritiqueResult.CharacterIssues,
+                                PacingIssues:    res.CritiqueResult.PacingIssues,
+                                Improvements:    res.CritiqueResult.Improvements,
+                                FixedExample:    res.CritiqueResult.FixedExample,
+                                OverallScore:    int32(res.CritiqueResult.OverallScore),
+                        }
+                }</span>
+
+                <span class="cov0" title="0">for _, issue := range res.ConsistencyIssues </span><span class="cov0" title="0">{
+                        pbResult.ConsistencyIssues = append(pbResult.ConsistencyIssues, &amp;pb.ConsistencyIssue{
+                                Type:        issue.Type,
+                                Severity:    issue.Severity,
+                                Description: issue.Description,
+                                Location:    issue.Location,
+                                Suggestion:  issue.Suggestion,
+                        })
+                }</span>
+
+                <span class="cov0" title="0">response.Results = append(response.Results, pbResult)</span>
+        }
+
+        // 转换汇总信息
+        <span class="cov0" title="0">if result.Summary != nil </span><span class="cov0" title="0">{
+                response.Summary = &amp;pb.QualitySummary{
+                        TotalIssues:      int32(result.Summary.TotalIssues),
+                        IssuesByType:     make(map[string]int32),
+                        IssuesBySeverity: make(map[string]int32),
+                        Recommendations:  result.Summary.Recommendations,
+                }
+
+                for k, v := range result.Summary.IssuesByType </span><span class="cov0" title="0">{
+                        response.Summary.IssuesByType[k] = int32(v)
+                }</span>
+
+                <span class="cov0" title="0">for k, v := range result.Summary.IssuesBySeverity </span><span class="cov0" title="0">{
+                        response.Summary.IssuesBySeverity[k] = int32(v)
+                }</span>
+
+                <span class="cov0" title="0">for _, trend := range result.Summary.QualityTrends </span><span class="cov0" title="0">{
+                        response.Summary.QualityTrends = append(response.Summary.QualityTrends, trend)
+                }</span>
+        }
+
+        <span class="cov0" title="0">return response, nil</span>
+}
+
+// 辅助函数：数据模型转换
+func convertProjectToProto(project *models.NovelProject) *pb.Project <span class="cov8" title="1">{
+        pbProject := &amp;pb.Project{
+                Id:             project.ID,
+                Title:          project.Title,
+                Description:    project.Description,
+                Genre:          project.Genre,
+                TargetAudience: project.TargetAudience,
+                Tone:           project.Tone,
+                Themes:         project.Themes,
+                Status:         project.Status,
+                CreatedAt:      timestamppb.New(project.CreatedAt),
+                UpdatedAt:      timestamppb.New(project.UpdatedAt),
+        }
+
+        if project.WorldView != nil </span><span class="cov0" title="0">{
+                pbProject.WorldView = convertWorldViewToProto(project.WorldView)
+        }</span>
+
+        <span class="cov8" title="1">if len(project.Characters) &gt; 0 </span><span class="cov0" title="0">{
+                pbProject.Characters = make([]*pb.Character, len(project.Characters))
+                for i, char := range project.Characters </span><span class="cov0" title="0">{
+                        pbProject.Characters[i] = convertCharacterToProto(char)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if project.Outline != nil </span><span class="cov0" title="0">{
+                pbProject.Outline = convertOutlineToProto(project.Outline)
+        }</span>
+
+        <span class="cov8" title="1">if len(project.Chapters) &gt; 0 </span><span class="cov0" title="0">{
+                pbProject.Chapters = make([]*pb.Chapter, len(project.Chapters))
+                for i, chapter := range project.Chapters </span><span class="cov0" title="0">{
+                        pbProject.Chapters[i] = convertChapterToProto(chapter)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return pbProject</span>
+}
+
+func convertWorldViewToProto(worldView *models.WorldView) *pb.WorldView <span class="cov0" title="0">{
+        return &amp;pb.WorldView{
+                Title:        worldView.Title,
+                Synopsis:     worldView.Synopsis,
+                Setting:      worldView.Setting,
+                KeyRules:     worldView.KeyRules,
+                ToneExamples: worldView.ToneExamples,
+                Themes:       worldView.Themes,
+        }
+}</span>
+
+func convertCharacterToProto(character *models.Character) *pb.Character <span class="cov0" title="0">{
+        return &amp;pb.Character{
+                Id:              character.ID,
+                ProjectId:       character.ProjectID,
+                Name:            character.Name,
+                Role:            character.Role,
+                Age:             int32(character.Age),
+                Appearance:      character.Appearance,
+                Background:      character.Background,
+                Motivation:      character.Motivation,
+                Flaws:           character.Flaws,
+                SpeechTone:      character.SpeechTone,
+                Secrets:         character.Secrets,
+                RelationshipMap: character.RelationshipMap,
+        }
+}</span>
+
+func convertOutlineToProto(outline *models.Outline) *pb.Outline <span class="cov0" title="0">{
+        pbOutline := &amp;pb.Outline{
+                Id:        outline.ID,
+                ProjectId: outline.ProjectID,
+        }
+
+        if len(outline.Chapters) &gt; 0 </span><span class="cov0" title="0">{
+                pbOutline.Chapters = make([]*pb.ChapterOutline, len(outline.Chapters))
+                for i, chapter := range outline.Chapters </span><span class="cov0" title="0">{
+                        pbOutline.Chapters[i] = &amp;pb.ChapterOutline{
+                                Index:          int32(chapter.Index),
+                                Title:          chapter.Title,
+                                Summary:        chapter.Summary,
+                                Goal:           chapter.Goal,
+                                TwistHint:      chapter.TwistHint,
+                                ImportantItems: chapter.ImportantItems,
+                        }
+                }</span>
+        }
+
+        <span class="cov0" title="0">return pbOutline</span>
+}
+
+func convertChapterToProto(chapter *models.Chapter) *pb.Chapter <span class="cov0" title="0">{
+        return &amp;pb.Chapter{
+                Id:         chapter.ID,
+                ProjectId:  chapter.ProjectID,
+                Index:      int32(chapter.Index),
+                Title:      chapter.Title,
+                Summary:    chapter.Summary,
+                RawContent: chapter.RawContent,
+                WordCount:  int32(chapter.WordCount),
+                Status:     chapter.Status,
+                CreatedAt:  timestamppb.New(chapter.CreatedAt),
+                UpdatedAt:  timestamppb.New(chapter.UpdatedAt),
+        }
+}</span>
+
+func convertContextFromProto(pbContext *pb.GenerationContext) *models.GenerationContext <span class="cov0" title="0">{
+        if pbContext == nil </span><span class="cov0" title="0">{
+                return &amp;models.GenerationContext{}
+        }</span>
+        
+        <span class="cov0" title="0">context := &amp;models.GenerationContext{
+                PreviousSummary: pbContext.PreviousSummary,
+                StyleExamples:   pbContext.StyleExamples,
+        }
+
+        if len(pbContext.Characters) &gt; 0 </span><span class="cov0" title="0">{
+                context.Characters = make([]*models.Character, len(pbContext.Characters))
+                for i, char := range pbContext.Characters </span><span class="cov0" title="0">{
+                        context.Characters[i] = convertCharacterFromProto(char)
+                }</span>
+        }
+
+        <span class="cov0" title="0">if len(pbContext.Timeline) &gt; 0 </span><span class="cov0" title="0">{
+                context.Timeline = make([]*models.TimelineEvent, len(pbContext.Timeline))
+                for i, event := range pbContext.Timeline </span><span class="cov0" title="0">{
+                        context.Timeline[i] = &amp;models.TimelineEvent{
+                                Timestamp:   event.Timestamp,
+                                Event:       event.Event,
+                                Description: event.Description,
+                        }
+                }</span>
+        }
+
+        <span class="cov0" title="0">if len(pbContext.Props) &gt; 0 </span><span class="cov0" title="0">{
+                context.Props = make([]*models.PropItem, len(pbContext.Props))
+                for i, prop := range pbContext.Props </span><span class="cov0" title="0">{
+                        context.Props[i] = &amp;models.PropItem{
+                                Name:        prop.Name,
+                                Description: prop.Description,
+                                Location:    prop.Location,
+                        }
+                }</span>
+        }
+
+        <span class="cov0" title="0">return context</span>
+}
+
+func convertWorldViewFromProto(pbWorldView *pb.WorldView) *models.WorldView <span class="cov0" title="0">{
+        return &amp;models.WorldView{
+                Title:        pbWorldView.Title,
+                Synopsis:     pbWorldView.Synopsis,
+                Setting:      pbWorldView.Setting,
+                KeyRules:     pbWorldView.KeyRules,
+                ToneExamples: pbWorldView.ToneExamples,
+                Themes:       pbWorldView.Themes,
+        }
+}</span>
+
+func convertCharacterFromProto(pbCharacter *pb.Character) *models.Character <span class="cov0" title="0">{
+        return &amp;models.Character{
+                ID:              pbCharacter.Id,
+                ProjectID:       pbCharacter.ProjectId,
+                Name:            pbCharacter.Name,
+                Role:            pbCharacter.Role,
+                Age:             int(pbCharacter.Age),
+                Appearance:      pbCharacter.Appearance,
+                Background:      pbCharacter.Background,
+                Motivation:      pbCharacter.Motivation,
+                Flaws:           pbCharacter.Flaws,
+                SpeechTone:      pbCharacter.SpeechTone,
+                Secrets:         pbCharacter.Secrets,
+                RelationshipMap: pbCharacter.RelationshipMap,
+        }
+}</span>
+
+func convertChapterOutlineFromProto(pbOutline *pb.ChapterOutline) *models.ChapterOutline <span class="cov0" title="0">{
+        if pbOutline == nil </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov0" title="0">return &amp;models.ChapterOutline{
+                Index:          int(pbOutline.Index),
+                Title:          pbOutline.Title,
+                Summary:        pbOutline.Summary,
+                Goal:           pbOutline.Goal,
+                TwistHint:      pbOutline.TwistHint,
+                ImportantItems: pbOutline.ImportantItems,
+        }</span>
+}
+
+// generateID 生成唯一ID
+func generateID() string <span class="cov8" title="1">{
+        return fmt.Sprintf("%d", time.Now().UnixNano())
+}</span>
+
+// SwitchModel 切换AI模型
+func (s *NovelService) SwitchModel(ctx context.Context, req *pb.SwitchModelRequest) (*pb.SwitchModelResponse, error) <span class="cov0" title="0">{
+        err := s.modelSwitcher.SwitchModel(ctx, req.ModelName)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;pb.SwitchModelResponse{
+                        Success: false,
+                        Message: fmt.Sprintf("切换模型失败: %v", err),
+                }, nil
+        }</span>
+
+        <span class="cov0" title="0">currentModel := s.modelSwitcher.GetCurrentModel()
+        return &amp;pb.SwitchModelResponse{
+                Success:      true,
+                Message:      "模型切换成功",
+                CurrentModel: currentModel,
+        }, nil</span>
+}
+
+// ListModels 获取可用模型列表
+func (s *NovelService) ListModels(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) <span class="cov0" title="0">{
+        models := s.modelSwitcher.ListModels()
+        currentModel := s.modelSwitcher.GetCurrentModel()
+
+        var pbModels []*pb.ModelInfo
+        for _, modelName := range models </span><span class="cov0" title="0">{
+                pbModels = append(pbModels, &amp;pb.ModelInfo{
+                        Name:        modelName,
+                        Provider:    "deepseek", // 这里可以从配置中获取
+                        Model:       modelName,
+                        Description: fmt.Sprintf("Model: %s", modelName),
+                        Available:   true, // 这里可以添加实际的可用性检查
+                })
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.ListModelsResponse{
+                Models:       pbModels,
+                CurrentModel: currentModel,
+        }, nil</span>
+}
+
+// GetStats 获取统计信息
+func (s *NovelService) GetStats(ctx context.Context, req *pb.GetStatsRequest) (*pb.GetStatsResponse, error) <span class="cov0" title="0">{
+        // 获取项目统计信息
+        projects, total, err := s.uc.ListProjects(ctx, 1, 1000) // 获取所有项目
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // 计算统计信息
+        <span class="cov0" title="0">completedCount := 0
+        totalWords := int64(0)
+        monthlyWords := int64(0)
+
+        currentTime := time.Now()
+        currentMonth := currentTime.Month()
+        currentYear := currentTime.Year()
+
+        for _, project := range projects </span><span class="cov0" title="0">{
+                // 统计已完成项目
+                if project.Status == "completed" </span><span class="cov0" title="0">{
+                        completedCount++
+                }</span>
+
+                // 统计总字数和本月字数
+                <span class="cov0" title="0">if project.Chapters != nil </span><span class="cov0" title="0">{
+                        for _, chapter := range project.Chapters </span><span class="cov0" title="0">{
+                                totalWords += int64(chapter.WordCount)
+
+                                // 检查是否为本月创建的章节
+                                if chapter.CreatedAt.Month() == currentMonth &amp;&amp; chapter.CreatedAt.Year() == currentYear </span><span class="cov0" title="0">{
+                                        monthlyWords += int64(chapter.WordCount)
+                                }</span>
+                        }
+                }
+        }
+
+        <span class="cov0" title="0">return &amp;pb.GetStatsResponse{
+                Stats: &amp;pb.ProjectStats{
+                        TotalProjects:     int32(total),
+                        CompletedProjects: int32(completedCount),
+                        TotalWords:        totalWords,
+                        MonthlyWords:      monthlyWords,
+                },
+        }, nil</span>
+}
+
+// convertLLMOptionsFromProto 将protobuf LLM选项转换为LLM选项
+func convertLLMOptionsFromProto(pbOptions *pb.LLMOptions) *llm.GenerateOptions <span class="cov0" title="0">{
+        if pbOptions == nil </span><span class="cov0" title="0">{
+                return llm.DefaultOptions()
+        }</span>
+
+        <span class="cov0" title="0">options := &amp;llm.GenerateOptions{
+                Temperature:      float64(pbOptions.Temperature),
+                TopP:             float64(pbOptions.TopP),
+                MaxTokens:        int(pbOptions.MaxTokens),
+                FrequencyPenalty: float64(pbOptions.FrequencyPenalty),
+                PresencePenalty:  float64(pbOptions.PresencePenalty),
+                RetryCount:       2, // 默认重试次数
+        }
+
+        // 设置默认值
+        if options.Temperature == 0 </span><span class="cov0" title="0">{
+                options.Temperature = 0.35
+        }</span>
+        <span class="cov0" title="0">if options.TopP == 0 </span><span class="cov0" title="0">{
+                options.TopP = 0.9
+        }</span>
+        <span class="cov0" title="0">if options.MaxTokens == 0 </span><span class="cov0" title="0">{
+                options.MaxTokens = 2000
+        }</span>
+
+        <span class="cov0" title="0">return options</span>
+}
+
+// convertGenerateOptionsFromProto 将protobuf生成选项转换为编排器选项
+func convertGenerateOptionsFromProto(pbOptions *pb.GenerateOptions) *orchestrator.GenerateOptions <span class="cov0" title="0">{
+        if pbOptions == nil </span><span class="cov0" title="0">{
+                return &amp;orchestrator.GenerateOptions{
+                        MaxChapters:      20,
+                        WordsPerChapter:  3000,
+                        PolishEnabled:    true,
+                        ConsistencyCheck: true,
+                        LLMOptions:       llm.DefaultOptions(),
+                }
+        }</span>
+
+        <span class="cov0" title="0">return &amp;orchestrator.GenerateOptions{
+                MaxChapters:      int(pbOptions.MaxChapters),
+                WordsPerChapter:  int(pbOptions.WordsPerChapter),
+                PolishEnabled:    pbOptions.PolishEnabled,
+                ConsistencyCheck: pbOptions.ConsistencyCheck,
+                LLMOptions:       convertLLMOptionsFromProto(pbOptions.LlmOptions),
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package service
+
+import (
+        "context"
+        "testing"
+        "time"
+
+        "backend/internal/pkg/models"
+        "github.com/stretchr/testify/assert"
+)
+
+// TestHelper 提供测试辅助功能
+type TestHelper struct {
+        t *testing.T
+}
+
+// NewTestHelper 创建测试辅助器
+func NewTestHelper(t *testing.T) *TestHelper <span class="cov0" title="0">{
+        return &amp;TestHelper{t: t}
+}</span>
+
+// AssertNoError 断言没有错误
+func (h *TestHelper) AssertNoError(err error) <span class="cov0" title="0">{
+        assert.NoError(h.t, err)
+}</span>
+
+// AssertError 断言有错误
+func (h *TestHelper) AssertError(err error) <span class="cov0" title="0">{
+        assert.Error(h.t, err)
+}</span>
+
+// AssertEqual 断言相等
+func (h *TestHelper) AssertEqual(expected, actual interface{}) <span class="cov0" title="0">{
+        assert.Equal(h.t, expected, actual)
+}</span>
+
+// AssertNotNil 断言不为空
+func (h *TestHelper) AssertNotNil(obj interface{}) <span class="cov0" title="0">{
+        assert.NotNil(h.t, obj)
+}</span>
+
+// AssertNil 断言为空
+func (h *TestHelper) AssertNil(obj interface{}) <span class="cov0" title="0">{
+        assert.Nil(h.t, obj)
+}</span>
+
+// CreateTestContext 创建测试上下文
+func CreateTestContext() context.Context <span class="cov0" title="0">{
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        _ = cancel // 在实际测试中应该调用 cancel
+        return ctx
+}</span>
+
+// CreateTestProject 创建测试项目
+func CreateTestProject() *models.NovelProject <span class="cov0" title="0">{
+        return &amp;models.NovelProject{
+                ID:             "test-project-1",
+                Title:          "测试小说",
+                Description:    "这是一个测试小说项目",
+                Genre:          "现代都市",
+                TargetAudience: "青年",
+                Tone:           "温情",
+                Themes:         []string{"友情", "成长"},
+                Status:         "draft",
+                CreatedAt:      time.Now(),
+                UpdatedAt:      time.Now(),
+        }
+}</span>
+
+// CreateTestChapter 创建测试章节
+func CreateTestChapter() *models.Chapter <span class="cov0" title="0">{
+        return &amp;models.Chapter{
+                ID:              "test-chapter-1",
+                ProjectID:       "test-project-1",
+                Index:           1,
+                Title:           "第一章：开始",
+                RawContent:      "这是第一章的原始内容...",
+                PolishedContent: "这是第一章的润色内容...",
+                Summary:         "第一章摘要",
+                WordCount:       1000,
+                Status:          "completed",
+                CreatedAt:       time.Now(),
+                UpdatedAt:       time.Now(),
+        }
+}</span>
+
+// CreateTestVideoScript 创建测试视频脚本
+func CreateTestVideoScript() *models.VideoScript <span class="cov0" title="0">{
+        return &amp;models.VideoScript{
+                ID:        "test-script-1",
+                ProjectID: "test-project-1",
+                ChapterID: "test-chapter-1",
+                Title:     "第一章视频脚本",
+                Platform:  "tiktok",
+                Duration:  60,
+                Style:     "悬疑",
+                Scenes: []*models.VideoScriptScene{
+                        {
+                                Index:             1,
+                                Duration:          10,
+                                ShotType:          "close-up",
+                                VisualDescription: "主角特写镜头",
+                                Narration:         "故事开始了...",
+                                Subtitle:          "你好，世界！",
+                                SoundEffects:      []string{"背景音乐"},
+                                Transition:        "淡入",
+                                KeyElements:       []string{"主角", "城市背景"},
+                        },
+                },
+                Hashtags:    []string{"#小说", "#短视频"},
+                Description: "第一章视频脚本描述",
+                Status:      "draft",
+                CreatedAt:   time.Now(),
+                UpdatedAt:   time.Now(),
+        }
+}</span>
+
+// BenchmarkHelper 性能测试辅助器
+type BenchmarkHelper struct {
+        b *testing.B
+}
+
+// NewBenchmarkHelper 创建性能测试辅助器
+func NewBenchmarkHelper(b *testing.B) *BenchmarkHelper <span class="cov0" title="0">{
+        return &amp;BenchmarkHelper{b: b}
+}</span>
+
+// ResetTimer 重置计时器
+func (h *BenchmarkHelper) ResetTimer() <span class="cov0" title="0">{
+        h.b.ResetTimer()
+}</span>
+
+// StartTimer 开始计时
+func (h *BenchmarkHelper) StartTimer() <span class="cov0" title="0">{
+        h.b.StartTimer()
+}</span>
+
+// StopTimer 停止计时
+func (h *BenchmarkHelper) StopTimer() <span class="cov0" title="0">{
+        h.b.StopTimer()
+}</span>
+
+// AssertResponseTime 断言响应时间在合理范围内
+func AssertResponseTime(t *testing.T, start time.Time, maxDuration time.Duration) <span class="cov0" title="0">{
+        elapsed := time.Since(start)
+        assert.True(t, elapsed &lt;= maxDuration, 
+                "Response time %v exceeds maximum allowed duration %v", elapsed, maxDuration)
+}</span>
+
+// TableTestCase 表驱动测试用例结构
+type TableTestCase struct {
+        Name        string
+        Input       interface{}
+        Expected    interface{}
+        ExpectedErr bool
+        Setup       func()
+        Cleanup     func()
+}
+
+// RunTableTests 运行表驱动测试
+func RunTableTests(t *testing.T, testCases []TableTestCase, testFunc func(tc TableTestCase)) <span class="cov0" title="0">{
+        for _, tc := range testCases </span><span class="cov0" title="0">{
+                t.Run(tc.Name, func(t *testing.T) </span><span class="cov0" title="0">{
+                        if tc.Setup != nil </span><span class="cov0" title="0">{
+                                tc.Setup()
+                        }</span>
+                        
+                        <span class="cov0" title="0">testFunc(tc)
+                        
+                        if tc.Cleanup != nil </span><span class="cov0" title="0">{
+                                tc.Cleanup()
+                        }</span>
+                })
+        }
+}</pre>
+		
+		<pre class="file" id="file10" style="display: none">package service
+
+import (
+        "context"
+        "time"
+
+        pb "backend/api/video_script/v1"
+        "backend/internal/agent/video_script"
+        "backend/internal/biz"
+        "backend/internal/pkg/models"
+
+        "github.com/go-kratos/kratos/v2/log"
+)
+
+// VideoScriptService 短视频脚本服务
+type VideoScriptService struct {
+        pb.UnimplementedVideoScriptServiceServer
+        bizUC      *biz.VideoScriptUseCase
+        videoAgent video_script.VideoScriptAgent
+        logger     *log.Helper
+}
+
+// NewVideoScriptService 创建短视频脚本服务
+func NewVideoScriptService(
+        bizUC *biz.VideoScriptUseCase,
+        videoAgent video_script.VideoScriptAgent,
+        logger log.Logger,
+) *VideoScriptService <span class="cov8" title="1">{
+        return &amp;VideoScriptService{
+                bizUC:      bizUC,
+                videoAgent: videoAgent,
+                logger:     log.NewHelper(logger),
+        }
+}</span>
+
+// GenerateVideoScript 生成短视频脚本
+func (s *VideoScriptService) GenerateVideoScript(ctx context.Context, req *pb.GenerateVideoScriptRequest) (*pb.GenerateVideoScriptResponse, error) <span class="cov8" title="1">{
+        s.logger.WithContext(ctx).Infof("Generating video script for project: %s, chapter: %s", req.ProjectId, req.ChapterId)
+
+        // 调用 Agent 生成脚本
+        agentReq := &amp;video_script.GenerateVideoScriptRequest{
+                ProjectID:      req.ProjectId,
+                ChapterID:      req.ChapterId,
+                ChapterTitle:   req.ChapterTitle,
+                ChapterContent: req.ChapterContent,
+                Platform:       req.Platform,
+                Duration:       int(req.Duration),
+                Style:          req.Style,
+                Requirements:   req.Requirements,
+        }
+
+        agentResp, err := s.videoAgent.GenerateVideoScript(ctx, agentReq)
+        if err != nil </span><span class="cov8" title="1">{
+                s.logger.WithContext(ctx).Errorf("Failed to generate video script: %v", err)
+                return nil, err
+        }</span>
+
+        // 保存到数据库
+        <span class="cov8" title="1">savedScript, err := s.bizUC.SaveVideoScript(ctx, agentResp.VideoScript)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to save video script: %v", err)
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;pb.GenerateVideoScriptResponse{
+                VideoScript: convertVideoScriptToProto(savedScript),
+        }, nil</span>
+}
+
+// OptimizeVideoScript 优化视频脚本
+func (s *VideoScriptService) OptimizeVideoScript(ctx context.Context, req *pb.OptimizeVideoScriptRequest) (*pb.OptimizeVideoScriptResponse, error) <span class="cov0" title="0">{
+        s.logger.WithContext(ctx).Infof("Optimizing video script: %s", req.ScriptId)
+
+        // 获取原始脚本
+        originalScript, err := s.bizUC.GetVideoScript(ctx, req.ScriptId)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to get video script: %v", err)
+                return nil, err
+        }</span>
+
+        // 调用 Agent 优化脚本
+        <span class="cov0" title="0">agentReq := &amp;video_script.OptimizeVideoScriptRequest{
+                VideoScript:              originalScript,
+                OptimizationRequirements: req.Requirements,
+        }
+
+        agentResp, err := s.videoAgent.OptimizeVideoScript(ctx, agentReq)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to optimize video script: %v", err)
+                return nil, err
+        }</span>
+
+        // 更新数据库
+        <span class="cov0" title="0">updatedScript, err := s.bizUC.UpdateVideoScript(ctx, agentResp.VideoScript)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to update video script: %v", err)
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.OptimizeVideoScriptResponse{
+                VideoScript: convertVideoScriptToProto(updatedScript),
+        }, nil</span>
+}
+
+// GeneratePlatformVariants 生成平台变体
+func (s *VideoScriptService) GeneratePlatformVariants(ctx context.Context, req *pb.GeneratePlatformVariantsRequest) (*pb.GeneratePlatformVariantsResponse, error) <span class="cov0" title="0">{
+        s.logger.WithContext(ctx).Infof("Generating platform variants for script: %s", req.BaseScriptId)
+
+        // 获取基础脚本
+        baseScript, err := s.bizUC.GetVideoScript(ctx, req.BaseScriptId)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to get base video script: %v", err)
+                return nil, err
+        }</span>
+
+        // 调用 Agent 生成平台变体
+        <span class="cov0" title="0">agentReq := &amp;video_script.GeneratePlatformVariantsRequest{
+                BaseScript:      baseScript,
+                TargetPlatforms: req.TargetPlatforms,
+        }
+
+        agentResp, err := s.videoAgent.GeneratePlatformVariants(ctx, agentReq)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to generate platform variants: %v", err)
+                return nil, err
+        }</span>
+
+        // 保存变体到数据库
+        <span class="cov0" title="0">var savedVariants []*models.VideoScript
+        for _, variant := range agentResp.Variants </span><span class="cov0" title="0">{
+                savedVariant, err := s.bizUC.SaveVideoScript(ctx, variant)
+                if err != nil </span><span class="cov0" title="0">{
+                        s.logger.WithContext(ctx).Errorf("Failed to save variant: %v", err)
+                        continue</span>
+                }
+                <span class="cov0" title="0">savedVariants = append(savedVariants, savedVariant)</span>
+        }
+
+        // 转换为 protobuf 格式
+        <span class="cov0" title="0">var pbVariants []*pb.VideoScript
+        for _, variant := range savedVariants </span><span class="cov0" title="0">{
+                pbVariants = append(pbVariants, convertVideoScriptToProto(variant))
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.GeneratePlatformVariantsResponse{
+                Variants: pbVariants,
+        }, nil</span>
+}
+
+// ListVideoScripts 获取视频脚本列表
+func (s *VideoScriptService) ListVideoScripts(ctx context.Context, req *pb.ListVideoScriptsRequest) (*pb.ListVideoScriptsResponse, error) <span class="cov8" title="1">{
+        s.logger.WithContext(ctx).Infof("Listing video scripts for project: %s", req.ProjectId)
+
+        // 从数据库获取脚本列表
+        page := int(req.Page)
+        pageSize := int(req.PageSize)
+        if page &lt;= 0 </span><span class="cov0" title="0">{
+                page = 1
+        }</span>
+        <span class="cov8" title="1">if pageSize &lt;= 0 </span><span class="cov0" title="0">{
+                pageSize = 10
+        }</span>
+
+        <span class="cov8" title="1">scripts, totalCount, err := s.bizUC.ListVideoScripts(ctx, req.ProjectId, page, pageSize)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to list video scripts: %v", err)
+                return nil, err
+        }</span>
+
+        // 转换为 protobuf 格式
+        <span class="cov8" title="1">var pbScripts []*pb.VideoScript
+        for _, script := range scripts </span><span class="cov8" title="1">{
+                pbScripts = append(pbScripts, convertVideoScriptToProto(script))
+        }</span>
+
+        <span class="cov8" title="1">return &amp;pb.ListVideoScriptsResponse{
+                Scripts: pbScripts,
+                Total:   int32(totalCount),
+        }, nil</span>
+}
+
+// GetVideoScript 获取视频脚本详情
+func (s *VideoScriptService) GetVideoScript(ctx context.Context, req *pb.GetVideoScriptRequest) (*pb.GetVideoScriptResponse, error) <span class="cov8" title="1">{
+        s.logger.WithContext(ctx).Infof("Getting video script: %s", req.ScriptId)
+
+        // 从数据库获取脚本详情
+        script, err := s.bizUC.GetVideoScript(ctx, req.ScriptId)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to get video script: %v", err)
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;pb.GetVideoScriptResponse{
+                VideoScript: convertVideoScriptToProto(script),
+        }, nil</span>
+}
+
+// DeleteVideoScript 删除视频脚本
+func (s *VideoScriptService) DeleteVideoScript(ctx context.Context, req *pb.DeleteVideoScriptRequest) (*pb.DeleteVideoScriptResponse, error) <span class="cov0" title="0">{
+        s.logger.WithContext(ctx).Infof("Deleting video script: %s", req.ScriptId)
+
+        // 从数据库删除脚本
+        err := s.bizUC.DeleteVideoScript(ctx, req.ScriptId)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.WithContext(ctx).Errorf("Failed to delete video script: %v", err)
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;pb.DeleteVideoScriptResponse{
+                Success: true,
+        }, nil</span>
+}
+
+// convertVideoScriptToProto 将业务模型转换为 protobuf 模型
+func convertVideoScriptToProto(script *models.VideoScript) *pb.VideoScript <span class="cov8" title="1">{
+        if script == nil </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">pbScript := &amp;pb.VideoScript{
+                Id:          script.ID,
+                ProjectId:   script.ProjectID,
+                ChapterId:   script.ChapterID,
+                Title:       script.Title,
+                Duration:    int32(script.Duration),
+                Platform:    script.Platform,
+                Style:       script.Style,
+                Description: script.Description,
+                Status:      script.Status,
+                CreatedAt:   script.CreatedAt.Unix(),
+                UpdatedAt:   script.UpdatedAt.Unix(),
+                Hashtags:    script.Hashtags,
+        }
+
+        // 转换场景
+        if script.Scenes != nil </span><span class="cov0" title="0">{
+                pbScript.Scenes = make([]*pb.VideoScene, len(script.Scenes))
+                for i, scene := range script.Scenes </span><span class="cov0" title="0">{
+                        pbScript.Scenes[i] = &amp;pb.VideoScene{
+                                Index:             int32(scene.Index),
+                                Duration:          int32(scene.Duration),
+                                ShotType:          scene.ShotType,
+                                VisualDescription: scene.VisualDescription,
+                                Narration:         scene.Narration,
+                                Subtitle:          scene.Subtitle,
+                                SoundEffects:      scene.SoundEffects,
+                                Transition:        scene.Transition,
+                                KeyElements:       scene.KeyElements,
+                        }
+                }</span>
+        }
+
+        // 转换钩子
+        <span class="cov8" title="1">if script.Hooks != nil </span><span class="cov0" title="0">{
+                pbScript.Hooks = &amp;pb.VideoHooks{
+                        Opening: script.Hooks.Opening,
+                        Climax:  script.Hooks.Climax,
+                        Ending:  script.Hooks.Ending,
+                }
+        }</span>
+
+        <span class="cov8" title="1">return pbScript</span>
+}
+
+// convertVideoScriptFromProto 将 protobuf 模型转换为业务模型
+func convertVideoScriptFromProto(pbScript *pb.VideoScript) *models.VideoScript <span class="cov0" title="0">{
+        if pbScript == nil </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+
+        <span class="cov0" title="0">script := &amp;models.VideoScript{
+                ID:          pbScript.Id,
+                ProjectID:   pbScript.ProjectId,
+                ChapterID:   pbScript.ChapterId,
+                Title:       pbScript.Title,
+                Duration:    int(pbScript.Duration),
+                Platform:    pbScript.Platform,
+                Style:       pbScript.Style,
+                Description: pbScript.Description,
+                Status:      pbScript.Status,
+                Hashtags:    pbScript.Hashtags,
+        }
+
+        // 转换时间戳
+        if pbScript.CreatedAt &gt; 0 </span><span class="cov0" title="0">{
+                script.CreatedAt = time.Unix(pbScript.CreatedAt, 0)
+        }</span>
+        <span class="cov0" title="0">if pbScript.UpdatedAt &gt; 0 </span><span class="cov0" title="0">{
+                script.UpdatedAt = time.Unix(pbScript.UpdatedAt, 0)
+        }</span>
+
+        // 转换场景
+        <span class="cov0" title="0">if pbScript.Scenes != nil </span><span class="cov0" title="0">{
+                script.Scenes = make([]*models.VideoScriptScene, len(pbScript.Scenes))
+                for i, pbScene := range pbScript.Scenes </span><span class="cov0" title="0">{
+                        script.Scenes[i] = &amp;models.VideoScriptScene{
+                                Index:             int(pbScene.Index),
+                                Duration:          int(pbScene.Duration),
+                                ShotType:          pbScene.ShotType,
+                                VisualDescription: pbScene.VisualDescription,
+                                Narration:         pbScene.Narration,
+                                Subtitle:          pbScene.Subtitle,
+                                SoundEffects:      pbScene.SoundEffects,
+                                Transition:        pbScene.Transition,
+                                KeyElements:       pbScene.KeyElements,
+                        }
+                }</span>
+        }
+
+        // 转换钩子
+        <span class="cov0" title="0">if pbScript.Hooks != nil </span><span class="cov0" title="0">{
+                script.Hooks = &amp;models.VideoHooks{
+                        Opening: pbScript.Hooks.Opening,
+                        Climax:  pbScript.Hooks.Climax,
+                        Ending:  pbScript.Hooks.Ending,
+                }
+        }</span>
+
+        <span class="cov0" title="0">return script</span>
+}</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
