@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-kratos/kratos/v2/log"
 	pb "backend/api/novel/v1"
 	"backend/internal/agent/chapter"
 	"backend/internal/agent/character"
@@ -20,6 +19,7 @@ import (
 	"backend/internal/pkg/llm"
 	"backend/internal/pkg/models"
 	"backend/internal/pkg/vector"
+	"github.com/go-kratos/kratos/v2/log"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -171,7 +171,7 @@ func (s *NovelService) UpdateProject(ctx context.Context, req *pb.UpdateProjectR
 		return nil, err
 	}
 
-	s.log.Infof("Original project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v", 
+	s.log.Infof("Original project: Title=%s, Description=%s, Genre=%s, TargetAudience=%s, Tone=%s, Themes=%v",
 		project.Title, project.Description, project.Genre, project.TargetAudience, project.Tone, project.Themes)
 
 	// 更新项目字段 - 直接更新所有字段，允许设置为空值
@@ -345,19 +345,36 @@ func (s *NovelService) UpdateChapterOutline(ctx context.Context, req *pb.UpdateC
 		return nil, fmt.Errorf("project outline not found")
 	}
 
-	// 查找要更新的章节
-	chapterIndex := int(req.ChapterIndex)
-	if chapterIndex < 0 || chapterIndex >= len(project.Outline.Chapters) {
-		return nil, fmt.Errorf("chapter index out of range")
+	// 查找要更新的章节 - 按章节的Index字段查找，而不是数组索引
+	targetChapterIndex := int(req.ChapterIndex)
+	var foundIndex = -1
+	
+	for i, chapter := range project.Outline.Chapters {
+		if chapter.Index == targetChapterIndex {
+			foundIndex = i
+			break
+		}
+	}
+	
+	if foundIndex == -1 {
+		return nil, fmt.Errorf("chapter with index %d not found", targetChapterIndex)
 	}
 
-	// 更新章节大纲
-	chapter := project.Outline.Chapters[chapterIndex]
-	chapter.Title = req.Title
-	chapter.Summary = req.Summary
-	chapter.Goal = req.Goal
-	chapter.TwistHint = req.TwistHint
-	chapter.ImportantItems = req.ImportantItems
+	// 更新章节大纲 - 创建新的 ChapterOutline 对象
+	updatedChapter := &models.ChapterOutline{
+		Index:          targetChapterIndex,
+		Title:          req.Title,
+		Summary:        req.Summary,
+		Goal:           req.Goal,
+		TwistHint:      req.TwistHint,
+		ImportantItems: req.ImportantItems,
+	}
+
+	// 替换到找到的位置
+	project.Outline.Chapters[foundIndex] = updatedChapter
+
+	// 添加日志以便调试
+	s.log.WithContext(ctx).Infof("Updated chapter %d: %s", req.ChapterIndex, req.Title)
 
 	// 保存更新后的项目
 	_, err = s.uc.UpdateProject(ctx, project)
@@ -1056,7 +1073,7 @@ func convertLLMOptionsFromProto(pbOptions *pb.LLMOptions) *llm.GenerateOptions {
 	if pbOptions == nil {
 		return llm.DefaultOptions()
 	}
-	
+
 	options := &llm.GenerateOptions{
 		Temperature:      float64(pbOptions.Temperature),
 		TopP:             float64(pbOptions.TopP),
@@ -1065,7 +1082,7 @@ func convertLLMOptionsFromProto(pbOptions *pb.LLMOptions) *llm.GenerateOptions {
 		PresencePenalty:  float64(pbOptions.PresencePenalty),
 		RetryCount:       2, // 默认重试次数
 	}
-	
+
 	// 设置默认值
 	if options.Temperature == 0 {
 		options.Temperature = 0.35
@@ -1076,7 +1093,7 @@ func convertLLMOptionsFromProto(pbOptions *pb.LLMOptions) *llm.GenerateOptions {
 	if options.MaxTokens == 0 {
 		options.MaxTokens = 2000
 	}
-	
+
 	return options
 }
 
@@ -1091,7 +1108,7 @@ func convertGenerateOptionsFromProto(pbOptions *pb.GenerateOptions) *orchestrato
 			LLMOptions:       llm.DefaultOptions(),
 		}
 	}
-	
+
 	return &orchestrator.GenerateOptions{
 		MaxChapters:      int(pbOptions.MaxChapters),
 		WordsPerChapter:  int(pbOptions.WordsPerChapter),

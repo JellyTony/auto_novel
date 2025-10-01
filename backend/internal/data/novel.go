@@ -185,11 +185,20 @@ func (r *novelRepo) UpdateProject(ctx context.Context, project *models.NovelProj
 	// 更新时间戳
 	dbProject.UpdatedAt = time.Now()
 
-	if err := r.data.db.WithContext(ctx).Where("id = ?", project.ID).Updates(dbProject).Error; err != nil {
+	// 使用 Select 明确指定要更新的字段，包括 outline
+	if err := r.data.db.WithContext(ctx).Model(&NovelProject{}).Where("id = ?", project.ID).
+		Select("title", "description", "genre", "target_audience", "tone", "themes", "world_view", "characters", "outline", "config", "updated_at").
+		Updates(dbProject).Error; err != nil {
 		return nil, fmt.Errorf("failed to update project: %w", err)
 	}
 
-	return r.modelToEntity(dbProject)
+	// 重新从数据库获取更新后的数据
+	var updatedProject NovelProject
+	if err := r.data.db.WithContext(ctx).Where("id = ?", project.ID).First(&updatedProject).Error; err != nil {
+		return nil, fmt.Errorf("failed to get updated project: %w", err)
+	}
+
+	return r.modelToEntity(&updatedProject)
 }
 
 // GetProject 获取项目

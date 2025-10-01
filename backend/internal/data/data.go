@@ -10,6 +10,7 @@ import (
 	"github.com/google/wire"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // ProviderSet is data providers.
@@ -31,8 +32,10 @@ func NewData(c *conf.Data, l log.Logger) (*Data, func(), error) {
 		return nil, nil, err
 	}
 
-	// 连接SQLite数据库
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	// 连接SQLite数据库，启用SQL日志打印
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		helper.Errorf("failed to connect database: %v", err)
 		return nil, nil, err
