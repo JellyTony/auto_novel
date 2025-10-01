@@ -116,10 +116,15 @@ export function useApiList<T = any>(options: UseApiOptions = {}) {
     setState({ data: [], loading: false, error: null });
   }, []);
 
+  const setData = useCallback((data: T[]) => {
+    setState(prev => ({ ...prev, data }));
+  }, []);
+
   return {
     ...state,
     execute,
     reset,
+    setData,
   };
 }
 
@@ -169,6 +174,37 @@ export function useApiMutation<TData = any, TVariables = any>(
     }
   }, [options]);
 
+  const execute = useCallback(async (variables: TVariables) => {
+    setState({ loading: true, error: null });
+    
+    try {
+      const data = await (options as any).apiCall(variables);
+      setState({ loading: false, error: null });
+      
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+      
+      return data;
+    } catch (error) {
+      const errorMessage = error instanceof APIError 
+        ? error.message 
+        : '操作失败，请稍后重试';
+      
+      setState({ loading: false, error: errorMessage });
+      
+      if (options.onError && error instanceof APIError) {
+        options.onError(error);
+      }
+      
+      if (options.showErrorToast !== false) {
+        console.error('API Error:', errorMessage);
+      }
+      
+      throw error;
+    }
+  }, [options]);
+
   const reset = useCallback(() => {
     setState({ loading: false, error: null });
   }, []);
@@ -176,24 +212,21 @@ export function useApiMutation<TData = any, TVariables = any>(
   return {
     ...state,
     mutate,
+    execute,
     reset,
   };
 }
 
-// 错误处理工具函数
 export function getErrorMessage(error: unknown): string {
   if (error instanceof APIError) {
     return error.message;
   }
-  
   if (error instanceof Error) {
     return error.message;
   }
-  
   return '未知错误';
 }
 
-// 重试工具函数
 export async function retryApiCall<T>(
   apiCall: () => Promise<T>,
   maxRetries: number = 3,
@@ -205,14 +238,11 @@ export async function retryApiCall<T>(
     try {
       return await apiCall();
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown error');
+      lastError = error instanceof Error ? error : new Error(String(error));
       
-      if (i === maxRetries) {
-        throw lastError;
+      if (i < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
       }
-      
-      // 等待指定时间后重试
-      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
     }
   }
   

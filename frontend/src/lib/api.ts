@@ -192,20 +192,21 @@ export interface GenerateCharactersResponse {
   characters: Character[];
 }
 
-// 大纲相关类型
+// 大纲相关类型 - 修复与后端匹配
 export interface ChapterOutline {
-  chapter_number: number;
+  index: number;
   title: string;
   summary: string;
-  key_events: string[];
-  characters_involved: string[];
-  word_count_target: number;
+  goal: string;
+  twist_hint: string;
+  important_items: string[];
 }
 
 export interface Outline {
   id: string;
   project_id: string;
   chapters: ChapterOutline[];
+  created_at?: string;
 }
 
 export interface GenerateOutlineRequest {
@@ -220,7 +221,50 @@ export interface GenerateOutlineResponse {
   outline: Outline;
 }
 
-// 章节相关类型
+// 章节操作相关类型
+export interface UpdateChapterOutlineRequest {
+  project_id: string;
+  chapter_index: number;
+  title?: string;
+  summary?: string;
+  goal?: string;
+  twist_hint?: string;
+  important_items?: string[];
+}
+
+export interface UpdateChapterOutlineResponse {
+  outline: Outline;
+}
+
+export interface DeleteChapterOutlineRequest {
+  project_id: string;
+  chapter_index: number;
+}
+
+export interface DeleteChapterOutlineResponse {
+  outline: Outline;
+}
+
+export interface ReorderChapterOutlineRequest {
+  project_id: string;
+  from_index: number;
+  to_index: number;
+}
+
+export interface ReorderChapterOutlineResponse {
+  outline: Outline;
+}
+
+export interface AddChapterOutlineRequest {
+  project_id: string;
+  chapter: Omit<ChapterOutline, 'index'>;
+  insert_at?: number;
+}
+
+export interface AddChapterOutlineResponse {
+  outline: Outline;
+}
+
 export interface Chapter {
   id: string;
   project_id: string;
@@ -491,9 +535,37 @@ export class NovelAPI {
     });
   }
 
-  // 大纲生成
+  // 大纲生成 - 修复API调用
   static async generateOutline(data: GenerateOutlineRequest): Promise<GenerateOutlineResponse> {
     return apiRequest<GenerateOutlineResponse>(`/api/v1/novel/projects/${data.project_id}/outline`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 章节大纲操作
+  static async updateChapterOutline(data: UpdateChapterOutlineRequest): Promise<UpdateChapterOutlineResponse> {
+    return apiRequest<UpdateChapterOutlineResponse>(`/api/v1/novel/projects/${data.project_id}/outline/chapters/${data.chapter_index}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async deleteChapterOutline(data: DeleteChapterOutlineRequest): Promise<DeleteChapterOutlineResponse> {
+    return apiRequest<DeleteChapterOutlineResponse>(`/api/v1/novel/projects/${data.project_id}/outline/chapters/${data.chapter_index}`, {
+      method: 'DELETE',
+    });
+  }
+
+  static async reorderChapterOutline(data: ReorderChapterOutlineRequest): Promise<ReorderChapterOutlineResponse> {
+    return apiRequest<ReorderChapterOutlineResponse>(`/api/v1/novel/projects/${data.project_id}/outline/reorder`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async addChapterOutline(data: AddChapterOutlineRequest): Promise<AddChapterOutlineResponse> {
+    return apiRequest<AddChapterOutlineResponse>(`/api/v1/novel/projects/${data.project_id}/outline/chapters`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
