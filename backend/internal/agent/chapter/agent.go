@@ -7,6 +7,7 @@ import (
 
 	"backend/internal/pkg/llm"
 	"backend/internal/pkg/models"
+	"github.com/google/wire"
 )
 
 // 请求和响应结构
@@ -42,6 +43,14 @@ type ExpandChapterResponse struct {
 	Chapter *models.Chapter `json:"chapter"`
 }
 
+// StreamCallback 流式生成回调接口
+type StreamCallback interface {
+	OnProgress(stage string, progress int) error
+	OnContent(content string) error
+	OnComplete(chapter *models.Chapter) error
+	OnError(err error) error
+}
+
 // ChapterAgent 章节生成 Agent
 type ChapterAgent struct {
 	llmClient llm.LLMClient
@@ -50,6 +59,9 @@ type ChapterAgent struct {
 
 // NewChapterAgent 创建章节生成代理
 func NewChapterAgent(llmClient llm.LLMClient) *ChapterAgent {
+	if llmClient == nil {
+		panic("llmClient cannot be nil")
+	}
 	return &ChapterAgent{
 		llmClient: llmClient,
 		templates: &llm.PromptTemplates{},
@@ -58,23 +70,46 @@ func NewChapterAgent(llmClient llm.LLMClient) *ChapterAgent {
 
 // GenerateChapter 生成章节内容
 func (a *ChapterAgent) GenerateChapter(ctx context.Context, req *GenerateChapterRequest) (*GenerateChapterResponse, error) {
+	// 添加空值检查
+	if a == nil {
+		return nil, fmt.Errorf("chapter agent is nil")
+	}
+	if a.llmClient == nil {
+		return nil, fmt.Errorf("llm client is nil")
+	}
+	if req == nil {
+		return nil, fmt.Errorf("request cannot be nil")
+	}
+	if req.ChapterOutline == nil {
+		return nil, fmt.Errorf("chapter outline cannot be nil")
+	}
+	if req.Context == nil {
+		return nil, fmt.Errorf("context cannot be nil")
+	}
+	
 	// 构建人物信息
 	charactersInfo := make([]string, len(req.Context.Characters))
 	for i, char := range req.Context.Characters {
-		charactersInfo[i] = fmt.Sprintf("姓名：%s，角色：%s，性格：%v，说话风格：%s",
-			char.Name, char.Role, char.Flaws, char.SpeechTone)
+		if char != nil {
+			charactersInfo[i] = fmt.Sprintf("姓名：%s，角色：%s，性格：%v，说话风格：%s",
+				char.Name, char.Role, char.Flaws, char.SpeechTone)
+		}
 	}
 
 	// 构建时间线信息
 	timelineInfo := make([]string, len(req.Context.Timeline))
 	for i, event := range req.Context.Timeline {
-		timelineInfo[i] = fmt.Sprintf("%s：%s", event.Timestamp, event.Event)
+		if event != nil {
+			timelineInfo[i] = fmt.Sprintf("%s：%s", event.Timestamp, event.Event)
+		}
 	}
 
 	// 构建道具信息
 	propsInfo := make([]string, len(req.Context.Props))
 	for i, prop := range req.Context.Props {
-		propsInfo[i] = fmt.Sprintf("%s：%s", prop.Name, prop.Description)
+		if prop != nil {
+			propsInfo[i] = fmt.Sprintf("%s：%s", prop.Name, prop.Description)
+		}
 	}
 
 	prompt := fmt.Sprintf(`
@@ -265,6 +300,134 @@ func (a *ChapterAgent) GenerateChapterSummary(ctx context.Context, chapter *mode
 	return summary, nil
 }
 
+// GenerateChapterStream 流式生成章节内容
+func (a *ChapterAgent) GenerateChapterStream(ctx context.Context, req *GenerateChapterRequest, callback StreamCallback) error {
+	// 发送初始进度
+	if err := callback.OnProgress("准备生成", 0); err != nil {
+		return err
+	}
+
+	// 构建人物信息
+	charactersInfo := make([]string, len(req.Context.Characters))
+	for i, char := range req.Context.Characters {
+		charactersInfo[i] = fmt.Sprintf("姓名：%s，角色：%s，性格：%v，说话风格：%s",
+			char.Name, char.Role, char.Flaws, char.SpeechTone)
+	}
+
+	// 构建时间线信息
+	timelineInfo := make([]string, len(req.Context.Timeline))
+	for i, event := range req.Context.Timeline {
+		timelineInfo[i] = fmt.Sprintf("%s：%s", event.Timestamp, event.Event)
+	}
+
+	// 构建道具信息
+	propsInfo := make([]string, len(req.Context.Props))
+	for i, prop := range req.Context.Props {
+		propsInfo[i] = fmt.Sprintf("%s：%s", prop.Name, prop.Description)
+	}
+
+	if err := callback.OnProgress("构建提示词", 10); err != nil {
+		return err
+	}
+
+	prompt := fmt.Sprintf(`
+基于以下信息生成第 %d 章的小说内容：
+
+世界观：%s
+
+主要人物：
+%s
+
+前情摘要：%s
+
+本章大纲：
+标题：%s
+概要：%s
+目标：%s
+转折点：%s
+关键道具：%v
+
+时间线：
+%s
+
+可用道具：
+%s
+
+风格示例：
+%s
+
+要求：
+1. 字数控制在 %d 字左右
+2. 符合人物性格和说话风格
+3. 推进剧情，实现本章目标
+4. 包含适当的对话和描写
+5. 体现转折点或冲突
+6. 保持与前文的连贯性
+7. 风格与示例保持一致
+
+请直接生成章节内容，不要包含任何格式标记。
+`, req.ChapterOutline.Index, formatWorldView(req.Context.WorldView),
+		joinStrings(charactersInfo, "\n"), req.Context.PreviousSummary,
+		req.ChapterOutline.Title, req.ChapterOutline.Summary,
+		req.ChapterOutline.Goal, req.ChapterOutline.TwistHint,
+		req.ChapterOutline.ImportantItems,
+		joinStrings(timelineInfo, "\n"), joinStrings(propsInfo, "\n"),
+		joinStrings(req.Context.StyleExamples, "\n\n"), req.TargetWordCount)
+
+	if err := callback.OnProgress("开始生成", 20); err != nil {
+		return err
+	}
+
+	// 模拟流式生成过程
+	content, err := a.llmClient.GenerateText(ctx, prompt, req.Options)
+	if err != nil {
+		return callback.OnError(fmt.Errorf("failed to generate chapter: %w", err))
+	}
+
+	// 模拟逐步发送内容
+	contentRunes := []rune(content)
+	chunkSize := len(contentRunes) / 10 // 分成10个块
+	if chunkSize < 1 {
+		chunkSize = 1
+	}
+
+	for i := 0; i < len(contentRunes); i += chunkSize {
+		end := i + chunkSize
+		if end > len(contentRunes) {
+			end = len(contentRunes)
+		}
+		
+		chunk := string(contentRunes[i:end])
+		if err := callback.OnContent(chunk); err != nil {
+			return err
+		}
+
+		progress := 20 + int(float64(end)/float64(len(contentRunes))*70)
+		if err := callback.OnProgress("生成中", progress); err != nil {
+			return err
+		}
+	}
+
+	// 计算字数
+	wordCount := len([]rune(strings.ReplaceAll(content, " ", "")))
+
+	chapter := &models.Chapter{
+		ProjectID:   req.ProjectID,
+		Index:       req.ChapterOutline.Index,
+		Title:       req.ChapterOutline.Title,
+		RawContent:  content,
+		Summary:     req.ChapterOutline.Summary,
+		WordCount:   wordCount,
+		Status:      "draft",
+	}
+
+	if err := callback.OnProgress("生成完成", 100); err != nil {
+		return err
+	}
+
+	return callback.OnComplete(chapter)
+}
+
 // GetCapabilities 返回代理能力描述
 func (a *ChapterAgent) GetCapabilities() map[string]interface{} {
 	return map[string]interface{}{
@@ -273,6 +436,7 @@ func (a *ChapterAgent) GetCapabilities() map[string]interface{} {
 		"description": "负责生成、优化和扩展小说章节内容",
 		"capabilities": []string{
 			"generate_chapter",
+			"generate_chapter_stream",
 			"refine_chapter",
 			"expand_chapter",
 			"generate_summary",
@@ -282,13 +446,16 @@ func (a *ChapterAgent) GetCapabilities() map[string]interface{} {
 
 // 辅助函数
 func formatWorldView(worldView *models.WorldView) string {
+	if worldView == nil {
+		return "暂无世界观设定"
+	}
 	return fmt.Sprintf("标题：%s\n简介：%s\n设定：%s\n规则：%v\n主题：%v",
 		worldView.Title, worldView.Synopsis, worldView.Setting,
 		worldView.KeyRules, worldView.Themes)
 }
 
 func joinStrings(strs []string, sep string) string {
-	result := ""
+	var result string
 	for i, str := range strs {
 		if i > 0 {
 			result += sep
@@ -297,3 +464,6 @@ func joinStrings(strs []string, sep string) string {
 	}
 	return result
 }
+
+// ProviderSet is chapter agent providers.
+var ProviderSet = wire.NewSet(NewChapterAgent)

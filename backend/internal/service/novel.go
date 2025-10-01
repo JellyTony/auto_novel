@@ -42,14 +42,14 @@ type NovelService struct {
 }
 
 // NewNovelService 创建小说服务
-func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher, logger log.Logger) *NovelService {
+func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, chapterAgent *chapter.ChapterAgent, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher, logger log.Logger) *NovelService {
 	service := &NovelService{
 		uc:               uc,
 		orchestrator:     orchestratorAgent,
 		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient, logger),
 		charAgent:        character.NewCharacterAgent(llmClient),
 		outlineAgent:     outline.NewOutlineAgent(llmClient),
-		chapterAgent:     chapter.NewChapterAgent(llmClient),
+		chapterAgent:     chapterAgent,
 		polishAgent:      polish.NewPolishAgent(llmClient),
 		consistencyAgent: consistency.NewConsistencyAgent(llmClient),
 		modelSwitcher:    modelSwitcher,
@@ -63,7 +63,7 @@ func NewNovelService(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.Orche
 }
 
 // NewNovelServiceWithRAG 创建带RAG功能的小说服务
-func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent,
+func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrator.OrchestratorAgent, chapterAgent *chapter.ChapterAgent,
 	einoClient *eino.EinoLLMClient, ragService *vector.RAGService, llmClient llm.LLMClient, modelSwitcher *eino.ModelSwitcher, logger log.Logger) *NovelService {
 	service := &NovelService{
 		uc:               uc,
@@ -71,7 +71,7 @@ func NewNovelServiceWithRAG(uc *biz.NovelUsecase, orchestratorAgent *orchestrato
 		worldAgent:       worldbuilding.NewWorldBuildingAgent(llmClient, logger),
 		charAgent:        character.NewCharacterAgent(llmClient),
 		outlineAgent:     outline.NewOutlineAgent(llmClient),
-		chapterAgent:     chapter.NewChapterAgent(llmClient),
+		chapterAgent:     chapterAgent,
 		polishAgent:      polish.NewPolishAgent(llmClient),
 		consistencyAgent: consistency.NewConsistencyAgentWithRAG(llmClient, *einoClient, ragService),
 		modelSwitcher:    modelSwitcher,
@@ -578,6 +578,19 @@ func (s *NovelService) ReorderChapterOutline(ctx context.Context, req *pb.Reorde
 
 // GenerateChapter 生成章节
 func (s *NovelService) GenerateChapter(ctx context.Context, req *pb.GenerateChapterRequest) (*pb.GenerateChapterResponse, error) {
+	// 添加空值检查
+	if s.chapterAgent == nil {
+		return nil, fmt.Errorf("chapter agent not initialized")
+	}
+	
+	if req == nil {
+		return nil, fmt.Errorf("request cannot be nil")
+	}
+	
+	if req.ChapterOutline == nil {
+		return nil, fmt.Errorf("chapter outline cannot be nil")
+	}
+
 	chapterReq := &chapter.GenerateChapterRequest{
 		ProjectID:       req.ProjectId,
 		ChapterOutline:  convertChapterOutlineFromProto(req.ChapterOutline),
@@ -588,18 +601,145 @@ func (s *NovelService) GenerateChapter(ctx context.Context, req *pb.GenerateChap
 
 	resp, err := s.chapterAgent.GenerateChapter(ctx, chapterReq)
 	if err != nil {
-		return nil, err
+		s.log.WithContext(ctx).Errorf("Failed to generate chapter: %v", err)
+		return nil, fmt.Errorf("章节生成失败: %w", err)
 	}
 
 	// 保存章节
 	savedChapter, err := s.uc.SaveChapter(ctx, resp.Chapter)
 	if err != nil {
-		return nil, err
+		s.log.WithContext(ctx).Errorf("Failed to save chapter: %v", err)
+		return nil, fmt.Errorf("章节保存失败: %w", err)
 	}
 
 	return &pb.GenerateChapterResponse{
 		Chapter: convertChapterToProto(savedChapter),
 	}, nil
+}
+
+// StreamCallback 流式生成回调处理器
+type StreamCallback struct {
+	stream     pb.NovelService_GenerateChapterStreamServer
+	chapterID  string
+	title      string
+	wordCount  int32
+	chunkIndex int32
+}
+
+// OnContent 处理内容片段
+func (c *StreamCallback) OnContent(content string) error {
+	c.chunkIndex++
+	c.wordCount += int32(len([]rune(content)))
+
+	return c.stream.Send(&pb.GenerateChapterStreamResponse{
+		Type:         pb.GenerateChapterStreamResponse_CONTENT,
+		ContentChunk: content,
+		ChunkIndex:   c.chunkIndex,
+		ChapterId:    c.chapterID,
+		Title:        c.title,
+		WordCount:    c.wordCount,
+	})
+}
+
+// OnProgress 处理进度更新
+func (c *StreamCallback) OnProgress(stage string, progress int) error {
+	return c.stream.Send(&pb.GenerateChapterStreamResponse{
+		Type:     pb.GenerateChapterStreamResponse_PROGRESS,
+		Progress: float32(progress) / 100.0,
+		Stage:    stage,
+	})
+}
+
+// OnComplete 处理完成回调
+func (c *StreamCallback) OnComplete(chapter *models.Chapter) error {
+	return nil // 完成处理在主函数中进行
+}
+
+// OnError 处理错误回调
+func (c *StreamCallback) OnError(err error) error {
+	return c.stream.Send(&pb.GenerateChapterStreamResponse{
+		Type:         pb.GenerateChapterStreamResponse_ERROR,
+		ErrorMessage: err.Error(),
+		ErrorCode:    "GENERATION_ERROR",
+	})
+}
+
+// GenerateChapterStream 流式生成章节
+func (s *NovelService) GenerateChapterStream(req *pb.GenerateChapterRequest, stream pb.NovelService_GenerateChapterStreamServer) error {
+	ctx := stream.Context()
+
+	// 发送开始信号
+	if err := stream.Send(&pb.GenerateChapterStreamResponse{
+		Type:     pb.GenerateChapterStreamResponse_PROGRESS,
+		Progress: 0.0,
+		Stage:    "开始生成章节...",
+	}); err != nil {
+		return err
+	}
+
+	// 构建生成请求
+	chapterReq := &chapter.GenerateChapterRequest{
+		ProjectID:       req.ProjectId,
+		ChapterOutline:  convertChapterOutlineFromProto(req.ChapterOutline),
+		Context:         convertContextFromProto(req.Context),
+		TargetWordCount: int(req.TargetWordCount),
+		Options:         convertLLMOptionsFromProto(req.LlmOptions),
+	}
+
+	// 生成章节ID和标题
+	chapterID := generateChapterID()
+	title := req.ChapterOutline.Title
+
+	// 创建流式生成回调
+	callback := &StreamCallback{
+		stream:    stream,
+		chapterID: chapterID,
+		title:     title,
+	}
+
+	// 执行流式生成
+	err := s.chapterAgent.GenerateChapterStream(ctx, chapterReq, callback)
+	if err != nil {
+		// 发送错误信息
+		return stream.Send(&pb.GenerateChapterStreamResponse{
+			Type:         pb.GenerateChapterStreamResponse_ERROR,
+			ErrorMessage: err.Error(),
+			ErrorCode:    "GENERATION_FAILED",
+		})
+	}
+
+	// 创建章节对象（从生成的内容构建）
+	chapter := &models.Chapter{
+		ID:              chapterID,
+		Title:           title,
+		RawContent:      "", // 内容已通过流式传输
+		PolishedContent: "",
+		WordCount:       int(callback.wordCount),
+		ProjectID:       req.ProjectId,
+		Status:          "generated",
+	}
+
+	// 保存章节
+	savedChapter, err := s.uc.SaveChapter(ctx, chapter)
+	if err != nil {
+		return stream.Send(&pb.GenerateChapterStreamResponse{
+			Type:         pb.GenerateChapterStreamResponse_ERROR,
+			ErrorMessage: "保存章节失败",
+			ErrorCode:    "SAVE_FAILED",
+		})
+	}
+
+	// 发送完成信号
+	return stream.Send(&pb.GenerateChapterStreamResponse{
+		Type:         pb.GenerateChapterStreamResponse_COMPLETE,
+		Progress:     1.0,
+		FinalChapter: convertChapterToProto(savedChapter),
+	})
+}
+
+// generateChapterID 生成章节ID
+func generateChapterID() string {
+	return fmt.Sprintf("chapter_%d", time.Now().UnixNano())
 }
 
 // PolishChapter 润色章节
@@ -1090,6 +1230,10 @@ func convertChapterToProto(chapter *models.Chapter) *pb.Chapter {
 }
 
 func convertContextFromProto(pbContext *pb.GenerationContext) *models.GenerationContext {
+	if pbContext == nil {
+		return &models.GenerationContext{}
+	}
+	
 	context := &models.GenerationContext{
 		PreviousSummary: pbContext.PreviousSummary,
 		StyleExamples:   pbContext.StyleExamples,
@@ -1156,6 +1300,9 @@ func convertCharacterFromProto(pbCharacter *pb.Character) *models.Character {
 }
 
 func convertChapterOutlineFromProto(pbOutline *pb.ChapterOutline) *models.ChapterOutline {
+	if pbOutline == nil {
+		return nil
+	}
 	return &models.ChapterOutline{
 		Index:          int(pbOutline.Index),
 		Title:          pbOutline.Title,

@@ -384,16 +384,23 @@ export default function OutlinePage() {
       toast.error('请先选择项目');
       return;
     }
-    const outline = chapters.find(c => c.index === chapterIndex);
-    if (!outline) {
+    const chapterOutline = chapters.find(c => c.index === chapterIndex);
+    if (!chapterOutline) {
       toast.error('未找到对应的章节大纲');
       return;
     }
+
+    // 验证章节大纲的必要字段
+    if (!chapterOutline.title || !chapterOutline.summary) {
+      toast.error('章节大纲信息不完整，请先完善章节标题和摘要');
+      return;
+    }
+
     setGeneratingChapter(chapterIndex);
     const request: GenerateChapterRequest = {
       project_id: selectedProject,
       chapter_number: chapterIndex,
-      outline
+      outline: chapterOutline
     };
     generateChapterApi.mutate(
       () => NovelAPI.generateChapter(request),

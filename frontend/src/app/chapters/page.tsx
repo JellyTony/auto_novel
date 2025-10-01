@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ChapterGenerationDialog } from "@/components/chapter-generation-dialog";
 import { 
   FileText,
   Sparkles,
@@ -39,6 +40,7 @@ export default function ChaptersPage() {
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
   const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [showStreamingDialog, setShowStreamingDialog] = useState(false);
   const [showPolishForm, setShowPolishForm] = useState(false);
   const [showQualityForm, setShowQualityForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -413,14 +415,39 @@ export default function ChaptersPage() {
               </DialogContent>
             </Dialog>
 
+            {/* 新的流式生成对话框 */}
+            <Button 
+              className="flex items-center gap-2"
+              disabled={!selectedProject}
+              onClick={() => setShowStreamingDialog(true)}
+            >
+              <Sparkles className="w-4 h-4" />
+              开始写作
+            </Button>
+
+            <ChapterGenerationDialog
+              open={showStreamingDialog}
+              onOpenChange={setShowStreamingDialog}
+              projectId={selectedProject}
+              chapterIndex={selectedChapter}
+              initialTitle={generateRequest.chapter_outline.title}
+              initialSummary={generateRequest.chapter_outline.summary}
+              onSuccess={(chapter) => {
+                console.log('章节生成成功:', chapter);
+                loadProjectDetail(); // 重新加载项目详情
+              }}
+            />
+
+            {/* 保留原有的生成对话框作为备用 */}
             <Dialog open={showGenerateForm} onOpenChange={setShowGenerateForm}>
               <DialogTrigger asChild>
                 <Button 
+                  variant="outline"
                   className="flex items-center gap-2"
                   disabled={!selectedProject}
                 >
                   <Plus className="w-4 h-4" />
-                  生成章节
+                  传统生成
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
@@ -551,9 +578,9 @@ export default function ChaptersPage() {
             title="还没有章节"
             description="为这个项目生成第一个章节，开始您的创作之旅"
             action={
-              <Button onClick={() => setShowGenerateForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                生成章节
+              <Button onClick={() => setShowStreamingDialog(true)}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                开始写作
               </Button>
             }
             icon={<FileText className="w-12 h-12 text-gray-400" />}

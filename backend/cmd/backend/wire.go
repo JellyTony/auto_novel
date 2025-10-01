@@ -16,6 +16,7 @@ import (
 	"backend/internal/pkg/vector"
 	"backend/internal/agent/orchestrator"
 	"backend/internal/agent/video_script"
+	"backend/internal/agent/chapter"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
@@ -24,5 +25,5 @@ import (
 
 // wireApp init kratos application.
 func wireApp(*conf.Server, *conf.Data, *conf.AI, log.Logger) (*kratos.App, func(), error) {
-	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, llm.ProviderSet, eino.ProviderSet, vector.ProviderSet, orchestrator.ProviderSet, video_script.ProviderSet, newApp))
+	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, llm.ProviderSet, eino.ProviderSet, vector.ProviderSet, orchestrator.ProviderSet, video_script.ProviderSet, chapter.ProviderSet, newApp))
 }

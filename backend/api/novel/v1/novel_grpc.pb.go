@@ -30,6 +30,7 @@ const (
 	NovelService_DeleteChapterOutline_FullMethodName  = "/novel.v1.NovelService/DeleteChapterOutline"
 	NovelService_ReorderChapterOutline_FullMethodName = "/novel.v1.NovelService/ReorderChapterOutline"
 	NovelService_GenerateChapter_FullMethodName       = "/novel.v1.NovelService/GenerateChapter"
+	NovelService_GenerateChapterStream_FullMethodName = "/novel.v1.NovelService/GenerateChapterStream"
 	NovelService_PolishChapter_FullMethodName         = "/novel.v1.NovelService/PolishChapter"
 	NovelService_CheckQuality_FullMethodName          = "/novel.v1.NovelService/CheckQuality"
 	NovelService_BatchCheckQuality_FullMethodName     = "/novel.v1.NovelService/BatchCheckQuality"
@@ -68,6 +69,8 @@ type NovelServiceClient interface {
 	ReorderChapterOutline(ctx context.Context, in *ReorderChapterOutlineRequest, opts ...grpc.CallOption) (*ReorderChapterOutlineResponse, error)
 	// 生成章节内容
 	GenerateChapter(ctx context.Context, in *GenerateChapterRequest, opts ...grpc.CallOption) (*GenerateChapterResponse, error)
+	// 流式生成章节内容
+	GenerateChapterStream(ctx context.Context, in *GenerateChapterRequest, opts ...grpc.CallOption) (NovelService_GenerateChapterStreamClient, error)
 	// 润色章节
 	PolishChapter(ctx context.Context, in *PolishChapterRequest, opts ...grpc.CallOption) (*PolishChapterResponse, error)
 	// 质量检测
@@ -197,6 +200,38 @@ func (c *novelServiceClient) GenerateChapter(ctx context.Context, in *GenerateCh
 	return out, nil
 }
 
+func (c *novelServiceClient) GenerateChapterStream(ctx context.Context, in *GenerateChapterRequest, opts ...grpc.CallOption) (NovelService_GenerateChapterStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &NovelService_ServiceDesc.Streams[0], NovelService_GenerateChapterStream_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &novelServiceGenerateChapterStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type NovelService_GenerateChapterStreamClient interface {
+	Recv() (*GenerateChapterStreamResponse, error)
+	grpc.ClientStream
+}
+
+type novelServiceGenerateChapterStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *novelServiceGenerateChapterStreamClient) Recv() (*GenerateChapterStreamResponse, error) {
+	m := new(GenerateChapterStreamResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *novelServiceClient) PolishChapter(ctx context.Context, in *PolishChapterRequest, opts ...grpc.CallOption) (*PolishChapterResponse, error) {
 	out := new(PolishChapterResponse)
 	err := c.cc.Invoke(ctx, NovelService_PolishChapter_FullMethodName, in, out, opts...)
@@ -234,7 +269,7 @@ func (c *novelServiceClient) CheckConsistency(ctx context.Context, in *CheckCons
 }
 
 func (c *novelServiceClient) GenerateNovel(ctx context.Context, in *GenerateNovelRequest, opts ...grpc.CallOption) (NovelService_GenerateNovelClient, error) {
-	stream, err := c.cc.NewStream(ctx, &NovelService_ServiceDesc.Streams[0], NovelService_GenerateNovel_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &NovelService_ServiceDesc.Streams[1], NovelService_GenerateNovel_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -336,6 +371,8 @@ type NovelServiceServer interface {
 	ReorderChapterOutline(context.Context, *ReorderChapterOutlineRequest) (*ReorderChapterOutlineResponse, error)
 	// 生成章节内容
 	GenerateChapter(context.Context, *GenerateChapterRequest) (*GenerateChapterResponse, error)
+	// 流式生成章节内容
+	GenerateChapterStream(*GenerateChapterRequest, NovelService_GenerateChapterStreamServer) error
 	// 润色章节
 	PolishChapter(context.Context, *PolishChapterRequest) (*PolishChapterResponse, error)
 	// 质量检测
@@ -395,6 +432,9 @@ func (UnimplementedNovelServiceServer) ReorderChapterOutline(context.Context, *R
 }
 func (UnimplementedNovelServiceServer) GenerateChapter(context.Context, *GenerateChapterRequest) (*GenerateChapterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateChapter not implemented")
+}
+func (UnimplementedNovelServiceServer) GenerateChapterStream(*GenerateChapterRequest, NovelService_GenerateChapterStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method GenerateChapterStream not implemented")
 }
 func (UnimplementedNovelServiceServer) PolishChapter(context.Context, *PolishChapterRequest) (*PolishChapterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PolishChapter not implemented")
@@ -635,6 +675,27 @@ func _NovelService_GenerateChapter_Handler(srv interface{}, ctx context.Context,
 		return srv.(NovelServiceServer).GenerateChapter(ctx, req.(*GenerateChapterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _NovelService_GenerateChapterStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GenerateChapterRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(NovelServiceServer).GenerateChapterStream(m, &novelServiceGenerateChapterStreamServer{stream})
+}
+
+type NovelService_GenerateChapterStreamServer interface {
+	Send(*GenerateChapterStreamResponse) error
+	grpc.ServerStream
+}
+
+type novelServiceGenerateChapterStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *novelServiceGenerateChapterStreamServer) Send(m *GenerateChapterStreamResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _NovelService_PolishChapter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -909,6 +970,11 @@ var NovelService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GenerateChapterStream",
+			Handler:       _NovelService_GenerateChapterStream_Handler,
+			ServerStreams: true,
+		},
 		{
 			StreamName:    "GenerateNovel",
 			Handler:       _NovelService_GenerateNovel_Handler,

@@ -7,6 +7,7 @@
 package main
 
 import (
+	"backend/internal/agent/chapter"
 	"backend/internal/agent/orchestrator"
 	"backend/internal/agent/video_script"
 	"backend/internal/biz"
@@ -51,6 +52,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger l
 	novelUsecase := biz.NewNovelUsecase(novelRepo, exportService, bizVideoScriptService, logger)
 	llmClient := llm.NewRealLLMClient(einoLLMClient)
 	orchestratorAgent := orchestrator.NewOrchestratorAgentProvider(llmClient, logger)
+	chapterAgent := chapter.NewChapterAgent(llmClient)
 	ragService, err := vector.NewRAGServiceProvider(confData, ai)
 	if err != nil {
 		cleanup()
@@ -62,7 +64,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, ai *conf.AI, logger l
 		return nil, nil, err
 	}
 	modelSwitcher := eino.NewModelSwitcher(modelFactory)
-	novelService := service.NewNovelServiceWithRAG(novelUsecase, orchestratorAgent, einoLLMClient, ragService, llmClient, modelSwitcher, logger)
+	novelService := service.NewNovelServiceWithRAG(novelUsecase, orchestratorAgent, chapterAgent, einoLLMClient, ragService, llmClient, modelSwitcher, logger)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, videoScriptService, novelService, logger)
 	httpServer := server.NewHTTPServer(confServer, greeterService, videoScriptService, novelService, logger)
 	app := newApp(logger, grpcServer, httpServer)

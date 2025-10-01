@@ -51,6 +51,98 @@ async function apiRequest<T>(
   }
 }
 
+// 流式 API 客户端类
+export class StreamingAPI {
+  private baseUrl: string;
+
+  constructor(baseUrl: string = API_BASE_URL) {
+    this.baseUrl = baseUrl;
+  }
+
+  // 流式生成章节
+  async generateChapterStream(
+    request: GenerateChapterRequest,
+    onMessage: (response: GenerateChapterStreamResponse) => void,
+    onError?: (error: Error) => void,
+    onComplete?: () => void
+  ): Promise<void> {
+    const url = `${this.baseUrl}/api/v1/novel/projects/${request.project_id}/chapters/stream`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        throw new APIError(
+          `HTTP ${response.status}: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            onComplete?.();
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+            
+            try {
+              // 处理 Server-Sent Events 格式
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                  onComplete?.();
+                  return;
+                }
+                
+                const streamResponse: GenerateChapterStreamResponse = JSON.parse(data);
+                onMessage(streamResponse);
+              }
+            } catch (parseError) {
+              console.warn('Failed to parse stream message:', parseError);
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      onError?.(error instanceof Error ? error : new Error('Unknown error'));
+    }
+  }
+
+  // 取消流式请求
+  cancelStream(controller: AbortController) {
+    controller.abort();
+  }
+}
+
+// 创建全局流式 API 实例
+export const streamingAPI = new StreamingAPI();
+
 // API 错误类
 export class APIError extends Error {
   constructor(
@@ -81,6 +173,21 @@ export interface ModelInfo {
   model: string;
   description: string;
   available: boolean;
+}
+
+// 流式响应类型
+export interface GenerateChapterStreamResponse {
+  type: 'CONTENT' | 'PROGRESS' | 'METADATA' | 'ERROR' | 'COMPLETE';
+  content_chunk?: string;
+  chunk_index?: number;
+  progress?: number;
+  stage?: string;
+  chapter_id?: string;
+  title?: string;
+  word_count?: number;
+  error_message?: string;
+  error_code?: string;
+  final_chapter?: Chapter;
 }
 
 // 项目相关类型 - 根据后端实际返回格式调整

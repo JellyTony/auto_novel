@@ -84,6 +84,14 @@ func NewEinoLLMClient(ctx context.Context, config *Config) (*EinoLLMClient, erro
 
 // GenerateText 生成文本
 func (c *EinoLLMClient) GenerateText(ctx context.Context, prompt string, options ...interface{}) (string, error) {
+	// 检查客户端是否已初始化
+	if c == nil {
+		return "", fmt.Errorf("eino client is nil")
+	}
+	if c.model == nil {
+		return "", fmt.Errorf("eino model is nil")
+	}
+
 	// 构建消息
 	messages := []*schema.Message{
 		schema.UserMessage(prompt),
@@ -96,6 +104,11 @@ func (c *EinoLLMClient) GenerateText(ctx context.Context, prompt string, options
 	response, err := c.model.Generate(ctx, messages, callOptions...)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate text: %w", err)
+	}
+
+	// 检查响应是否为空
+	if response == nil {
+		return "", fmt.Errorf("received nil response from model")
 	}
 
 	// 提取生成的文本内容

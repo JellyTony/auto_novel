@@ -9,6 +9,8 @@ import (
 	"backend/internal/pkg/models"
 )
 
+
+
 // EinoChapterAgent 基于 eino 框架的章节生成 Agent
 type EinoChapterAgent struct {
 	client eino.EinoLLMClient
@@ -109,6 +111,167 @@ func (a *EinoChapterAgent) GenerateChapter(ctx context.Context, req *GenerateCha
 	return &GenerateChapterResponse{
 		Chapter: chapter,
 	}, nil
+}
+
+// GenerateChapterStream 流式生成章节内容
+func (a *EinoChapterAgent) GenerateChapterStream(ctx context.Context, req *GenerateChapterRequest, callback StreamCallback) error {
+	// 发送初始进度
+	if err := callback.OnProgress("准备生成章节内容", 10); err != nil {
+		return fmt.Errorf("failed to send initial progress: %w", err)
+	}
+
+	// 构建人物信息
+	charactersInfo := make([]string, len(req.Context.Characters))
+	for i, char := range req.Context.Characters {
+		charactersInfo[i] = fmt.Sprintf("姓名：%s，角色：%s，性格：%v，说话风格：%s",
+			char.Name, char.Role, char.Flaws, char.SpeechTone)
+	}
+
+	// 构建时间线信息
+	timelineInfo := make([]string, len(req.Context.Timeline))
+	for i, event := range req.Context.Timeline {
+		timelineInfo[i] = fmt.Sprintf("%s：%s", event.Timestamp, event.Event)
+	}
+
+	// 构建道具信息
+	propsInfo := make([]string, len(req.Context.Props))
+	for i, prop := range req.Context.Props {
+		propsInfo[i] = fmt.Sprintf("%s：%s", prop.Name, prop.Description)
+	}
+
+	// 发送准备完成进度
+	if err := callback.OnProgress("构建生成提示", 20); err != nil {
+		return fmt.Errorf("failed to send preparation progress: %w", err)
+	}
+
+	prompt := fmt.Sprintf(`
+基于以下信息生成第 %d 章的小说内容：
+
+世界观：%s
+
+主要人物：
+%s
+
+前情摘要：%s
+
+本章大纲：
+标题：%s
+概要：%s
+目标：%s
+转折点：%s
+关键道具：%v
+
+时间线：
+%s
+
+可用道具：
+%s
+
+要求：
+1. 字数控制在 %d 字左右
+2. 保持人物性格一致
+3. 遵循世界观设定
+4. 情节紧凑有趣
+5. 对话自然流畅
+6. 场景描写生动
+
+请直接返回章节内容，不要包含任何格式标记。
+`,
+		req.ChapterOutline.Index,
+		formatWorldView(req.Context.WorldView),
+		joinStrings(charactersInfo, "\n"),
+		req.Context.PreviousSummary,
+		req.ChapterOutline.Title,
+		req.ChapterOutline.Summary,
+		req.ChapterOutline.Goal,
+		req.ChapterOutline.TwistHint,
+		req.ChapterOutline.ImportantItems,
+		joinStrings(timelineInfo, "\n"),
+		joinStrings(propsInfo, "\n"),
+		req.TargetWordCount,
+	)
+
+	// 发送开始生成进度
+	if err := callback.OnProgress("开始生成章节内容", 30); err != nil {
+		return fmt.Errorf("failed to send generation start progress: %w", err)
+	}
+
+	// 使用流式生成
+	content, err := a.generateStreamingContent(ctx, prompt, callback)
+	if err != nil {
+		return fmt.Errorf("failed to generate chapter: %w", err)
+	}
+
+	// 创建章节对象
+	chapter := &models.Chapter{
+		ProjectID:       req.ProjectID,
+		Index:           req.ChapterOutline.Index,
+		Title:           req.ChapterOutline.Title,
+		RawContent:      content,
+		PolishedContent: "",
+		Summary:         req.ChapterOutline.Summary,
+		WordCount:       len([]rune(strings.ReplaceAll(content, " ", ""))),
+		Status:          "draft",
+	}
+
+	// 发送完成进度
+	if err := callback.OnProgress("章节生成完成", 100); err != nil {
+		return fmt.Errorf("failed to send completion progress: %w", err)
+	}
+
+	return callback.OnComplete(chapter)
+}
+
+// generateStreamingContent 流式生成内容的内部方法
+func (a *EinoChapterAgent) generateStreamingContent(ctx context.Context, prompt string, callback StreamCallback) (string, error) {
+	// 由于 eino 框架可能不直接支持流式生成，我们模拟流式输出
+	// 在实际实现中，应该使用 eino 的流式 API
+	
+	// 先生成完整内容
+	content, err := a.client.GenerateText(ctx, prompt)
+	if err != nil {
+		return "", err
+	}
+
+	// 模拟流式输出，将内容分块发送
+	chunkSize := 50 // 每次发送50个字符
+	runes := []rune(content)
+	totalChunks := (len(runes) + chunkSize - 1) / chunkSize
+	
+	var fullContent strings.Builder
+	
+	for i := 0; i < totalChunks; i++ {
+		start := i * chunkSize
+		end := start + chunkSize
+		if end > len(runes) {
+			end = len(runes)
+		}
+		
+		chunk := string(runes[start:end])
+		fullContent.WriteString(chunk)
+		
+		// 发送内容块
+		if err := callback.OnContent(chunk); err != nil {
+			return "", fmt.Errorf("failed to send content chunk: %w", err)
+		}
+		
+		// 发送进度更新
+		progress := 30 + int((float32(i+1)/float32(totalChunks))*60) // 从30%到90%
+		stage := fmt.Sprintf("生成中... (%d/%d)", i+1, totalChunks)
+		if err := callback.OnProgress(stage, progress); err != nil {
+			return "", fmt.Errorf("failed to send progress: %w", err)
+		}
+		
+		// 模拟生成延迟
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		default:
+			// 继续处理
+		}
+	}
+	
+	return fullContent.String(), nil
 }
 
 // RefineChapter 优化章节内容
